@@ -43,3 +43,6 @@ tmp-retention-*.sql
 *-sql.txt
 *-probe.txt
 shot_*.png
+
+# ===== 验证脚本产物（CDP 截图/结果，非源码）=====
+tools/shots/
