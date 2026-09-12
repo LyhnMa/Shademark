@@ -1,0 +1,1253 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>管理后台 — Shademark</title>
+<link rel="icon" href="/logo.png" type="image/png">
+<style>
+:root{
+  --bg:#0d0d0f;--card:#17171b;--sidebar:#101014;--border:#2a2a33;
+  --text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;
+  --danger:#f87171;--success:#4ade80;--warn:#ffd166;--info:#60a5fa;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column}
+
+/* 顶部导航（与短链工具一致：主页 / 报价单 / 水印 / 压缩 / 发码 / 短链 + 右侧账号区） */
+.nav{height:60px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:24px;background:var(--bg);flex-shrink:0}
+.nav .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);flex-shrink:0}
+.nav .brand img{width:32px;height:32px;object-fit:contain;border-radius:8px}
+.nav .brand span{font-size:15px;font-weight:700;letter-spacing:-0.02em}
+.nav-tools{display:flex;gap:4px;align-items:center}
+.nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap}
+.nav-tools a:hover{color:var(--text);background:#141419}
+.nav-links{display:flex;gap:12px;align-items:center;margin-left:auto}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:color .2s;white-space:nowrap}
+.nav-links a:hover{color:var(--text)}
+.nav-user{font-size:13px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.layout{flex:1;display:flex;min-height:0}
+
+/* 侧边栏 */
+.sidebar{width:220px;border-right:1px solid var(--border);padding:20px 12px;display:flex;flex-direction:column;background:var(--sidebar);flex-shrink:0}
+.sidebar .menu-item{padding:9px 12px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:14px;font-weight:500;margin-bottom:2px;transition:all .15s}
+.sidebar .menu-item:hover{color:var(--text);background:#1a1a22}
+.sidebar .menu-item.active{color:var(--text);background:#1e1e28}
+.sidebar .contact-item{padding:9px 12px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:14px;font-weight:500;margin-bottom:2px;transition:all .15s}
+.sidebar .contact-item:hover{color:var(--text);background:#1a1a22}
+
+/* 存量账号补邮箱提示（一行，可关掉不再提） */
+.email-tip{display:none;align-items:center;gap:10px;margin-bottom:16px;padding:10px 14px;border:1px solid var(--border);border-radius:6px;background:#14141a;color:var(--muted);font-size:13px;flex-wrap:wrap}
+.email-tip.show{display:flex}
+.email-tip input{flex:0 0 220px;padding:7px 10px;font-size:13px}
+.email-tip .x{margin-left:auto;cursor:pointer;color:var(--muted);font-size:16px;line-height:1;padding:0 2px}
+.email-tip .x:hover{color:var(--text)}
+
+/* 主内容区 */
+.main{flex:1;min-height:0;padding:clamp(20px,3vh,32px) clamp(20px,3vw,40px);overflow-y:auto;max-width:calc(100vw - 220px)}
+.main h1{font-size:24px;font-weight:700;margin-bottom:24px}
+.section{display:none}
+.section.active{display:block}
+.toolbar{display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
+input,select,textarea{background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:6px;font-size:14px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+.btn{background:var(--accent);color:#fff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity .2s;text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
+.btn:hover{opacity:.88}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-danger{background:#5c2020;color:var(--danger);border:1px solid transparent}
+.btn-danger:hover{background:#6b2626}
+.btn-sm{padding:6px 10px;font-size:12px}
+.btn-green{background:#14432c;color:var(--success)}
+.btn-green:hover{background:#185336}
+.btn-warn{background:#5a4423;color:var(--warn);border:1px solid transparent}
+.btn-warn:hover{background:#6b5130}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:760px}
+th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-weight:500;font-size:12px;white-space:nowrap}
+tr:hover td{background:#14141a}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:12px;font-weight:600}
+.badge-pending{background:#3a3a45;color:var(--warn)}
+.badge-paid{background:#2a3a35;color:var(--success)}
+.badge-delivered{background:#2a3a35;color:var(--success)}
+.badge-cancelled{background:#3a2a2a;color:var(--danger)}
+.badge-refunded{background:#3a2a2a;color:var(--danger)}
+.badge-unused{background:#2a2a35;color:var(--muted)}
+.badge-sold{background:#2a3a3a;color:var(--info)}
+.badge-active{background:#2a3a35;color:var(--success)}
+.badge-revoked{background:#3a2a2a;color:var(--danger)}
+.badge-enabled{background:#2a3a35;color:var(--success)}
+.badge-disabled{background:#3a2a2a;color:var(--danger)}
+.badge-pro{background:#2a2440;color:var(--accent)}
+.badge-free{background:#22222a;color:var(--muted)}
+/* 订阅页 */
+.sub-plan-card{background:linear-gradient(135deg,rgba(124,77,255,.12),rgba(124,77,255,.02));border:1px solid rgba(124,77,255,.28);border-radius:12px;padding:18px 20px;margin-bottom:22px}
+.plan-line{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:700}
+/* 权益对比：三列表格（Free / 宽限期 / Pro），第一列权益名 + 后三列数值，横向对齐 */
+.sub-cols{margin-bottom:22px;overflow-x:auto}
+.sub-table{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+.sub-table th,.sub-table td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);vertical-align:middle}
+.sub-table thead th{font-size:13px;font-weight:700;color:var(--text);background:rgba(124,77,255,.06);white-space:nowrap}
+.sub-table thead th:first-child{color:var(--muted);font-weight:600}
+.sub-table tbody td{color:var(--text);line-height:1.5}
+.sub-table tbody td:first-child{color:var(--muted);white-space:nowrap}
+.sub-table .th-pro{color:var(--accent)}
+.sub-table .th-grace{color:var(--warn)}
+.sub-table .col-pro{background:rgba(124,77,255,.05)}
+.sub-table .yes{color:#4ade80;font-weight:700}
+.sub-table .no{color:var(--muted)}
+.sub-table .grace-note{font-size:12px;font-weight:400;color:var(--muted);display:block;margin-top:2px}
+.sub-upgrade{border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+.upgrade-title{font-size:15px;font-weight:700;margin-bottom:8px}
+.upgrade-text{font-size:13px;line-height:1.7}
+.actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+/* —— 新建商品弹窗排版（仅作用于 #productModal，不影响其它弹窗）—— */
+#productModal .modal-content{max-width:660px}
+#productModal .pm-sections{display:flex;flex-direction:column;gap:4px}
+#productModal .pm-sec{border:1px solid var(--border);border-radius:10px;padding:14px 16px 2px;margin-bottom:12px}
+#productModal .pm-sec-title{font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+#productModal .pm-sec-title::before{content:'';width:8px;height:8px;border-radius:2px;background:var(--accent)}
+#productModal .pm-row{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+#productModal .pm-sec .form-group{margin-bottom:14px}
+#productModal .pm-sec .form-group label{display:flex;align-items:center;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+#productModal .pm-sec .form-group label .req{color:var(--danger);font-style:normal;font-weight:700}
+#productModal .pm-sec .form-group input,
+#productModal .pm-sec .form-group select,
+#productModal .pm-sec .form-group textarea{width:100%;max-width:none}
+#productModal .pm-sec .form-group .hint{text-transform:none;font-weight:400;color:var(--muted);letter-spacing:0}
+#productModal .pm-sec .form-group label .hint{margin-left:auto;padding-left:12px}
+.pro-tip{color:var(--accent);font-size:11px;font-weight:600;text-transform:none;letter-spacing:0}
+input:disabled,select:disabled{opacity:.45;cursor:not-allowed;background:transparent}
+#productModal .locked-field{position:relative}
+#productModal .locked-field.is-locked input{opacity:.4;background:transparent;cursor:not-allowed}
+#productModal .locked-field.is-locked label{opacity:.6}
+#productModal .locked-field .lock-tag{color:var(--accent);font-size:11px;font-weight:600;text-transform:none;letter-spacing:0}
+#productModal .locked-field.is-locked .lock-tag{display:inline!important}
+#productModal .auto-line{display:flex!important;align-items:center;justify-content:flex-start!important;gap:8px;font-size:13px!important;font-weight:600;color:var(--text);text-transform:none!important;letter-spacing:0!important;margin-bottom:6px}
+#productModal .auto-line input[type=checkbox]{width:auto;margin:0}
+#productModal .auto-line .hint{margin-left:0;padding-left:0;font-size:11px;font-weight:600}
+#productModal .pm-foot{border-top:1px solid var(--border);padding-top:16px;margin-top:2px;display:flex;justify-content:flex-end;gap:10px}
+@media(max-width:560px){#productModal .pm-row{grid-template-columns:1fr}}
+
+
+.form-group{margin-bottom:16px}
+.form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.form-group input,.form-group select,.form-group textarea{width:100%;max-width:480px}
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.72);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal.active{display:flex}
+.modal-content{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto}
+.modal-content h2{font-size:18px;font-weight:700;margin-bottom:20px}
+.loading{color:var(--muted);text-align:center;padding:40px;font-size:14px}
+.actions{display:flex;gap:10px;flex-wrap:wrap}
+.cell-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+/* —— 通用确认 / 提示弹窗（替代原生 confirm/alert，兼容安卓各浏览器） —— */
+.sd-mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.62);z-index:400;align-items:center;justify-content:center;padding:20px}
+.sd-mask.show{display:flex}
+.sd-dialog{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px;width:100%;max-width:380px;box-shadow:0 18px 60px rgba(0,0,0,.5)}
+.sd-title{font-size:15px;font-weight:700;margin-bottom:10px}
+.sd-msg{font-size:14px;color:var(--muted);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.sd-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;flex-wrap:wrap}
+.sd-actions .btn{min-height:42px;padding:9px 14px;flex:1 1 auto;min-width:96px}
+/* 联系表单弹窗（三处入口共用） */
+.contact-modal .modal-content{max-width:480px}
+.contact-modal .cm-sub{color:var(--muted);font-size:12px;line-height:1.6;margin:-14px 0 16px}
+.contact-modal .form-group input,.contact-modal .form-group select,.contact-modal .form-group textarea{max-width:none;min-height:44px}
+.contact-modal textarea{resize:vertical;min-height:96px}
+.contact-modal .cm-err{color:var(--danger);font-size:13px;line-height:1.5;min-height:0;margin:-6px 0 4px;display:none}
+.contact-modal .actions .btn{min-height:44px;padding:9px 16px;flex:1 1 auto}
+@media(max-width:600px){.contact-modal .modal-content{margin:8px;width:90%;padding:20px}}
+
+.sub-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--muted);line-height:1.6}
+.sub-bar .badge{font-size:11px;font-weight:700}
+/* 宽限期：已到期但功能保留，配色转警告，提示续费 */
+.sub-bar.grace{border-color:rgba(255,209,102,.45);background:#1a1710}
+.sub-bar.grace .warn{color:var(--warn);font-weight:600}
+.sub-bar .renew{margin-left:auto;color:var(--warn);font-weight:700;cursor:pointer;text-decoration:underline;text-underline-offset:3px;white-space:nowrap}
+/* —— 页面角落：当前权益两行（固定不滚动，与短链页同一位置） —— */
+.plan-foot{position:fixed;right:16px;bottom:14px;z-index:40;max-width:calc(100vw - 32px);
+  font-size:12px;line-height:1.5;color:var(--muted);font-variant-numeric:tabular-nums;
+  background:rgba(13,13,15,.88);border:1px solid var(--border);border-radius:10px;padding:8px 12px;
+  backdrop-filter:blur(6px);pointer-events:none}
+.plan-foot .pf-line{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.plan-foot .pf-line+.pf-line{margin-top:2px}
+.plan-foot b{color:var(--text);font-weight:600}
+.plan-foot .pf-tier{font-weight:600}
+.plan-foot.warn{color:var(--warn);border-color:rgba(255,209,102,.45);background:rgba(26,23,16,.94)}
+.plan-foot.warn b{color:var(--warn)}
+@media(max-width:600px){.plan-foot{position:static;margin:16px 0 0;border-radius:10px;white-space:normal;line-height:1.6}}
+/* —— 右上角账号菜单 —— */
+.acct{position:relative;display:inline-flex;align-items:center}
+.acct-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--muted);
+  font-size:13px;font-weight:500;font-family:inherit;padding:4px 2px;max-width:200px}
+.acct-btn:hover{color:var(--text)}
+.acct-btn .caret{width:8px;height:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin-top:-3px;flex-shrink:0}
+.acct-menu{display:none;position:absolute;right:0;top:calc(100% + 12px);min-width:168px;background:var(--card);border:1px solid var(--border);
+  border-radius:10px;padding:6px;box-shadow:0 16px 40px rgba(0,0,0,.5);z-index:120}
+.acct-menu.show{display:block}
+.acct-menu a,.acct-menu button{display:block;width:100%;text-align:left;padding:9px 12px;border-radius:6px;color:var(--text);
+  text-decoration:none;font-size:13px;font-weight:500;background:none;border:none;cursor:pointer;font-family:inherit;white-space:nowrap}
+.acct-menu a:hover,.acct-menu button:hover{background:#1e1e28}
+.acct-menu .sep{height:1px;background:var(--border);margin:6px 4px}
+.acct-menu .danger{color:var(--danger)}
+/* —— 订阅页：当前权益（按工具分组，从哪个入口进来高亮哪一栏） —— */
+.sub-rights{border:1px solid var(--border);border-radius:12px;padding:18px 20px;margin-bottom:22px}
+.sub-rights h3{margin:0 0 12px;font-size:15px}
+.rights-group{padding:10px 12px;border-radius:8px;border:1px solid transparent;margin-bottom:6px}
+.rights-group:last-child{margin-bottom:0}
+.rights-group.hl{border-color:rgba(124,108,240,.45);background:rgba(124,108,240,.07)}
+.rights-group .rg-name{font-size:13px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:8px}
+.rights-group .rg-items{font-size:13px;color:var(--muted);line-height:1.8}
+.rights-group .rg-items i{font-style:normal;color:var(--text)}
+.plan-note{font-size:13px;color:var(--muted);margin-top:10px;line-height:1.7}
+.plan-note.warn{color:var(--warn)}
+.plan-note.ok{color:var(--success)}
+.detail-row{display:flex;justify-content:space-between;padding:10px 2px;border-bottom:1px solid var(--border);font-size:14px}
+.detail-row:last-child{border-bottom:none}
+.detail-row .lbl{color:var(--muted);font-size:13px}
+.detail-row .val{font-weight:600;word-break:break-all}
+.code-plain{font-family:'ui-monospace',SFMono-Regular,Menlo,monospace;font-size:14px;letter-spacing:1px}
+.link-input{width:100%;max-width:none}
+@media(min-width:801px) and (max-width:1100px){
+  .sidebar{width:192px}
+  .main{max-width:calc(100vw - 192px);padding:20px}
+}
+@media(max-width:800px){
+  body{flex-direction:column;overflow-x:hidden}
+  .nav{padding:0 16px;gap:10px}
+  .nav-tools{min-width:0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .nav-tools::-webkit-scrollbar{display:none}
+  .layout{flex-direction:column}
+  .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);padding:10px 12px;flex-direction:row;overflow-x:auto;align-items:center;gap:4px;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .sidebar::-webkit-scrollbar{display:none}
+  .sidebar .menu-item{padding:8px 12px;font-size:13px;white-space:nowrap;flex-shrink:0}
+  .sidebar .contact-item{padding:8px 12px;font-size:13px;white-space:nowrap;flex-shrink:0}
+  .main{padding:20px 16px;max-width:100vw}
+  .main h1{font-size:20px;margin-bottom:18px}
+  .toolbar{gap:8px}
+  .toolbar select,.toolbar input{flex:1 1 auto;min-width:0;max-width:100%}
+  .table-wrap{border:1px solid var(--border);border-radius:8px;margin-top:4px}
+  table{min-width:760px}
+  .btn-sm{min-height:38px}
+  .btn{min-height:42px}
+  .cell-actions{gap:6px}
+  .modal-content{padding:20px;margin:16px;max-height:88vh;border-radius:12px}
+  .loading{padding:28px 12px}
+  .actions{justify-content:flex-end}
+}
+@media(max-width:480px){
+  .sub-cols{gap:10px}
+  .sub-col,.sub-upgrade{padding:14px 14px}
+  .form-group input,.form-group select,.form-group textarea{max-width:100%}
+}
+@media(max-width:600px){
+  .nav{gap:8px}
+  .nav-tools{display:none}
+  .nav-links{gap:14px}
+}
+/* 窄屏：表格行转卡片，去掉横向滚动 */
+@media(max-width:820px){
+  .table-wrap{overflow:visible;border:none}
+  table{min-width:0;display:block;width:100%}
+  thead{display:none}
+  tbody{display:block}
+  tbody tr{display:block;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px}
+  tbody tr:hover td{background:transparent}
+  tbody tr.loading td{border:none;text-align:center}
+  tbody td{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px}
+  tbody td:last-child{border-bottom:none}
+  tbody td::before{content:attr(data-label);color:var(--muted);font-size:12px;font-weight:600;flex:0 0 auto;margin-right:12px;padding-top:1px}
+  tbody td.ad-main{display:block;border-bottom:1px solid var(--border);margin-bottom:6px}
+  tbody td.ad-main::before{content:''}
+  tbody td.ad-ops{display:block;border-bottom:none;padding-top:6px}
+  tbody td.ad-ops::before{content:''}
+  tbody td.ad-ops .cell-actions{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;width:100%}
+  tbody td.ad-ops .cell-actions .btn,
+  tbody td.ad-ops .cell-actions .btn-sm,
+  tbody td.ad-ops .cell-actions .btn-ghost,
+  tbody td.ad-ops .cell-actions .btn-danger{width:100%;margin:0;justify-content:center}
+  .code-plain{font-size:14px;letter-spacing:.5px}
+  tbody td code{font-size:12px}
+}
+</style>
+</head>
+<body>
+<!-- 顶部导航（与短链工具一致） -->
+<nav class="nav">
+  <a href="/" class="brand"><img src="/logo.png" alt="Logo"><span>Shademark</span></a>
+  <div class="nav-tools">
+    <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/admin">发码</a><a href="/links">短链</a>
+  </div>
+  <div class="nav-links">
+    <a href="/login" id="navLogin" style="display:none">登录</a>
+    <span class="acct" id="navAcct" style="display:none">
+      <button class="acct-btn" id="acctBtn" onclick="toggleAcct(event)" aria-haspopup="true" aria-expanded="false" title="账号菜单">
+        <span id="navUser"></span><i class="caret"></i>
+      </button>
+      <div class="acct-menu" id="acctMenu">
+        <a href="?sub=1">订阅</a>
+        <a href="/admin">发码后台</a>
+        <div class="sep"></div>
+        <button class="danger" onclick="logout()">退出登录</button>
+      </div>
+    </span>
+    <a href="javascript:void(0)" id="navContact" onclick="openContact('other')" style="display:none">联系</a>
+  </div>
+</nav>
+
+<div class="layout">
+<!-- 侧边栏 -->
+<aside class="sidebar">
+  <div class="menu-item active" data-section="products">商品管理</div>
+  <div class="menu-item" data-section="codes">激活码</div>
+  <div class="menu-item" data-section="orders">订单管理</div>
+  <div class="menu-item" data-section="settings">API 密钥</div>
+  <div class="menu-item" data-section="subscription">订阅</div>
+</aside>
+
+<!-- 主内容 -->
+<div class="main">
+  <div class="email-tip" id="emailTip">
+    <span>补一个邮箱，以后忘记密码可以自己找回。</span>
+    <input id="bindEmailInput" type="email" placeholder="your@email.com" />
+    <button class="btn btn-sm" onclick="bindEmail()">保存</button>
+    <span class="x" onclick="dismissEmailTip()" title="不再提示">×</span>
+  </div>
+
+  <!-- 商品管理 -->
+  <div class="section active" id="section-products">
+    <h1>商品管理</h1>
+    <div class="toolbar"><button class="btn" onclick="openProductModal()">新建商品</button></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>名称</th><th>价格</th><th>库存</th><th>有效期</th><th>自动确认</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody id="productTable"><tr><td colspan="7" class="loading">加载中...</td></tbody>
+    </table></div>
+  </div>
+
+  <!-- 激活码 -->
+  <div class="section" id="section-codes">
+    <h1>激活码</h1>
+    <div class="toolbar">
+      <select id="codeProductFilter" onchange="loadCodes()"><option value="">全部商品</option></select>
+      <select id="codeStatusFilter" onchange="loadCodes()">
+        <option value="">全部状态</option>
+        <option value="unused">未售</option>
+        <option value="sold">已售</option>
+        <option value="active">已激活</option>
+        <option value="revoked">已作废</option>
+      </select>
+      <input type="number" id="codeCount" value="10" min="1" max="10000" style="width:100px" oninput="renderPlanFoot()" />
+      <button class="btn" onclick="generateCodes()">批量生成</button>
+      <button class="btn btn-ghost" onclick="exportCodes()">导出 CSV</button>
+      <button class="btn btn-danger" id="codeBatchDelBtn" style="display:none" onclick="deleteSelectedCodes()">删除选中</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th><input type="checkbox" id="codeCheckAll" onclick="toggleAllCodes(this)" title="全选（仅未售/已作废可删）" /></th><th>所属商品</th><th>激活码</th><th>状态</th><th>生效时间</th><th>有效期至</th><th>生成时间</th><th>关联订单号</th><th>操作</th></tr></thead>
+      <tbody id="codeTable"><tr><td colspan="9" class="loading">加载中...</td></tbody>
+    </table></div>
+  </div>
+
+  <!-- 订单管理 -->
+  <div class="section" id="section-orders">
+    <h1>订单管理</h1>
+    <div class="toolbar">
+      <select id="orderProductFilter" onchange="loadOrders()"><option value="">全部商品</option></select>
+      <select id="orderStatusFilter" onchange="loadOrders()">
+        <option value="">全部状态</option>
+        <option value="pending">待支付</option>
+        <option value="paid">已支付</option>
+        <option value="delivered">已发码</option>
+        <option value="cancelled">已取消</option>
+        <option value="refunded">已退款</option>
+      </select>
+      <button class="btn btn-ghost" onclick="exportOrders()">导出 CSV</button>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>订单号</th><th>商品</th><th>买家备注</th><th>金额</th><th>状态</th><th>激活码</th><th>操作</th></tr></thead>
+      <tbody id="orderTable"><tr><td colspan="7" class="loading">加载中...</td></tbody>
+    </table></div>
+  </div>
+
+  <!-- API 密钥 -->
+  <div class="section" id="section-settings">
+    <h1>API 密钥</h1>
+    <div class="toolbar"><button class="btn" onclick="createAPIKey()">生成新密钥</button></div>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Key</th><th>权限</th><th>状态</th><th>创建时间</th><th>操作</th></tr></thead>
+      <tbody id="apiKeyTable"><tr><td colspan="5" class="loading">加载中...</td></tbody>
+    </table></div>
+  </div>
+
+  <!-- 订阅（Shademark 平台统一订阅 · 账号级唯一页） -->
+  <div class="section" id="section-subscription">
+    <h1>订阅</h1>
+
+    <!-- 权益对比：三列表格（Free / 宽限期 / Pro），所有人可见，不按档位隐藏 -->
+    <div class="sub-cols" id="subCompare"></div>
+
+    <div class="sub-upgrade" id="subUpgrade">
+      <div class="upgrade-title" id="subUpgradeTitle">如何升级 Pro？</div>
+      <div class="upgrade-text" id="subUpgradeText">当前为手动开通方式，开通后立即生效、无需重新登录。</div>
+      <div style="margin-top:14px"><button class="btn" onclick="openContact('upgrade')">联系平台方</button></div>
+    </div>
+  </div>
+
+  <!-- 页面角落：当前权益（与短链页同一位置，极轻一行） -->
+  <div class="plan-foot" id="planFoot" style="display:none"></div>
+</div>
+</div><!-- /layout -->
+
+<!-- Pro 专属提示弹窗 -->
+<div class="modal" id="proModal">
+  <div class="modal-content">
+    <h2><span class="badge badge-pro">Pro</span> 专属功能</h2>
+    <p style="color:var(--text);margin:14px 0 6px;font-size:14px;line-height:1.7">该功能为 Pro 专属。请联系平台方升级后使用。</p>
+    <p style="color:var(--muted);font-size:12px;line-height:1.6">开通后立即生效，无需重新登录。一个账号、一个等级，发码平台 / 短链 / 水印 / 压缩全矩阵通用。</p>
+    <div class="actions">
+      <button class="btn btn-primary" onclick="openContact('upgrade')">联系开通</button>
+      <button class="btn btn-ghost" onclick="goSubscription()">查看详情</button>
+      <button class="btn btn-ghost" onclick="closeProModal()">知道了</button>
+    </div>
+  </div>
+</div>
+
+<!-- 联系表单弹窗（三处入口共用） -->
+<div class="modal contact-modal" id="contactModal">
+  <div class="modal-content">
+    <h2>联系平台方</h2>
+    <p class="cm-sub">有什么需求或问题，提交后平台方会尽快回复。</p>
+    <div class="form-group"><label>联系方式 <em class="req">*</em></label><input id="cm_email" type="text" placeholder="建议填写邮箱或微信号，用于平台方联系你" /></div>
+    <div class="form-group"><label>类型 <em class="req">*</em></label>
+      <select id="cm_type">
+        <option value="upgrade">升级 Pro</option>
+        <option value="technical">技术问题</option>
+        <option value="other">其他</option>
+      </select>
+    </div>
+    <div class="form-group"><label>留言 <em class="req">*</em></label><textarea id="cm_message" rows="4" placeholder="请描述你的需求或问题"></textarea></div>
+    <div class="cm-err" id="cm_err"></div>
+    <div class="actions">
+      <button class="btn btn-primary cm-submit" onclick="submitContact()">提交</button>
+      <button class="btn btn-ghost" onclick="closeContact()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 商品模态框 -->
+<div class="modal" id="productModal">
+  <div class="modal-content" style="max-width:660px">
+    <h2 id="productModalTitle">新建商品</h2>
+    <div class="pm-sections">
+
+      <!-- 基本信息 -->
+      <div class="pm-sec">
+        <div class="pm-sec-title">基本信息</div>
+        <div class="form-group"><label>商品名称 <em class="req">*</em></label><input id="p_name" placeholder="例如：Pro 会员卡" /></div>
+        <div class="form-group"><label>商品描述 <span class="hint">（可选）</span></label><textarea id="p_description" rows="2" placeholder="向买家展示的说明文字"></textarea></div>
+        <div class="pm-row">
+          <div class="form-group"><label>价格（元）<em class="req">*</em></label><input id="p_price" type="number" step="0.01" placeholder="0.00" /></div>
+          <div class="form-group"><label>激活码有效期 <span class="hint">（天）</span></label><input id="p_validity" type="number" min="1" placeholder="留空 = 永久有效" /></div>
+        </div>
+      </div>
+
+      <!-- 激活码设置 -->
+      <div class="pm-sec">
+        <div class="pm-sec-title">激活码</div>
+        <div class="form-group"><label>激活码前缀 <span class="hint">（可选）</span></label><input id="p_prefix" placeholder="如 PROD-（留空则无前缀）" /></div>
+        <div class="pm-row">
+          <div class="form-group"><label>码长度</label><input id="p_length" type="number" min="4" max="64" value="16" /></div>
+          <div class="form-group"><label>字符集</label>
+            <select id="p_charset">
+              <option value="alphanumeric">字母 + 数字（推荐）</option>
+              <option value="numeric">纯数字</option>
+              <option value="letters">纯字母</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 自动确认（Pro） -->
+      <div class="pm-sec">
+        <div class="pm-sec-title">自动回调发码</div>
+        <div class="form-group"><label class="auto-line">
+            <span style="display:inline-flex;align-items:center;gap:6px"><input type="checkbox" id="p_auto" /> 启用自动确认</span>
+            <span id="p_auto_hint" style="display:none;margin-left:0;color:var(--accent);font-size:11px;font-weight:600">（Pro 专属）</span>
+          </label>
+        </div>
+        <div class="pm-row">
+          <div class="form-group locked-field"><label>回调 URL <span class="hint">（可选）</span><span class="lock-tag" style="display:none">（Pro 专属）</span></label><input id="p_callback_url" placeholder="https://你的服务器/回调" /></div>
+          <div class="form-group locked-field"><label>回调密钥 <span class="hint">（可选）</span><span class="lock-tag" style="display:none">（Pro 专属）</span></label><input id="p_callback_secret" placeholder="HMAC 签名密钥" /></div>
+        </div>
+        <p style="font-size:12px;color:var(--muted);margin:2px 0 6px;line-height:1.6">开启后，买家付款成功时由你的服务器带签名调用确认接口，系统自动发码，无需手动确认。</p>
+      </div>
+
+      <div class="pm-foot">
+        <button class="btn btn-ghost" onclick="closeProductModal()">取消</button>
+        <button class="btn" onclick="createProduct()">创建商品</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 购买链接弹层 -->
+<div class="modal" id="linkModal">
+  <div class="modal-content" style="max-width:520px">
+    <h2 id="linkModalTitle">购买链接</h2>
+    <div id="linkExtra" style="margin-bottom:14px"></div>
+    <div class="form-group"><label>链接</label><input id="linkUrl" class="link-input" type="text" onclick="this.select()" /></div>
+    <div class="actions">
+      <button class="btn" id="linkCopyBtn" onclick="copyModalLink()">复制链接</button>
+      <button class="btn btn-ghost" onclick="closeLinkModal()">关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- 激活码详情 / 修改有效期（激活码管理 + 订单管理共用） -->
+<div class="modal" id="codeModal">
+  <div class="modal-content">
+    <h2>激活码详情</h2>
+    <div id="codeDetailBox"></div>
+    <div class="form-group"><label>修改有效期<span style="text-transform:none;color:var(--muted);font-weight:400">（留空表示永久有效）</span></label>
+      <input id="codeExpiresDate" type="date" />
+    </div>
+    <div class="error" id="codeModalErr" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px"></div>
+    <div class="actions">
+      <button class="btn" onclick="saveCodeExpiry()">保存</button>
+      <button class="btn btn-ghost" onclick="closeCodeModal()">取消</button>
+    </div>
+  </div>
+</div>
+
+<div class="sd-mask" id="sdMask">
+  <div class="sd-dialog">
+    <div class="sd-title" id="sdTitle"></div>
+    <div class="sd-msg" id="sdMsg"></div>
+    <div class="sd-actions" id="sdActions"></div>
+  </div>
+</div>
+
+<script>
+let currentSection='products';
+let codeModalCodeId=null;
+let codeModalSource='codes'; // codes | orders（保存后刷新对应列表）
+
+// —— 通用 ——
+const STATUS_CN={pending:'待支付',paid:'已支付',delivered:'已发码',cancelled:'已取消',refunded:'已退款',unused:'未售',sold:'已售',active:'已激活',revoked:'已作废'};
+
+/* —— 统一确认 / 提示弹窗（替代原生 confirm/alert，安卓内置浏览器原生弹窗常被拦截） —— */
+function sdOpen(title, msg, actions) {
+  const mask = document.getElementById('sdMask');
+  document.getElementById('sdTitle').textContent = title;
+  document.getElementById('sdMsg').textContent = msg;
+  const box = document.getElementById('sdActions');
+  box.innerHTML = '';
+  actions.forEach(a => {
+    const b = document.createElement('button');
+    b.className = 'btn ' + (a.cls || 'btn-ghost');
+    b.textContent = a.label;
+    b.onclick = () => { sdClose(); a.onOk && a.onOk(); };
+    box.appendChild(b);
+  });
+  mask.classList.add('show');
+}
+function sdClose() { document.getElementById('sdMask').classList.remove('show'); }
+function sdConfirm(msg, onOk) {
+  sdOpen('请确认', msg, [
+    { label: '取消', cls: 'btn-ghost', onOk: null },
+    { label: '确定', cls: 'btn-primary', onOk },
+  ]);
+}
+function sdConfirmDanger(msg, onOk) {
+  sdOpen('请确认', msg, [
+    { label: '取消', cls: 'btn-ghost', onOk: null },
+    { label: '确定', cls: 'btn-danger', onOk },
+  ]);
+}
+function sdAlert(msg, title) {
+  sdOpen(title || '提示', msg, [{ label: '知道了', cls: 'btn-ghost', onOk: null }]);
+}
+document.getElementById('sdMask').addEventListener('click', (e) => { if (e.target.id === 'sdMask') sdClose(); });
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmtTs(ts){if(!ts)return '—';return new Date(Number(ts)*1000).toLocaleString('zh-CN')}
+function fmtDateY(ts){if(!ts)return '永久';const d=new Date(Number(ts)*1000);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}
+function fmtDateMD(ts){if(!ts)return '—';const d=new Date(Number(ts)*1000);return `${d.getMonth()+1} 月 ${d.getDate()} 日`}
+function elapsed(ts){if(!ts)return null;const d=new Date(Number(ts)*1000);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}
+function toLocalDate(ts){return ts?elapsed(ts):''}
+
+document.querySelectorAll('.menu-item').forEach(item=>{
+  item.addEventListener('click',()=>{
+    document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
+    item.classList.add('active');
+    document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+    document.getElementById('section-'+item.dataset.section).classList.add('active');
+    currentSection=item.dataset.section;
+    loadCurrentSection();
+  });
+});
+function loadCurrentSection(){
+  if(currentSection==='products')loadProducts();
+  else if(currentSection==='codes'){loadCodeFilters();loadCodes()}
+  else if(currentSection==='orders'){loadOrderFilters();loadOrders()}
+  else if(currentSection==='settings')loadSettings();
+  else if(currentSection==='subscription')renderSubPlanCard();
+}
+
+// ================= 商品 =================
+function buyLink(productId){return location.origin+'/store/'+encodeURIComponent(productId)}
+async function copyBuyLink(productId){
+  const url=buyLink(productId);
+  try{await navigator.clipboard.writeText(url)}catch(e){
+    const ta=document.createElement('textarea');ta.value=url;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy')}catch(_){}
+    document.body.removeChild(ta);
+  }
+  const b=event&&event.target;if(b){const t=b.textContent;b.textContent='已复制';setTimeout(()=>b.textContent=t,1500)}
+}
+function showLinkModal(title,url,extraHtml){
+  document.getElementById('linkModalTitle').textContent=title;
+  const link=document.getElementById('linkUrl');link.value=url;link.readOnly=true;
+  document.getElementById('linkExtra').innerHTML=extraHtml||'';
+  document.getElementById('linkModal').classList.add('active');
+  setTimeout(()=>{try{link.focus();link.select()}catch(e){}},50);
+}
+function copyModalLink(){
+  const link=document.getElementById('linkUrl');const url=link.value;
+  try{navigator.clipboard.writeText(url)}catch(e){link.select();try{document.execCommand('copy')}catch(_){}}
+  const b=document.getElementById('linkCopyBtn');const t=b.textContent;b.textContent='已复制';setTimeout(()=>b.textContent=t,1500);
+}
+function closeLinkModal(){document.getElementById('linkModal').classList.remove('active')}
+
+async function loadProducts(){
+  try{
+    const r=await fetch('/api/admin/products');const d=await r.json();
+    const tbody=document.getElementById('productTable');
+    tbody.innerHTML=(d.products||[]).map(p=>`
+      <tr>
+        <td data-label="名称" class="ad-main">${esc(p.name)}</td>
+        <td data-label="价格">¥${(p.price/100).toFixed(2)}</td>
+        <td data-label="库存">${p.stock??'∞'}</td>
+        <td data-label="有效期">${p.code_validity_days?p.code_validity_days+' 天':'永久'}</td>
+        <td data-label="自动确认">${p.auto_confirm_enabled?'<span class="badge badge-active">是</span>':'<span class="badge badge-unused">—</span>'}</td>
+        <td data-label="状态">${p.is_active?'<span class="badge badge-active">在售</span>':'<span class="badge badge-revoked">已下架</span>'}</td>
+        <td data-label="操作" class="ad-ops"><div class="cell-actions">
+          <button class="btn btn-sm" onclick="copyBuyLink('${p.id}')" title="复制购买链接">复制购买链接</button>
+          <a class="btn btn-sm btn-ghost" style="text-decoration:none" href="/store/${p.id}" target="_blank">查看</a>
+          ${p.is_active?`<button class="btn btn-sm btn-ghost" onclick="setProductActive('${p.id}',0)">下架</button>`:`<button class="btn btn-sm" onclick="setProductActive('${p.id}',1)">上架</button>`}
+          <button class="btn btn-sm btn-danger" onclick="deleteProduct('${p.id}')">删除</button>
+        </div></td>
+      </tr>`).join('')||'<tr><td colspan="7" class="loading">暂无商品</td></tr>';
+  }catch(e){document.getElementById('productTable').innerHTML='<tr><td colspan="7" class="loading">加载失败</td></tr>'}
+}
+async function setProductActive(id,active){
+  await fetch('/api/admin/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:id,action:active?'activate':'deactivate'})});
+  loadProducts();
+}
+function deleteProduct(id){
+  sdConfirmDanger('确认永久删除该商品？此操作不可恢复。', () => doDeleteProduct(id));
+}
+async function doDeleteProduct(id){
+  const r=await fetch(`/api/admin/products?id=${id}`,{method:'DELETE'});
+  const d=await r.json().catch(()=>({}));
+  if(d.error){sdAlert(d.error);return}
+  loadProducts();
+}
+async function createProduct(){
+  const payload={
+    name:document.getElementById('p_name').value,
+    description:document.getElementById('p_description').value,
+    price:parseFloat(document.getElementById('p_price').value),
+    code_prefix:document.getElementById('p_prefix').value,
+    code_length:parseInt(document.getElementById('p_length').value)||16,
+    code_charset:document.getElementById('p_charset').value,
+    auto_confirm_enabled:document.getElementById('p_auto').checked,
+    callback_url:document.getElementById('p_callback_url').value,
+    callback_secret:document.getElementById('p_callback_secret').value,
+    code_validity_days:document.getElementById('p_validity').value||null,
+  };
+  if(!payload.name||!payload.price)return sdAlert('请填写名称和价格');
+  const r=await fetch('/api/admin/products',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+  const d=await r.json();
+  if(d.error)return sdAlert(d.error);
+  closeProductModal();loadProducts();
+  if(d.id){
+    showLinkModal('商品创建成功', buyLink(d.id),
+      `<div style="color:var(--success);font-size:13px;margin-bottom:6px">✓ 已创建「${esc(payload.name)}」</div>
+       <div style="color:var(--muted);font-size:12px;margin-bottom:4px">将此购买链接分享给买家，买家打开后即可单独购买该商品：</div>`);
+  }
+}
+function openProductModal(){
+  document.getElementById('productModalTitle').textContent='新建商品';
+  ['p_name','p_description','p_price','p_validity','p_prefix','p_callback_url','p_callback_secret'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('p_length').value=16;document.getElementById('p_charset').value='alphanumeric';document.getElementById('p_auto').checked=false;
+  applyProductAutoLock(SUB.tier==='pro');
+  document.getElementById('productModal').classList.add('active');
+}
+function closeProductModal(){document.getElementById('productModal').classList.remove('active')}
+
+// ================= 激活码 =================
+async function loadCodeFilters(){
+  try{
+    const r=await fetch('/api/admin/products');const d=await r.json();
+    const sel=document.getElementById('codeProductFilter');
+    const keep=sel.value;
+    sel.innerHTML='<option value="">全部商品</option>'+(d.products||[]).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    if(keep)sel.value=keep;
+  }catch(e){}
+}
+async function loadCodes(){
+  try{
+    const pid=document.getElementById('codeProductFilter').value;
+    const st=document.getElementById('codeStatusFilter').value;
+    const q=new URLSearchParams();if(pid)q.set('product_id',pid);if(st)q.set('status',st);
+    const r=await fetch('/api/admin/codes?'+q.toString());const d=await r.json();
+    const tbody=document.getElementById('codeTable');
+    const canEdit=s=>s==='unused'||s==='sold'||s==='active';
+    const canRevoke=s=>s==='unused';
+    const canDel=s=>s==='unused'||s==='revoked';
+    tbody.innerHTML=(d.codes||[]).map(c=>{
+      const expired=c.expires_at&&Number(c.expires_at)*1000<Date.now();
+      const btnEdit=canEdit(c.status)?`<button class="btn btn-sm btn-green" onclick="openCodeModal('${c.id}','codes')">修改有效期</button>`:'';
+      const btnRevoke=canRevoke(c.status)?`<button class="btn btn-sm btn-warn" onclick="revokeCode('${c.id}')">作废</button>`:'';
+      const btnDel=canDel(c.status)?`<button class="btn btn-sm btn-danger" onclick="deleteCode('${c.id}')">删除</button>`:'';
+      const chk=canDel(c.status)?`<input type="checkbox" class="code-check" value="${c.id}" onchange="updateCodeSel()">`:'';
+      return `<tr>
+        <td data-label="选择">${chk||''}</td>
+        <td data-label="所属商品">${esc(c.product_name||'—')}</td>
+        <td data-label="激活码"><code class="code-plain" style="cursor:pointer" onclick="openCodeModal('${c.id}','codes')" title="查看详情">${esc(c.code_value)}</code></td>
+        <td data-label="状态"><span class="badge badge-${c.status}">${STATUS_CN[c.status]||c.status}</span></td>
+        <td data-label="生效时间">${c.issued_at?fmtTs(c.issued_at):'—'}</td>
+        <td data-label="有效期至">${c.expires_at?fmtDateY(c.expires_at)+(expired?' <span class="badge badge-revoked">已过期</span>':''):'永久'}</td>
+        <td data-label="生成时间">${fmtTs(c.created_at)}</td>
+        <td data-label="关联订单号"><code style="font-family:'ui-monospace',SFMono-Regular,Menlo,monospace;font-size:12px">${esc(c.order_number||'—')}</code></td>
+        <td data-label="操作" class="ad-ops"><div class="cell-actions">${btnEdit}${btnRevoke}${btnDel}</div></td>
+      </tr>`;
+    }).join('')||'<tr><td colspan="9" class="loading">暂无激活码</td></tr>';
+    const allBox=document.getElementById('codeCheckAll');if(allBox)allBox.checked=false;
+    updateCodeSel();
+  }catch(e){document.getElementById('codeTable').innerHTML='<tr><td colspan="9" class="loading">加载失败</td></tr>'}
+}
+// 全选/取消全选（仅当前可选中的码）
+function toggleAllCodes(el){
+  document.querySelectorAll('#codeTable .code-check').forEach(cb=>{cb.checked=el.checked});
+  updateCodeSel();
+}
+// 更新“删除选中”按钮状态与数量
+function updateCodeSel(){
+  const n=document.querySelectorAll('#codeTable .code-check:checked').length;
+  const b=document.getElementById('codeBatchDelBtn');
+  if(b){b.style.display=n?'inline-flex':'none';b.textContent='删除选中 ('+n+')'}
+}
+function deleteSelectedCodes(){
+  const ids=[...document.querySelectorAll('#codeTable .code-check:checked')].map(cb=>cb.value);
+  if(!ids.length)return;
+  sdConfirmDanger(`确认删除选中的 ${ids.length} 个激活码？此操作不可恢复。`, () => doDeleteSelectedCodes(ids));
+}
+async function doDeleteSelectedCodes(ids){
+  const r=await fetch('/api/admin/codes',{method:'DELETE',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids})});
+  const d=await r.json().catch(()=>({}));
+  if(d.error){sdAlert(d.error);return}
+  loadCodes();
+}
+async function generateCodes(){
+  const productId=document.getElementById('codeProductFilter').value;
+  const count=parseInt(document.getElementById('codeCount').value);
+  if(!productId||!count)return sdAlert('请选择商品并填写数量');
+  const r=await fetch('/api/admin/codes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({product_id:productId,count})});
+  const d=await r.json();
+  if(d.error)return sdAlert(d.error);
+  loadCodes();
+}
+function revokeCode(id){
+  sdConfirmDanger('确认作废该激活码？作废后无法恢复，买家将无法再使用。', () => doRevokeCode(id));
+}
+async function doRevokeCode(id){
+  const r=await fetch('/api/admin/codes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'revoke',code_id:id})});
+  const d=await r.json().catch(()=>({}));
+  if(d.error)return sdAlert(d.error);
+  // 激活码/订单数据同源，作废后激活码页刷新；若当前在订单页则由状态联动呈现
+  loadCodes();
+  // 若激活码曾关联订单且订单页可见，同步刷新订单（用于已退款作废后的展示一致性）
+  if(document.getElementById('orderTable'))loadOrders();
+}
+function deleteCode(id){
+  sdConfirmDanger('确认删除该激活码？此操作不可恢复。', () => doDeleteCode(id));
+}
+async function doDeleteCode(id){
+  const r=await fetch(`/api/admin/codes?id=${id}`,{method:'DELETE'});
+  const d=await r.json().catch(()=>({}));
+  if(d.error){sdAlert(d.error);return}
+  loadCodes();
+}
+function exportCodes(){
+  if(!proOnly())return;   // 激活码导出为 Pro 权益
+  const pid=document.getElementById('codeProductFilter').value;
+  const st=document.getElementById('codeStatusFilter').value;
+  const q=new URLSearchParams();if(pid)q.set('product_id',pid);if(st)q.set('status',st);
+  location.href='/api/admin/codes/export?'+q.toString();
+}
+
+// ================= 订单 =================
+async function loadOrderFilters(){
+  try{
+    const r=await fetch('/api/admin/products');const d=await r.json();
+    const sel=document.getElementById('orderProductFilter');
+    const keep=sel.value;
+    sel.innerHTML='<option value="">全部商品</option>'+(d.products||[]).map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+    if(keep)sel.value=keep;
+  }catch(e){}
+}
+async function loadOrders(){
+  try{
+    const pid=document.getElementById('orderProductFilter').value;
+    const st=document.getElementById('orderStatusFilter').value;
+    const q=new URLSearchParams();if(pid)q.set('product_id',pid);if(st)q.set('status',st);
+    const r=await fetch('/api/admin/orders?'+q.toString());const d=await r.json();
+    const tbody=document.getElementById('orderTable');
+    tbody.innerHTML=(d.orders||[]).map(o=>{
+      let codeCell='—';
+      if(o.status==='delivered'&&o.code_value)codeCell=`<code class="code-plain" style="cursor:pointer;color:var(--success)" onclick="openCodeModal('${o.activation_code_id}','orders')" title="查看/修改有效期">${esc(o.code_value)}</code>`;
+      else if(o.status==='refunded'&&o.code_value)codeCell=`<code class="code-plain" style="color:var(--danger);opacity:.7;text-decoration:line-through">${esc(o.code_value)}</code> <span class="badge badge-revoked">已作废</span>`;
+      let ops='—';
+      if(o.status==='pending')ops=`<button class="btn btn-sm" onclick="confirmOrder('${o.id}')">确认收款</button> <button class="btn btn-sm btn-danger" onclick="cancelOrder('${o.id}')">取消</button>`;
+      else if(o.status==='paid')ops=`<button class="btn btn-sm" onclick="confirmOrder('${o.id}')">确认收款</button>`;
+      else if(o.status==='delivered')ops=`<button class="btn btn-sm btn-danger" onclick="refundOrder('${o.id}')">退款并作废</button>`;
+      return `<tr>
+        <td data-label="订单号" class="ad-main"><code style="font-family:'ui-monospace',SFMono-Regular,Menlo,monospace;font-size:13px">${esc(o.order_number)}</code></td>
+        <td data-label="商品">${esc(o.product_name||'—')}</td>
+        <td data-label="买家备注">${esc(o.buyer_email||'—')}</td>
+        <td data-label="金额">¥${(o.amount/100).toFixed(2)}</td>
+        <td data-label="状态"><span class="badge badge-${o.status}">${STATUS_CN[o.status]||o.status}</span></td>
+        <td data-label="激活码">${codeCell}</td>
+        <td data-label="操作" class="ad-ops"><div class="cell-actions">${ops}</div></td>
+      </tr>`;
+    }).join('')||'<tr><td colspan="7" class="loading">暂无订单</td></tr>';
+  }catch(e){document.getElementById('orderTable').innerHTML='<tr><td colspan="7" class="loading">加载失败</td></tr>'}
+}
+function confirmOrder(orderId){
+  sdConfirm('确认已收到买家付款并发码？', () => doConfirmOrder(orderId));
+}
+async function doConfirmOrder(orderId){
+  const r=await fetch('/api/admin/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_id:orderId,action:'confirm'})});
+  const d=await r.json();
+  if(d.error)return sdAlert(d.error);
+  if(d.code)sdAlert(`已发码：${d.code}`, '发码成功');
+  loadOrders();
+}
+function cancelOrder(orderId){
+  sdConfirmDanger('确认取消该订单？', () => doCancelOrder(orderId));
+}
+async function doCancelOrder(orderId){
+  const r=await fetch('/api/admin/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_id:orderId,action:'cancel'})});
+  const d=await r.json().catch(()=>({}));
+  if(d.error){sdAlert(d.error);return}
+  loadOrders();
+}
+function refundOrder(orderId){
+  sdConfirmDanger('确认退款并作废该订单的激活码？激活码将立即失效。', () => doRefundOrder(orderId));
+}
+async function doRefundOrder(orderId){
+  const r=await fetch('/api/admin/orders',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({order_id:orderId,action:'refund'})});
+  const d=await r.json();
+  if(d.error)return sdAlert(d.error);
+  loadOrders();
+}
+function exportOrders(){
+  if(!proOnly())return;   // 订单导出为 Pro 权益
+  const pid=document.getElementById('orderProductFilter').value;
+  const st=document.getElementById('orderStatusFilter').value;
+  const q=new URLSearchParams();if(pid)q.set('product_id',pid);if(st)q.set('status',st);
+  location.href='/api/admin/orders/export?'+q.toString();
+}
+
+// ================= 激活码详情 / 修改有效期（共用） =================
+async function openCodeModal(codeId,source){
+  if(!codeId)return sdAlert('无激活码');
+  codeModalCodeId=codeId;codeModalSource=source;
+  const r=await fetch('/api/admin/codes/'+encodeURIComponent(codeId));
+  const d=await r.json();
+  if(d.error){sdAlert(d.error);return}
+  const c=d.code;
+  const expired=c.expires_at&&Number(c.expires_at)*1000<Date.now();
+  document.getElementById('codeDetailBox').innerHTML=`
+    <div class="detail-row"><span class="lbl">激活码</span><span class="val"><code class="code-plain">${esc(c.code_value)}</code></span></div>
+    <div class="detail-row"><span class="lbl">所属商品</span><span class="val">${esc(c.product_name||'—')}</span></div>
+    <div class="detail-row"><span class="lbl">当前状态</span><span class="val"><span class="badge badge-${c.status}">${STATUS_CN[c.status]||c.status}</span></span></div>
+    <div class="detail-row"><span class="lbl">生效时间</span><span class="val">${c.issued_at?fmtTs(c.issued_at):'—'}</span></div>
+    <div class="detail-row"><span class="lbl">当前有效期</span><span class="val">${c.expires_at?fmtDateY(c.expires_at)+(expired?' <span class="badge badge-revoked">已过期</span>':''):'永久'}</span></div>
+  `;
+  document.getElementById('codeExpiresDate').value=c.expires_at?toLocalDate(c.expires_at):'';
+  document.getElementById('codeModalErr').style.display='none';
+  document.getElementById('codeModal').classList.add('active');
+}
+function closeCodeModal(){document.getElementById('codeModal').classList.remove('active');codeModalCodeId=null}
+async function saveCodeExpiry(){
+  const dateVal=document.getElementById('codeExpiresDate').value; // 'YYYY-MM-DD' 或空
+  const err=document.getElementById('codeModalErr');
+  err.style.display='none';
+  let expires_at=null;
+  if(dateVal){
+    // 当天 23:59:59 作为过期时刻，避免当天即过期
+    const ts=Math.floor(new Date(dateVal+'T23:59:59').getTime()/1000);
+    if(isNaN(ts)){err.textContent='日期格式不正确';err.style.display='block';return}
+    expires_at=ts;
+  }
+  const r=await fetch('/api/admin/codes/'+encodeURIComponent(codeModalCodeId),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({expires_at})});
+  const d=await r.json();
+  if(d.error){err.textContent=d.error;err.style.display='block';return}
+  closeCodeModal();
+  // 数据同源，两个来源都刷新以保持同步
+  if(currentSection==='orders')loadOrders();
+  else if(currentSection==='codes')loadCodes();
+}
+
+// ================= API 密钥 =================
+async function loadSettings(){
+  try{
+    const r=await fetch('/api/admin/settings');const d=await r.json();
+    const keys=d.apiKeys||[];
+    document.getElementById('apiKeyTable').innerHTML=keys.map(k=>`
+      <tr>
+        <td data-label="Key"><code style="font-family:'ui-monospace',SFMono-Regular,Menlo,monospace;font-size:13px;word-break:break-all">${esc(k.key_value)}</code></td>
+        <td data-label="权限">${esc(k.scope)}</td>
+        <td data-label="状态">${k.is_active?'<span class="badge badge-enabled">启用</span>':'<span class="badge badge-disabled">已停用</span>'}</td>
+        <td data-label="创建时间">${new Date(k.created_at*1000).toLocaleString('zh-CN')}</td>
+        <td data-label="操作" class="ad-ops"><button class="btn btn-sm btn-danger" onclick="revokeAPIKey('${k.id}')">停用</button></td>
+      </tr>`).join('')||'<tr><td colspan="5" class="loading">暂无密钥</td></tr>';
+  }catch(e){document.getElementById('apiKeyTable').innerHTML='<tr><td colspan="5" class="loading">加载失败</td></tr>'}
+}
+function createAPIKey(){
+  // 用 DOM 弹窗选权限（原生 prompt 在安卓内置浏览器常被拦截）
+  const mask = document.getElementById('sdMask');
+  document.getElementById('sdTitle').textContent = '新建 API 密钥';
+  document.getElementById('sdMsg').textContent = '选择密钥权限：';
+  const box = document.getElementById('sdActions');
+  box.innerHTML = '';
+  [['verify','仅验证'],['confirm','仅确认发码'],['all','全部']].forEach(([scope,label]) => {
+    const b = document.createElement('button');
+    b.className = 'btn';
+    b.textContent = label + ' · ' + scope;
+    b.onclick = () => { sdClose(); doCreateAPIKey(scope); };
+    box.appendChild(b);
+  });
+  const cancel = document.createElement('button');
+  cancel.className = 'btn btn-ghost';
+  cancel.textContent = '取消';
+  cancel.onclick = sdClose;
+  box.appendChild(cancel);
+  mask.classList.add('show');
+}
+async function doCreateAPIKey(scope){
+  const r=await fetch('/api/admin/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'create_api_key',scope})});
+  const d=await r.json();
+  if(d.error)return sdAlert(d.error);
+  sdAlert(`Key: ${d.key_value}\nSecret: ${d.secret}\n\n请立即保存，Secret 只显示一次。`, '密钥已创建');
+  loadSettings();
+}
+function revokeAPIKey(id){
+  sdConfirmDanger('确认停用该密钥？停用后该密钥将无法继续调用接口。', () => doRevokeAPIKey(id));
+}
+async function doRevokeAPIKey(id){
+  const r=await fetch('/api/admin/settings',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'revoke_api_key',key_id:id})});
+  const d=await r.json().catch(()=>({}));
+  if(d.error){sdAlert(d.error);return}
+  loadSettings();
+}
+
+async function logout(){await fetch('/api/auth/logout',{method:'POST'});location.href='/'}
+
+async function checkAuth(){
+  const r=await fetch('/api/auth/session');const d=await r.json();
+  if(!d.authenticated){location.href='/login?next=/admin';return}
+  renderNavAuth(d);
+  renderSubscription(d.subscription);
+  renderAccount(d);
+  loadProducts();
+  // 深链：/admin?sub=1&from=links|codes|quote|watermark|compress
+  // 订阅页账号级唯一，三个入口（账号菜单 / 侧栏「订阅」/ 工具页提示）都指向这里。
+  const q=new URLSearchParams(location.search);
+  if(q.get('sub')){
+    openSubscription();
+  }
+}
+
+// 打开「订阅」section（不走侧栏 click，避免把 SUB_FROM 覆盖成 codes）
+function openSubscription(){
+  document.querySelectorAll('.menu-item').forEach(m=>m.classList.remove('active'));
+  const item=[...document.querySelectorAll('.menu-item')].find(m=>m.dataset.section==='subscription');
+  if(item)item.classList.add('active');
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  const sec=document.getElementById('section-subscription');
+  if(sec)sec.classList.add('active');
+  currentSection='subscription';
+  renderSubPlanCard();
+}
+
+// 顶部导航右侧：未登录显示「登录」，已登录显示 账号菜单（邮箱+等级 → 订阅 / 发码后台 / 退出登录）
+function renderNavAuth(d){
+  const ok=!!(d&&d.authenticated);
+  const login=document.getElementById('navLogin');
+  const user=document.getElementById('navUser');
+  const contact=document.getElementById('navContact');
+  const acct=document.getElementById('navAcct');
+  if(!ok){
+    if(login)login.style.display='';
+    if(user)user.textContent='';
+    if(contact)contact.style.display='none';
+    if(acct)acct.style.display='none';
+    return;
+  }
+  const tier=((d.subscription&&d.subscription.tier)||(d.user&&d.user.subscription_tier)||'free');
+  if(login)login.style.display='none';
+  if(user){
+    user.innerHTML=esc((d.user&&d.user.email)||'')+(tier==='pro'
+      ?' <span class="badge badge-pro" style="margin-left:6px">Pro</span>'
+      :' <span class="badge badge-free" style="margin-left:6px">Free</span>');
+  }
+  if(acct)acct.style.display='';
+  if(contact)contact.style.display='';
+}
+
+// —— 右上角账号菜单 ——
+function toggleAcct(e){
+  if(e)e.stopPropagation();
+  const m=document.getElementById('acctMenu'),b=document.getElementById('acctBtn');
+  if(!m)return;
+  const open=m.classList.toggle('show');
+  if(b)b.setAttribute('aria-expanded',open?'true':'false');
+}
+document.addEventListener('click',()=>{
+  const m=document.getElementById('acctMenu'),b=document.getElementById('acctBtn');
+  if(m&&m.classList.contains('show')){m.classList.remove('show');if(b)b.setAttribute('aria-expanded','false');}
+});
+document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){const m=document.getElementById('acctMenu');if(m&&m.classList.contains('show'))toggleAcct();}});
+
+// 账号信息：顶栏已显示邮箱，侧栏不再重复展示
+function renderAccount(d){
+  const u=(d&&d.user)||{};
+  if(u.needs_email)document.getElementById('emailTip').classList.add('show');
+}
+async function bindEmail(){
+  const el=document.getElementById('bindEmailInput');
+  const v=(el.value||'').trim();
+  if(!v){sdAlert('请填写邮箱');return}
+  const r=await fetch('/api/auth/bind-email',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:v})});
+  const d=await r.json().catch(()=>({}));
+  if(d.error){sdAlert(d.error);return}
+  document.getElementById('emailTip').classList.remove('show');
+  sdAlert('已保存，以后可以用这个邮箱找回密码');
+}
+// 关掉提示后不再提（后端记住这个选择）
+async function dismissEmailTip(){
+  document.getElementById('emailTip').classList.remove('show');
+  try{await fetch('/api/auth/dismiss-email-prompt',{method:'POST'})}catch(e){}
+}
+
+// Shademark 平台统一订阅：一个账号、一个等级，全矩阵通用
+const SUB={tier:'free',stored_tier:'free',expires_at:null,days_left:null,expired:false,in_grace:false,grace_days_left:null,grace_ends_at:null,ever_pro:false,retention:{link:30,order:30,quote:30}};
+let SUB_READY=false;
+// 实际生效的数据保留天数：现在是 Pro 或曾经是 Pro 都按 Pro 档（与清理任务同一口径）
+function planRet(){
+  const r=SUB.retention||{};
+  const fallback=SUB.ever_pro?90:30;
+  return {link:r.link||fallback,order:r.order||fallback,quote:r.quote||fallback};
+}
+function renderSubscription(sub){
+  if(!sub)return;
+  SUB.tier=sub.tier||'free';
+  SUB.stored_tier=sub.stored_tier||sub.tier||'free';
+  SUB.expires_at=sub.expires_at||null;
+  SUB.days_left=sub.days_left||null;
+  SUB.expired=!!sub.expired;
+  SUB.in_grace=!!sub.in_grace;
+  SUB.grace_days_left=sub.grace_days_left||null;
+  SUB.grace_ends_at=sub.grace_ends_at||null;
+  SUB.ever_pro=!!sub.ever_pro;
+  if(sub.retention)SUB.retention=sub.retention;
+  SUB_READY=true;
+  const isPro=SUB.tier==='pro';
+  applyProductAutoLock(isPro);
+  const cnt=document.getElementById('codeCount');
+  if(cnt&&!isPro){cnt.max=100;if(parseInt(cnt.value)>100)cnt.value=100}
+  else if(cnt){cnt.max=10000}
+  renderPlanFoot();
+  renderSubPlanCard();
+}
+
+// 页面右下角：当前权益两行（第一行会员到期 / 第二行权益），Free / Pro / 宽限 / 接近上限 / 超额 多态。
+// 数字全部来自同一处口径（PLANS：批量单次 100/10000、API 60/600、保留 30/90）。
+function renderPlanFoot(){
+  const el=document.getElementById('planFoot');
+  if(!el)return;
+  if(!SUB_READY){el.style.display='none';return}
+  const isPro=SUB.tier==='pro';
+  const ret=planRet();
+  const max=isPro?10000:100;
+  const api=isPro?600:60;
+  const cnt=document.getElementById('codeCount');
+  const v=cnt?(parseInt(cnt.value||'0',10)||0):0;
+  el.style.display='';
+
+  // 第一行：会员到期（Pro 正常 / Pro 宽限 / Free）
+  let line1='';
+  if(SUB.in_grace){
+    line1=`<b class="pf-tier">Pro</b><span>已到期，宽限至 ${fmtDateMD(SUB.grace_ends_at||SUB.expires_at)}</span>`;
+  }else if(isPro){
+    line1=`<b class="pf-tier">Pro</b><span>${SUB.expires_at?`到期时间 ${fmtDateY(SUB.expires_at)}（剩 ${SUB.days_left} 天）`:'不限期'}</span>`;
+  }else{
+    line1=`<b class="pf-tier">Free</b>`;
+  }
+
+  // 第二行：权益（超额先说核心功能没断，再说额度）
+  let line2='';
+  let warn=false;
+  if(v>max){
+    warn=true;
+    line2=`<b>已生成的激活码照常验证、照常回调</b><span>本批 ${v}/${max} 超出单次上限，分批生成或升级 Pro 即可。</span>`;
+  }else if(v>=Math.ceil(max*0.8)){
+    warn=true;
+    line2=`<b>本批 ${v}/${max}</b><span>已接近单次上限，生成可继续</span>`;
+  }else{
+    const retNote=(!isPro&&SUB.ever_pro)?`（曾为 Pro，按 90 天保留）`:'';
+    line2=`<span>批量上限 ${max} · API ${api} 次/分 · 数据保留 ${ret.order} 天${retNote}</span>`;
+  }
+
+  el.className='plan-foot'+(warn?' warn':'');
+  el.innerHTML=`<div class="pf-line">${line1}</div><div class="pf-line">${line2}</div>`;
+}
+// 商品弹窗「自动回调发码」区：Free 下禁用自动确认复选框 + 回调 URL / 回调密钥，并显示 Pro 专属提示
+function applyProductAutoLock(isPro){
+  const auto=document.getElementById('p_auto');
+  if(!auto)return;
+  auto.disabled=!isPro;
+  auto.title=isPro?'':'自动回调发码为 Pro 权益';
+  if(!isPro)auto.checked=false;
+  const hint=document.getElementById('p_auto_hint');
+  if(hint)hint.style.display=isPro?'none':'inline';
+  ['p_callback_url','p_callback_secret'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){el.disabled=!isPro;el.title=isPro?'':'自动回调发码为 Pro 权益（需升级 Pro）';if(!isPro)el.value='';}
+  });
+  // 锁定态视觉：给外层 .locked-field 加类，让输入框置灰并提示
+  document.querySelectorAll('#productModal .locked-field').forEach(w=>{
+    w.classList.toggle('is-locked',!isPro);
+  });
+}
+// 订阅区：只保留「权益对比」两列 + 升级说明（当前套餐信息已挪到右下角权益块）
+function renderSubPlanCard(){
+  const isPro=SUB.tier==='pro';
+  renderSubCompare();
+  const upT=document.getElementById('subUpgradeTitle');
+  if(upT)upT.textContent=isPro?'如何续费 / 延长 Pro？':'如何升级 Pro？';
+}
+
+// 权益对比：三列表格（Free / 宽限期 / Pro），所有人可见，不按档位隐藏任何一列。
+// 宽限期列 = Pro 的内容；表头注明「已到期后的 3 天过渡，功能同 Pro」。
+function renderSubCompare(){
+  const el=document.getElementById('subCompare');
+  if(!el)return;
+  // 表格数据：每行 [权益名, Free, Pro]；宽限期列与 Pro 相同
+  const rows=[
+    ['批量生成上限','100','10,000'],
+    ['验证 API 速率','60 次/分','600 次/分'],
+    ['订单数据保留','30 天','90 天'],
+    ['自动回调发码','—','✓'],
+    ['订单 / 激活码 CSV 导出','—','✓'],
+    ['短链月点击','10,000','100,000'],
+    ['短链统计保留','30 天','90 天'],
+    ['短链点击 CSV 导出','—','✓'],
+    ['水印工具','全部功能','全部功能'],
+    ['压缩工具','全部功能','全部功能'],
+  ];
+  const body=rows.map(r=>{
+    const yes=cls=>cls==='✓'?'<span class="yes">✓</span>':cls==='—'?'<span class="no">—</span>':cls;
+    return `<tr>
+      <td>${r[0]}</td>
+      <td>${yes(r[1])}</td>
+      <td class="col-pro">${yes(r[2])}</td>
+      <td class="col-pro">${yes(r[2])}</td>
+    </tr>`;
+  }).join('');
+  el.innerHTML=`
+    <table class="sub-table">
+      <thead>
+        <tr>
+          <th>权益</th>
+          <th>Free</th>
+          <th class="th-grace">宽限期<span class="grace-note">已到期后的 3 天过渡，功能同 Pro</span></th>
+          <th class="th-pro">Pro</th>
+        </tr>
+      </thead>
+      <tbody>${body}</tbody>
+    </table>`;
+  el.style.display='';
+}
+// Pro 专属提示：free 用户触发
+function proOnly(){
+  if(SUB.tier==='pro')return true;
+  document.getElementById('proModal').classList.add('active');
+  return false;
+}
+function closeProModal(){document.getElementById('proModal').classList.remove('active')}
+function goSubscription(){
+  closeProModal();
+  const item=[...document.querySelectorAll('.menu-item')].find(m=>m.dataset.section==='subscription');
+  if(item)item.click();else location.href='/admin';
+}
+
+// —— 联系表单（三处入口共用组件）——
+let CM_SENDING = false;
+function openContact(type){
+  const modal=document.getElementById('contactModal');
+  if(!modal)return;
+  // 默认类型
+  const sel=document.getElementById('cm_type');
+  const setType=type||'other';
+  if(['upgrade','technical','other'].includes(setType))sel.value=setType;
+  // 清空错误、联系方式与留言（不预填，由用户手动填写）
+  const err=document.getElementById('cm_err');err.style.display='none';
+  document.getElementById('cm_message').value='';
+  const email=document.getElementById('cm_email');
+  email.value='';email.disabled=false;
+  modal.classList.add('active');
+  setTimeout(()=>{ email.focus(); },50);
+}
+function closeContact(){
+  const modal=document.getElementById('contactModal');
+  if(modal)modal.classList.remove('active');
+  const err=document.getElementById('cm_err');if(err)err.style.display='none';
+  CM_SENDING=false;
+}
+async function submitContact(){
+  if(CM_SENDING)return;
+  const contact=document.getElementById('cm_email').value.trim();
+  const type=document.getElementById('cm_type').value;
+  const message=document.getElementById('cm_message').value.trim();
+  const err=document.getElementById('cm_err');
+  // 联系方式支持邮箱或微信号（自由文本），仅要求非空
+  if(!contact){err.textContent='请填写联系方式（邮箱或微信号）';err.style.display='block';return;}
+  if(contact.length>200){err.textContent='联系方式过长';err.style.display='block';return;}
+  if(!message){err.textContent='请填写留言内容';err.style.display='block';return;}
+  CM_SENDING=true;
+  const submitBtn=document.querySelector('#contactModal .cm-submit');
+  const oldTxt=submitBtn.textContent;submitBtn.textContent='提交中…';submitBtn.disabled=true;
+  try{
+    const r=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:contact,type,message})});
+    const d=await r.json().catch(()=>({}));
+    if(!r.ok){err.textContent=d.error||'提交失败，请稍后再试';err.style.display='block';CM_SENDING=false;return;}
+    closeContact();
+    sdAlert('已收到，会尽快回复','联系平台方');
+  }catch(e){
+    err.textContent='网络错误，请稍后再试';err.style.display='block';
+  }finally{
+    CM_SENDING=false;submitBtn.textContent=oldTxt;submitBtn.disabled=false;
+  }
+}
+checkAuth();
+document.getElementById('proModal').addEventListener('click',e=>{if(e.target.id==='proModal')closeProModal()});
+document.getElementById('linkModal').addEventListener('click',e=>{if(e.target.id==='linkModal')closeLinkModal()});
+document.getElementById('linkUrl').addEventListener('keydown',e=>{if(e.key==='Enter')copyModalLink()});
+document.getElementById('codeModal').addEventListener('click',e=>{if(e.target.id==='codeModal')closeCodeModal()});
+document.getElementById('contactModal').addEventListener('click',e=>{if(e.target.id==='contactModal')closeContact()});
+document.getElementById('contactModal').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.tagName!=='TEXTAREA'&&e.target.id!=='cm_type'){e.preventDefault();submitContact();}});
+</script>
+</body>
+</html>

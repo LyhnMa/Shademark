@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="6FX7y1BK1c6LzgkEPCLKqN">
+<head data-page-node-id="oFAqPaCYmdVxmTmuGb1zoM">
+<meta charset="UTF-8" data-page-node-id="GMfr3ruDQTzYPcEVYeHKoI" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="Bvv4Gsj767xW5YpDuePDBk" />
+<title>隐私说明 — Shademark</title>
+<meta name="description" content="Shademark 隐私说明：我们仅收集服务运行所需的最少数据，不出售、不共享给第三方；可随时联系申请删除账号及数据。" data-page-node-id="Xo1Jy8m3Ki4ukhl56IJ7Lv">
+<link rel="canonical" href="https://shademark.cn/privacy" data-page-node-id="qf36rWnAOAWLqj2v8J6QLP">
+<meta property="og:type" content="website" data-page-node-id="wvUII0ks4sO6KaI4S4SflV">
+<meta property="og:site_name" content="Shademark" data-page-node-id="1x5Ca6tyjtWIP5wGQuhbpG">
+<meta property="og:title" content="隐私说明 — Shademark" data-page-node-id="DR9CmDWOqythoUFMR08Vay">
+<meta property="og:url" content="https://shademark.cn/privacy" data-page-node-id="xusdZrv7UCB018iN75FJD0">
+<link rel="icon" href="/logo.png" type="image/png" data-page-node-id="capcFiTt9evUiFziA7f0bA">
+<style>
+:root{--bg:#0d0d0f;--card:#17171b;--border:#2a2a33;--text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;--danger:#f87171;--success:#4ade80;--warn:#ffd166;--info:#60a5fa}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden}
+.nav{height:60px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:24px;background:var(--bg);flex-shrink:0}
+.nav .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);flex-shrink:0}
+.nav .brand img{width:32px;height:32px;object-fit:contain;border-radius:8px}
+.nav .brand span{font-size:15px;font-weight:700;letter-spacing:-0.02em}
+.nav-tools{display:flex;gap:4px;align-items:center;flex-wrap:nowrap}
+.nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap}
+.nav-tools a:hover{color:var(--text);background:#141419}
+.main{max-width:680px;margin:0 auto;padding:clamp(28px,5vh,48px) 24px clamp(32px,6vh,56px);display:flex;flex-direction:column}
+.main h1{font-size:26px;font-weight:700;letter-spacing:-0.01em;margin-bottom:6px}
+.main .subtitle{color:var(--muted);font-size:14px;line-height:1.6;margin-bottom:clamp(22px,4vh,32px)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:clamp(20px,3vw,32px);display:flex;flex-direction:column}
+.card .sec{border-bottom:1px solid var(--border);padding:20px 0}
+.card .sec:first-child{padding-top:0}
+.card .sec:last-child{border-bottom:none;padding-bottom:0}
+.card .sec h2{font-size:15px;font-weight:700;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.card .sec h2 .idx{width:22px;height:22px;flex:none;border-radius:6px;background:#22222c;color:var(--accent);font-size:12px;display:inline-flex;align-items:center;justify-content:center;font-weight:700}
+.card .sec p{font-size:14px;line-height:1.75;color:var(--muted)}
+.card .sec p b{color:var(--text);font-weight:600}
+.card .sec ul{margin:8px 0 0 0;padding-left:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.card .sec ul li{font-size:14px;line-height:1.7;color:var(--muted);position:relative;padding-left:16px}
+.card .sec ul li::before{content:"";position:absolute;left:0;top:10px;width:5px;height:5px;border-radius:50%;background:var(--accent);opacity:.8}
+.mono{font-family:'ui-monospace',SFMono-Regular,Menlo,monospace;color:var(--text)}
+a{color:var(--accent);text-decoration:none}
+a:hover{text-decoration:underline}
+.footer{text-align:center;margin-top:28px}
+.footer a{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;transition:all .2s}
+.footer a:hover{color:var(--text);border-color:var(--accent);text-decoration:none}
+@media(max-width:600px){.nav{padding:0 16px;gap:8px}.nav-tools{display:none}.main{padding:24px 16px 32px}.main h1{font-size:22px}.card{padding:20px}}
+
+/* 联系按钮 + 联系表单弹窗（复用站内 /api/contact，不暴露平台邮箱） */
+.contact-btn{display:inline-flex;align-items:center;gap:8px;margin-top:14px;background:var(--accent);color:#fff;border:none;padding:10px 20px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer;transition:filter .2s}
+.contact-btn:hover{filter:brightness(.92)}
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(6,6,9,.72);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal.active{display:flex}
+.modal-card{background:var(--card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:400px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.modal-head h2{font-size:18px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
+.modal-close:hover{color:var(--text)}
+.modal-card .field{margin-bottom:14px}
+.modal-card .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600}
+.modal-card select,.modal-card textarea,.modal-card input{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;font-size:14px;outline:none;border-radius:6px;font-family:inherit;box-sizing:border-box}
+.modal-card select:focus,.modal-card textarea:focus,.modal-card input:focus{border-color:var(--accent)}
+.modal-card textarea{min-height:96px;resize:vertical;line-height:1.5}
+.cm-err{color:var(--danger);font-size:13px;line-height:1.5;margin:-4px 0 10px;display:none}
+.cm-actions{display:flex;gap:10px;margin-top:6px}
+.cm-actions .btn-submit{flex:1;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;transition:filter .2s}
+.cm-actions .btn-submit:hover{filter:brightness(.92)}
+.cm-actions .btn-cancel{flex:1;border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:6px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;transition:border-color .2s,color .2s}
+.cm-actions .btn-cancel:hover{color:var(--text);border-color:var(--accent)}
+.tip-ok{display:none;color:var(--success);font-size:13px;margin-top:8px}
+@media(max-width:600px){.modal-card{padding:20px}}
+</style>
+</head>
+<body data-page-node-id="8LDeYKR6KluBK3A6drgFQO">
+<nav class="nav" data-page-node-id="SZJE9zDeVnP3yKbTrTDIaR">
+  <a href="/" class="brand" data-page-node-id="NUiI9ui6F8hXtOgb1KsYaj"><img src="/logo.png" alt="Logo" data-page-node-id="rMnrCsz7Avs0vzCkfo05xN"><span data-page-node-id="VXZQiiDn0aYKzqecwXQcCK">Shademark</span></a>
+  <div class="nav-tools" data-page-node-id="QRZ1CnDViI5pKaH8XvmbyG">
+    <a href="/" data-page-node-id="XSbhyYBokXrk0sxZfU5YP8">主页</a><a href="/quote" data-page-node-id="zH3DponKCE9TTE6SqsSozY">报价单</a><a href="/watermark" data-page-node-id="ncx7qpvCzEGQtRfcujDGpd">水印</a><a href="/compress" data-page-node-id="lSRNYW7nqLNXS3IWK5PvjA">压缩</a><a href="/admin" data-page-node-id="nUwVcn6nJR6hF9NVyML7N7">发码</a><a href="/links" data-page-node-id="5IjI0wYy9UeRECdYrPrYNo">短链</a>
+  </div>
+</nav>
+
+<div class="main" data-page-node-id="MF4WhhHBCfdmrTKEBOvK6D">
+  <h1 data-page-node-id="lsucFTZNapStcuWmhdZAkR">隐私说明</h1>
+  <p class="subtitle" data-page-node-id="B0x4RcJKoklNwStFg80khI">我们只收集让服务正常运行所需的最少数据，不会出售，也不会共享给任何第三方。</p>
+
+  <div class="card" data-page-node-id="89WPnUBA1TM8QtzKqLrS55">
+    <div class="sec" data-page-node-id="f5ANhxw4Nq9e5lD60jFytg">
+      <h2 data-page-node-id="bcSxSJ2xccvkK2BhW2LBve"><span class="idx" data-page-node-id="dzGmq2ZJy4IUcQ5YmiEuin">1</span>我们收集什么</h2>
+      <ul data-page-node-id="7M4PlYj9oW9JvnCHKGTpCs">
+        <li data-page-node-id="7u3yCrum5cKa6ll3HK8vKC">账号信息：注册时你提供的邮箱与可选联系方式（如微信号或手机号），用于登录与账号管理。</li>
+        <li data-page-node-id="prHB75pxhLBNQjzht8OH9c">工具产生的必要数据：短链的点击记录、激活码的使用记录等，用于让对应工具正常运转。</li>
+      </ul>
+    </div>
+
+    <div class="sec" data-page-node-id="F2dgUCf2r04Pmf3BbliImf">
+      <h2 data-page-node-id="r9z6PPH8wjuuprVaysuY1G"><span class="idx" data-page-node-id="5XE5KXsVlgQN7TEpTAHlD8">2</span>我们如何使用</h2>
+      <p data-page-node-id="GGZ6elqiwglVSs2eeBmW1u">上述数据<b data-page-node-id="nGAjq47zip6b5HwHqAQq2p">仅用于 Shademark 服务的运行</b>——账号管理、订阅状态判断、以及各工具的核心功能。我们不会出售你的数据，也不会与任何第三方共享。</p>
+    </div>
+
+    <div class="sec" data-page-node-id="BeGLhEUsawtIw8Ov7YysFC">
+      <h2 data-page-node-id="xEdVsGoPnn0BPiJEA0ihlQ"><span class="idx" data-page-node-id="AJUbgZnNBREHUPOZf5SHQi">3</span>数据存储</h2>
+      <p data-page-node-id="T0jplIhmFPiW95l4Gm5oeu">数据存储于 <b data-page-node-id="EXWsLPCihaLimf62TkD9bv">Cloudflare D1</b>（全球分布式数据库），仅供 Shademark 服务运行访问，不用于任何其他用途。订单、点击记录等数据会根据你的订阅等级自动保留 30 天（免费版）或 90 天（Pro），到期自动清理。</p>
+    </div>
+
+    <div class="sec" data-page-node-id="axhwg8CH9zwt7GcIdLEC0P">
+      <h2 data-page-node-id="rFl3Pvvtu2ur1CvacI0K3D"><span class="idx" data-page-node-id="wwYCOMseQqnRQ9XWGunn7W">4</span>你的权利</h2>
+      <p data-page-node-id="9m8eVFNjOjjN0006cAB9sr">你可以随时通过下方「联系平台」提出申请，要求<b data-page-node-id="9lTiwV9rf2fdYKfyROazHg">删除你的账号及相关数据</b>，我们会在核实身份后尽快处理。</p>
+    </div>
+
+    <div class="sec" data-page-node-id="sMsBC2teIXpDuPx8Xvxgpp">
+      <h2 data-page-node-id="r0stguMglSCWfNPsHuFIlS"><span class="idx" data-page-node-id="caLOPC5WJnM73wiBnm9LGx">5</span>联系方式</h2>
+      <p data-page-node-id="x9P9tqy3K72PYL4ivwteNb">如需处理隐私相关请求（如申请删除数据），请通过下方「联系平台」提交，我们会尽快核实并处理。</p>
+      <button class="contact-btn" onclick="openContact()" data-page-node-id="p68FZUUPIBd1g5RHTFMDSK">联系平台</button>
+    </div>
+
+    <div class="sec" data-page-node-id="Vs7cNoI3IbtxHMvGtUkq7t">
+      <h2 data-page-node-id="BwghrDkCZjourfP2EowETn"><span class="idx" data-page-node-id="vZ2eTWLkl0uIWhK0JyXNyo">6</span>更新说明</h2>
+      <p data-page-node-id="DlYoZwDVRFbOTDaGMSa1r7">本隐私说明可能根据服务变化进行更新。如有重大调整，我们会通过网站公告进行提示。最后更新：2026 年 9 月。</p>
+    </div>
+  </div>
+
+  <div class="footer" data-page-node-id="s6BRCabUMi1VwJ11iM9L4I"><a href="/" data-page-node-id="FenKYwX8cphzC0lkJ79a3I">← 返回主页</a></div>
+</div>
+
+<!-- 联系表单弹窗（复用站内 /api/contact 提交，不展示平台邮箱） -->
+<div class="modal" id="contactModal" data-page-node-id="YKJ7JSxQhxHmyDBaR5g65L">
+  <div class="modal-card" data-page-node-id="A7DIMSjGyZfpFE2MuzSEBH">
+    <div class="modal-head" data-page-node-id="FcnNSPgnL0O67xbVbZGEuR">
+      <h2 data-page-node-id="WiYKMyGMqDI4FLrr0ayJHl">联系平台</h2>
+      <button class="modal-close" onclick="closeContact()" aria-label="关闭" data-page-node-id="rYmCBXDtCDu5aNqKlkS9dZ">×</button>
+    </div>
+    <div class="field" data-page-node-id="bH08zqpANzFVOaUTTnFtkA">
+      <label data-page-node-id="LAxs65rxQ4egaFpIC5lOcX">类型</label>
+      <select id="cm_type" data-page-node-id="qs8mJe8HeiiVICMbRNc24J">
+        <option value="privacy" data-page-node-id="eS30B9g9iRP3UfEGBMGaV5">隐私相关请求</option>
+        <option value="upgrade" data-page-node-id="Vsf31q3YfizmzkiHIPrKmZ">升级 Pro</option>
+        <option value="technical" data-page-node-id="aXpbXXlNMElGCdyqJeJsx3">技术问题</option>
+        <option value="other" data-page-node-id="MLLN5HcDkaH7NkiousFXRI">其他</option>
+      </select>
+    </div>
+    <div class="field" data-page-node-id="mw4FN6qkav7faBfZ1GoXL2">
+      <label data-page-node-id="kQPsvJLvCCLfB13vyQkjcW">联系方式 <span style="color:var(--danger)" data-page-node-id="w2IEBQJ0Ecm7iLb3RlIi72">*</span></label>
+      <input id="cm_email" type="text" placeholder="建议填写邮箱或微信号，用于平台方联系你" autocomplete="off" data-page-node-id="G2LAarB0UtvRSjC9B5fOjJ" />
+    </div>
+    <div class="field" data-page-node-id="o0EJzPR9gU623Vz56Bf831">
+      <label data-page-node-id="1z6wSdqgBuiOAqhKLAl4i8">留言 <span style="color:var(--danger)" data-page-node-id="oGMSAeW0sAGTgxVwAuaqxQ">*</span></label>
+      <textarea id="cm_message" placeholder="请描述你的隐私相关请求或问题"></textarea>
+    </div>
+    <div class="cm-err" id="cm_err" data-page-node-id="q1B5Gh3e7gjhGo9bgy4TXC"></div>
+    <div class="cm-actions" data-page-node-id="cuuMry6U6uFKppcFfmy21Y">
+      <button class="btn-submit" id="cm_submit" onclick="submitContact()" data-page-node-id="mrxGlR03AV33L13hSJVFwF">提交</button>
+      <button class="btn-cancel" onclick="closeContact()" data-page-node-id="HTp91ZmSD7rMsm12n4qsJj">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let CM_SENDING=false;
+function openContact(){
+  document.getElementById('cm_err').style.display='none';
+  document.getElementById('cm_message').value='';
+  document.getElementById('cm_type').value='privacy';
+  const email=document.getElementById('cm_email');
+  email.value='';email.disabled=false;
+  document.getElementById('contactModal').classList.add('active');
+  setTimeout(()=>email.focus(),50);
+}
+function closeContact(){
+  const m=document.getElementById('contactModal');
+  if(m)m.classList.remove('active');
+}
+async function submitContact(){
+  if(CM_SENDING)return;
+  const email=document.getElementById('cm_email').value.trim();
+  const type=document.getElementById('cm_type').value;
+  const message=document.getElementById('cm_message').value.trim();
+  const err=document.getElementById('cm_err');
+  if(!email){err.textContent='请填写联系方式（邮箱或微信号）';err.style.display='block';return;}
+  if(!message){err.textContent='请填写留言内容';err.style.display='block';return;}
+  CM_SENDING=true;
+  const btn=document.getElementById('cm_submit');
+  const oldTxt=btn.textContent;btn.textContent='提交中…';btn.disabled=true;
+  try{
+    const r=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,type,message})});
+    const d=await r.json().catch(()=>({}));
+    if(r.ok&&d.success){closeContact();openTip('已收到，会尽快回复');}
+    else{err.textContent=d.error||'提交失败，请稍后再试';err.style.display='block';}
+  }catch(e){err.textContent='网络错误';err.style.display='block';}
+  finally{CM_SENDING=false;btn.disabled=false;btn.textContent=oldTxt;}
+}
+function openTip(msg){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:var(--card);color:var(--text);border:1px solid var(--border);padding:12px 20px;border-radius:8px;font-size:14px;z-index:400;box-shadow:0 10px 30px rgba(0,0,0,.4)';
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2200);
+}
+document.getElementById('contactModal').addEventListener('click',e=>{if(e.target.id==='contactModal')closeContact()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeContact()});
+</script>
+</body>
+</html>

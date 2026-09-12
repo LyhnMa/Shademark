@@ -1,0 +1,16 @@
+{
+  "name": "shademark",
+  "version": "1.0.0",
+  "description": "Shademark — 开发者工具产品矩阵",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev dist --d1=DB",
+    "deploy": "wrangler deploy",
+    "db:migrate": "wrangler d1 execute shademark --local --file=schema.sql",
+    "db:migrate:remote": "wrangler d1 execute shademark --remote --file=schema.sql"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0",
+    "@cloudflare/workers-types": "^4.20240117.0"
+  }
+}

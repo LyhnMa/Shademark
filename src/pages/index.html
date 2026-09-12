@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="7K6IxkGBuVkyeqdsadY9pO">
+<head data-page-node-id="z0N6uJWYdKXOz9UxUl9Ygr">
+<meta charset="UTF-8" data-page-node-id="URJojfCoLQc8KI80HmD7Vd" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" data-page-node-id="N3bMMeZuZIy4t954FQseHs" />
+<title>Shademark — 要用的工具，都在这里</title>
+<meta name="description" content="Shademark：报价单、发码、短链、水印、压缩等开发者工具，打开即用，免费。浏览器本地处理文件，随时登录保存。" data-page-node-id="0NY5rnA2hHVyJdFfBTlClp">
+<meta name="robots" content="index,follow" data-page-node-id="atoqB0v5K1rhFIz6T7Up6T">
+<link rel="canonical" href="https://shademark.cn/" data-page-node-id="gqqCjWFVJHttQsYCi5qKJv">
+<meta property="og:type" content="website" data-page-node-id="zeHND3YDFV7DRCc7F7JqjK">
+<meta property="og:site_name" content="Shademark" data-page-node-id="ZGq4iBeUQo6hmb98I2fLr9">
+<meta property="og:title" content="Shademark — 要用的工具，都在这里" data-page-node-id="hr9xjCVIHk82oDWeS98FuH">
+<meta property="og:description" content="报价、发码、水印、短链、压缩——打开就能用的开发者工具矩阵。" data-page-node-id="AXIFSNZG5xoMcuJR7cCnP3">
+<meta property="og:url" content="https://shademark.cn/" data-page-node-id="kjtyycjAMf8rSaMW35rnzj">
+<meta property="og:image" content="https://shademark.cn/logo.png" data-page-node-id="bzn103V9HGyWIExHk0sMNE">
+<meta name="twitter:card" content="summary" data-page-node-id="jv81T4vwmFRu2FbPH6kOGm">
+<link rel="icon" href="/logo.png" type="image/png" data-page-node-id="FavxoGA1CZ9iUFolkHLEJ1">
+<style>
+:root{
+  --bg:#0d0d0f;--card:#17171b;--sidebar:#101014;--border:#2a2a33;
+  --text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;
+  --danger:#f87171;--success:#4ade80;--warn:#ffd166;--info:#60a5fa;
+  --r-sm:6px;--r:12px;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column}
+.page{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
+
+/* 导航 */
+.nav{height:60px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:28px;background:var(--bg);flex-shrink:0;position:relative;z-index:60}
+.nav .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);flex-shrink:0}
+.nav .brand img{width:32px;height:32px;object-fit:contain;border-radius:8px}
+.nav .brand span{font-size:16px;font-weight:700;letter-spacing:-0.02em}
+.nav-tools{display:flex;gap:4px;align-items:center}
+.nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s}
+.nav-tools a:hover{color:var(--text);background:#141419}
+.nav-right{display:flex;gap:10px;align-items:center;margin-left:auto}
+.nav-right .cta{background:var(--accent);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;min-height:38px;display:inline-flex;align-items:center;transition:filter .2s}
+.nav-right .cta:hover{filter:brightness(.9)}
+.nav-right .ghost{display:inline-flex;align-items:center;min-height:38px;padding:7px 16px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;transition:border-color .2s,color .2s}
+.nav-right .ghost:hover{color:var(--text);border-color:var(--accent)}
+.nav-right button.ghost{cursor:pointer;font-family:inherit}
+#navAuth{display:none}
+.nav-user{font-size:13px;color:var(--muted)}
+/* —— 右上角账号菜单（用户名 → 订阅 / 发码后台 / 退出登录） —— */
+.acct{position:relative;display:inline-flex;align-items:center}
+.acct-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--muted);
+  font-size:13px;font-weight:500;font-family:inherit;padding:4px 2px}
+.acct-btn:hover{color:var(--text)}
+.acct-btn .caret{width:8px;height:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin-top:-3px;flex-shrink:0}
+.acct-menu{display:none;position:absolute;right:0;top:calc(100% + 12px);min-width:168px;background:#17171b;border:1px solid var(--border);
+  border-radius:10px;padding:6px;box-shadow:0 16px 40px rgba(0,0,0,.5);z-index:120}
+.acct-menu.show{display:block}
+.acct-menu a,.acct-menu button{display:block;width:100%;text-align:left;padding:9px 12px;border-radius:6px;color:var(--text);
+  text-decoration:none;font-size:13px;font-weight:500;background:none;border:none;cursor:pointer;font-family:inherit;white-space:nowrap}
+.acct-menu a:hover,.acct-menu button:hover{background:#1e1e28}
+.acct-menu .sep{height:1px;background:var(--border);margin:6px 4px}
+.acct-menu .danger{color:var(--danger)}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:12px}
+.badge-pro{background:#2a2440;color:var(--accent)}
+.badge-free{background:#22222a;color:var(--muted)}
+
+/* Hero —— 间距与字号随视口高度自适应，保证一屏放下 */
+.hero{position:relative;padding:clamp(20px,4vh,64px) 32px clamp(16px,3vh,40px);max-width:1100px;margin:0 auto;display:flex;flex-direction:column;align-items:center;text-align:center;gap:clamp(12px,2vh,20px);width:100%}
+/* 主视觉区：极淡网格背景（约32px，线比背景稍亮且 ≤ #1a1a22） */
+.hero::before{content:"";position:absolute;inset:0;pointer-events:none;z-index:0;
+  background-image:linear-gradient(rgba(26,26,34,.55) 1px,transparent 1px),linear-gradient(90deg,rgba(26,26,34,.55) 1px,transparent 1px);
+  background-size:32px 32px;
+  -webkit-mask-image:radial-gradient(ellipse 78% 90% at 50% 42%,#000 42%,transparent 78%);
+  mask-image:radial-gradient(ellipse 78% 90% at 50% 42%,#000 42%,transparent 78%)}
+.hero>*{position:relative;z-index:1}
+.hero h1{font-size:clamp(40px,min(6vw,7vh),48px);font-weight:700;line-height:1.12;letter-spacing:-0.02em;
+  background:linear-gradient(180deg,#e8e8ea 0%,#8a8a94 100%);
+  -webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;color:transparent}
+/* 标题与副标题之间：1px 紫色分割线，宽约40px */
+.hero .divider{width:40px;height:1px;background:var(--accent);border:none;flex:none}
+.hero p{font-size:clamp(14px,1.7vh,17px);color:var(--muted);max-width:560px;line-height:1.65}
+.hero .tag{display:inline-block;padding:5px 14px;border-radius:100px;font-size:12px;font-weight:600;border:1px solid var(--border);color:var(--muted);margin-bottom:clamp(2px,1vh,8px)}
+
+/* 产品卡片 */
+.products{display:grid;grid-template-columns:repeat(auto-fit,minmax(188px,1fr));gap:16px;max-width:1180px;margin:0 auto;padding:0 32px clamp(20px,4vh,64px)}
+.product-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:clamp(20px,3vh,28px) 24px;text-decoration:none;color:inherit;transition:border-color .2s,transform .2s;display:flex;flex-direction:column;gap:clamp(8px,1.5vh,12px)}
+@media(hover:hover){.product-card:hover{border-color:var(--accent);transform:translateY(-2px)}}
+.product-card .icon{width:40px;height:40px;border-radius:8px;background:#1e1e28;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--accent)}
+.product-card h3{font-size:clamp(16px,2vh,18px);font-weight:600}
+.product-card p{font-size:clamp(13px,1.5vh,14px);color:var(--muted);line-height:1.6;flex:1}
+.product-card .tag{display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;font-weight:600;background:#1e1e28;color:var(--muted);align-self:flex-start}
+
+/* 动画 */
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.animate{animation:fadeUp .6s ease-out both}
+.animate-1{animation-delay:.05s}.animate-2{animation-delay:.12s}.animate-3{animation-delay:.19s}.animate-4{animation-delay:.26s}.animate-5{animation-delay:.33s}
+
+/* 登录 / 注册弹窗 */
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(6,6,9,.72);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal.active{display:flex}
+.modal-card{background:var(--card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:380px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.tabs{display:flex;gap:6px}
+.tab{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s}
+.tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.modal-close{background:none;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
+.modal-close:hover{color:var(--text)}
+.modal-card input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:11px 12px;font-size:14px;outline:none;margin-bottom:12px;min-height:44px}
+.modal-card input:focus{border-color:var(--accent)}
+.auth-submit{width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;transition:filter .2s;min-height:46px}
+.auth-submit:hover{filter:brightness(.9)}
+.auth-submit:disabled{opacity:.5}
+.auth-error{color:var(--danger);font-size:13px;margin:-4px 0 12px;display:none}
+.auth-forgot{display:none;text-align:right;margin:-6px 0 12px}
+.auth-forgot a{color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(138,138,148,.45);transition:color .2s,text-decoration-color .2s}
+.auth-forgot a:hover{color:var(--accent);text-decoration-color:var(--accent)}
+.auth-tip{color:var(--muted);font-size:12px;margin-top:12px;text-align:center;line-height:1.6}
+@media(max-width:600px){.modal-card{padding:20px}}
+
+/* 联系表单弹窗 */
+.modal-card .field{margin-bottom:14px}
+.modal-card .field label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600}
+.modal-card select,.modal-card textarea{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--r-sm);color:var(--text);padding:11px 12px;font-size:14px;outline:none;font-family:inherit;min-height:44px}
+.modal-card select:focus,.modal-card textarea:focus{border-color:var(--accent)}
+.modal-card textarea{min-height:96px;resize:vertical;line-height:1.5}
+.cm-err{color:var(--danger);font-size:13px;line-height:1.5;margin:-4px 0 10px;display:none}
+.cm-actions{display:flex;gap:10px;margin-top:6px;flex-wrap:nowrap}
+.cm-actions .btn{flex:1 1 0;min-height:44px;justify-content:center;width:auto}
+.cm-actions .ghost-btn{flex:1 1 0;min-height:44px;border:1px solid var(--border);background:transparent;color:var(--muted);border-radius:var(--r-sm);font-size:14px;font-weight:600;cursor:pointer;transition:border-color .2s,color .2s}
+.cm-actions .ghost-btn:hover{color:var(--text);border-color:var(--accent)}
+
+/* 响应式 */
+@media(max-width:1000px){.products{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:800px){
+  /* 窄屏卡片竖排，恢复常规文档流，允许滚动 */
+  body{display:block}
+  .page{display:block}
+  .nav{padding:0 16px;gap:10px;position:sticky;top:0;z-index:50}
+  .nav-tools{display:none}
+  .nav-right{gap:8px}
+  .nav-right .cta{padding:8px 13px;font-size:13px}
+  .nav-right .ghost{padding:7px 11px;font-size:13px}
+  .hero{padding:46px 20px 30px;gap:16px}
+  .hero h1{font-size:clamp(32px,8.6vw,40px);letter-spacing:-0.02em}
+  .hero p{font-size:15px;line-height:1.6}
+  .products{grid-template-columns:1fr;gap:12px;padding:0 20px 48px}
+  .product-card{padding:20px;gap:10px}
+}
+@media(max-width:480px){
+  .hero h1{font-size:clamp(28px,9.5vw,34px)}
+}
+
+/* 页脚（极简隐私入口，桌面保持一屏不滚动） */
+.site-footer{flex-shrink:0;display:flex;align-items:center;justify-content:center;gap:14px;height:40px;padding:0 32px;font-size:12px;color:var(--muted)}
+.site-footer a{color:var(--muted);text-decoration:none;transition:color .2s}
+.site-footer a:hover{color:var(--text)}
+.site-footer .dot{opacity:.35}
+.site-footer .brand-foot{display:inline-flex;align-items:center;gap:6px}
+.site-footer .brand-foot img{width:16px;height:16px;border-radius:4px}
+@media(max-width:800px){.site-footer{height:auto;flex-wrap:wrap;gap:8px 16px;padding:12px 16px 20px}}
+</style>
+</head>
+<body data-page-node-id="WGRV86a631xu2nIcuRuYO6">
+
+<!-- 导航（品牌标识 + 工具入口） -->
+<nav class="nav animate" data-page-node-id="mKFAfyUDgo6YtWnI8rwxkU">
+  <a href="/" class="brand" data-page-node-id="UfOrXixgQZOeeXPWqCFtUH">
+    <img src="/logo.png" alt="Logo" data-page-node-id="tgDyL2jTSqZFkz4HE9RoJY">
+    <span data-page-node-id="TnniIATTeFsYOcUYd0KVx6">Shademark</span>
+  </a>
+  <div class="nav-tools" data-page-node-id="leqbLRe7ir73oGKRGeE0kg">
+    <a href="/quote" data-page-node-id="4OIGuDQdg6n7mR1wuOGqit">报价单</a>
+    <a href="/watermark" data-page-node-id="scFy18KBId7G839ABHOCjO">水印</a>
+    <a href="/compress" data-page-node-id="PA9PKuGR40ChIDX8mAyQzZ">压缩</a>
+    <a href="/admin" data-gate="1" data-page-node-id="vsvnOTJs8A4jzwWD1RyFgl">发码</a>
+    <a href="/links" data-gate="1" data-page-node-id="Ev6fHtuAVV1zOABdngTwre">短链</a>
+  </div>
+  <div class="nav-right" data-page-node-id="gjct29coAwfq9BPHRrOGaq">
+    <span class="acct" id="navAcct" style="display:none" data-page-node-id="acctWrap">
+      <button class="acct-btn" id="acctBtn" onclick="toggleAcct(event)" aria-haspopup="true" aria-expanded="false" title="账号菜单" data-page-node-id="acctBtn">
+        <span class="nav-user" id="navUser" data-page-node-id="qmFb61qN9IsdU3308TvRDR"></span><i class="caret"></i>
+      </button>
+      <div class="acct-menu" id="acctMenu" data-page-node-id="acctMenu">
+        <a href="/admin?sub=1">订阅</a>
+        <a href="/admin">发码后台</a>
+        <div class="sep"></div>
+        <button class="danger" onclick="logout()">退出登录</button>
+      </div>
+    </span>
+    <a href="javascript:void(0)" id="navContact" class="ghost" onclick="openContact('other')" style="display:none" data-page-node-id="VnqlY46PpCOazxH7ABNAjq">联系</a>
+    <button class="cta" id="navAuth" onclick="openAuth()" data-page-node-id="fTbn7OjkWniC24R9DdXTeI">登录</button>
+  </div>
+</nav>
+
+<div class="page" data-page-node-id="Qu2CtqDbMEXECB4vu5T3t0">
+<section class="hero" data-page-node-id="NGuTukOtYYOIbwmA4c4iTA">
+  <h1 class="animate animate-1" data-page-node-id="WLATj5FVk262ot9DXwgA8m">要用的工具，都在这里。</h1>
+  <div class="divider animate animate-2" data-page-node-id="K1e6nlogOnOuvRpbJsUxh5"></div>
+  <p class="animate animate-3" data-page-node-id="QvXlMHmuDwV1SRf1aPHKCc">报价、发码、水印、短链——打开就能用。</p>
+</section>
+
+<!-- 产品卡片 -->
+<div class="products" data-page-node-id="c8oqNv2mkdILjYeaB2unUI">
+  <a href="/watermark" class="product-card animate animate-1" data-page-node-id="8SJVcqrPHDpGggN0UCdZ0D">
+    <div class="icon" data-page-node-id="zX5PAATLDHltqEOUIoLP6p">W</div>
+    <h3 data-page-node-id="d95QB0ivprPNzPqTfIx2iD">水印</h3>
+    <p data-page-node-id="eqRGNr9vRbI19LIqax04wQ">浏览器本地运行，完全免费。支持批量处理、隐形追踪、自定义模板。</p>
+    <span class="tag" data-page-node-id="oa4w9qROrJjfHnVE4BRi5s">Free</span>
+  </a>
+  <a href="/compress" class="product-card animate animate-2" data-page-node-id="mHuX6cVYkxdu2LA2oUmHZm">
+    <div class="icon" data-page-node-id="gbL9F1V2sMtnAeacA9rRyp">C</div>
+    <h3 data-page-node-id="AxnPcrnPUHGvIbwrYivC92">压缩</h3>
+    <p data-page-node-id="WnTqdfDzh9rvZCSxxHq6Bo">批量压缩图片体积，转格式、改尺寸、按序导出。成品可一键送进水印工具。</p>
+    <span class="tag" data-page-node-id="xrkoZV4rDQKLNQgDNPESwx">Free</span>
+  </a>
+  <a href="/quote" class="product-card animate animate-3" data-page-node-id="iBiC58eBZQlehkdnWQwLpE">
+    <div class="icon" data-page-node-id="fWEwLdh1uR3YD40M215tD2">Q</div>
+    <h3 data-page-node-id="Z2RgXyMAVRQoxdwsZsf4w6">报价单工具</h3>
+    <p data-page-node-id="n8r1BieAATlDUXPUqoTugl">实时预览、一键导出可打印的专业报价单，自动编号。登录后可存历史与模板。</p>
+    <span class="tag" data-page-node-id="58SHpHVElw0p3AVa4uvPDC">Quote</span>
+  </a>
+  <a href="/links" class="product-card animate animate-4" data-gate="1" data-page-node-id="IvMIeCEYzA62p0dPWFjdOb">
+    <div class="icon" data-page-node-id="3WW9cVoeRfiaA61Qw3CMEG">L</div>
+    <h3 data-page-node-id="J101DpkC0sMekoRYLppcTM">短链工具</h3>
+    <p data-page-node-id="MUL7XglFarFPDX9X71dD6t">生成带统计的短链，看清谁点了、从哪来、点了几次。</p>
+    <span class="tag" data-page-node-id="f8hUEef6A9slXEEZWhVV1W">Track</span>
+  </a>
+  <a href="/admin" class="product-card animate animate-5" data-gate="1" data-page-node-id="6mt0TaraTwO7193DoULnhH">
+    <div class="icon" data-page-node-id="vZA7ICYRoQ9cmiiMSvcuP3">K</div>
+    <h3 data-page-node-id="SRQrQhztx7NrFJAksqSsT0">发码平台</h3>
+    <p data-page-node-id="WBGlbDWiJSOONChlPAhp1T">激活码生成、商品与订单管理、开放 API。登录后即可创建与分发。</p>
+    <span class="tag" data-page-node-id="9zNqETeNxq8yRnBDQhNxKf">Manage</span>
+  </a>
+</div>
+</div>
+
+<!-- 页脚（隐私入口） -->
+<footer class="site-footer" data-page-node-id="Br97R4EwtZSlYHlgKgSvSD">
+  <span class="brand-foot" data-page-node-id="AIU7MJKLYQ2YjMw1P2BShK"><img src="/logo.png" alt="Shademark" data-page-node-id="iHakGE3Dc8Y6kxcEdSepBb"><span data-page-node-id="5Hy7vjtNxM47mXZQNnHZIP">Shademark™</span></span>
+  <span class="dot" data-page-node-id="TQw0VdpGzDHVelCGAaPdDm">·</span>
+  <a href="/privacy" data-page-node-id="6xMmE32at9EYb7eBwAeqWA">隐私说明</a>
+</footer>
+
+<!-- 登录 / 注册弹窗 -->
+<div class="modal" id="authModal" data-page-node-id="gD66aEZ9yDorhNNoGnk0JO">
+  <div class="modal-card" data-page-node-id="8yeKw8kIRx60OeBuR1BK0F">
+    <div class="modal-head" data-page-node-id="X9Rv3R5oNnQyhxKO68NccO">
+      <div class="tabs" data-page-node-id="a8xRclg4xTWrMvpoo8u3By">
+        <button class="tab active" id="tabLogin" onclick="setMode('login')" data-page-node-id="LX3Wz92eRUtkgW3p6Klajb">登录</button>
+        <button class="tab" id="tabRegister" onclick="setMode('register')" data-page-node-id="bB0S8URJxYcVG5Jdb8YJpe">注册</button>
+      </div>
+      <button class="modal-close" onclick="closeAuth()" aria-label="关闭" data-page-node-id="ZfhHgPszCDMFYlQLcJnDdz">×</button>
+    </div>
+    <form onsubmit="return submitAuth(event)" data-page-node-id="ngyHGDQtkcQ4f5XJAfxhth">
+      <input type="email" id="authEmail" placeholder="邮箱" autocomplete="off" data-page-node-id="FHBUofD5uxxiS0ycXhMNvB" />
+      <input type="password" id="authPass" placeholder="密码" autocomplete="new-password" data-page-node-id="XA40x4gghlcUJTG4Uu5lqE" />
+      <div class="auth-forgot" id="authForgot"><a href="/forgot">忘记密码？</a></div>
+      <div id="authNameWrap" style="display:none" data-page-node-id="SLywddpJsmoZX0AHi1s0NO">
+        <input id="authName" placeholder="昵称（可选）" autocomplete="off" data-page-node-id="s6CBINcbEvh69pagV0LmYF" />
+      </div>
+      <div id="authContactWrap" style="display:none" data-page-node-id="FSGtFQ1HPyh23CEtBvviMU">
+        <input id="authContact" placeholder="联系方式（可选）：微信号或手机号" autocomplete="off" data-page-node-id="qi4DrvhNtcARZLuv6vo9pi" />
+      </div>
+      <div class="auth-error" id="authError" data-page-node-id="vhZN75ZEmVno8DFwX9m2tY"></div>
+      <button class="auth-submit" id="authSubmitBtn" type="submit" data-page-node-id="cnCmJzNgKgJyMNAlCgS9ZR">登录</button>
+    </form>
+    <p class="auth-tip" id="authTip" data-page-node-id="seKFi1YaeJjpQUsLbbF3A0"></p>
+  </div>
+</div>
+
+<!-- 联系表单弹窗 -->
+<div class="modal" id="contactModal" data-page-node-id="JWTKboxde1cvtSdYkhhF0E">
+  <div class="modal-card" data-page-node-id="oxcAQF1XrdSSmAv4d0iUeP">
+    <div class="modal-head" data-page-node-id="N1wR2W69bGq5Kz64rtaKWV">
+      <h2 style="font-size:18px;font-weight:700" data-page-node-id="Q8BcpRd7UgCkpoNG8bV7li">联系平台</h2>
+      <button class="modal-close" onclick="closeContact()" aria-label="关闭" data-page-node-id="wtUsqDQ7rrzG3rA6M8H4Ap">×</button>
+    </div>
+    <div class="field" data-page-node-id="iH5QbDredL2CzayoKF9uhw">
+      <label data-page-node-id="HZ8mEFMzEzE8Wse6WREe4s">类型</label>
+      <select id="cm_type" data-page-node-id="L3TOdM8UBe2IZdQYgbjWEs">
+        <option value="upgrade" data-page-node-id="aR35gt3rsQ5sVAXwjxKON2">升级 Pro</option>
+        <option value="technical" data-page-node-id="SF7gdfGHMhQMsmujQEEvab">技术问题</option>
+        <option value="other" data-page-node-id="zQpDdDPHRUkNGD5vEQZm8A">其他</option>
+      </select>
+    </div>
+    <div class="field" data-page-node-id="BkHtjdhNFWsGdDtCUT4gIi">
+      <label data-page-node-id="VV4hCDW2htGuv2EGPI7AbK">联系方式 <span style="color:var(--danger)" data-page-node-id="XUXPxB8ngBlXu8EE83qwqV">*</span></label>
+      <input id="cm_email" type="text" placeholder="建议填写邮箱或微信号，用于平台方联系你" autocomplete="off" data-page-node-id="sM8B3B6b1Fy6flI8nlAQPP" />
+    </div>
+    <div class="field" data-page-node-id="6o58AVwBKao9vG1J9cb8qu">
+      <label data-page-node-id="ttUAtKebMJF7PbXc7M99Cp">留言 <span style="color:var(--danger)" data-page-node-id="jnpOU6YyiYxOfTJeEbhTI8">*</span></label>
+      <textarea id="cm_message" placeholder="请描述你的需求或问题"></textarea>
+    </div>
+    <div class="cm-err" id="cm_err" data-page-node-id="udQSlieHUenzh4EoCdoAc6"></div>
+    <div class="cm-actions" data-page-node-id="uaxSYSPf0HyUD4rvpmNOsY">
+      <button class="auth-submit" style="flex:1 1 0;margin:0" id="cm_submit" onclick="submitContact()" data-page-node-id="3nnNPcWJGcJnVkAo0pbHz8">提交</button>
+      <button class="ghost-btn" style="flex:1 1 0;min-height:44px" onclick="closeContact()" data-page-node-id="v287yCPa8WOLuqkBO3FZal">取消</button>
+    </div>
+  </div>
+</div>
+
+<script>
+let AUTH={ok:false};
+let pendingTarget=null;   // 登录成功后跳转的目标
+let mode='login';
+let CM_SENDING=false;
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+
+// 会话探测（并据登录态切换导航右侧：登录 / 后台+联系）
+async function checkAuth(){
+  try{
+    const r=await fetch('/api/auth/session');
+    const d=await r.json().catch(()=>({}));
+    AUTH.ok=!!(d&&d.authenticated);
+    AUTH.email=(d&&d.user&&d.user.email)||'';
+    const authEl=document.getElementById('navAuth');
+    const acctEl=document.getElementById('navAcct');
+    const contactEl=document.getElementById('navContact');
+    const userEl=document.getElementById('navUser');
+    if(AUTH.ok&&AUTH.email){
+      const tier=((d&&d.subscription&&d.subscription.tier)||(d&&d.user&&d.user.subscription_tier)||'free');
+      authEl.style.display='none';
+      acctEl.style.display='inline-flex';
+      contactEl.style.display='';
+      userEl.innerHTML=esc(AUTH.email)+(tier==='pro'
+        ?' <span class="badge badge-pro" style="margin-left:6px">Pro</span>'
+        :' <span class="badge badge-free" style="margin-left:6px">Free</span>');
+    }else{
+      // 未登录：恢复显示“登录”，隐藏登录态区
+      acctEl.style.display='none';
+      contactEl.style.display='none';
+      userEl.textContent='';
+      authEl.style.display='inline-flex';
+    }
+  }catch(e){AUTH.ok=false;AUTH.email=''}
+}
+
+// 需要登录的工具卡：已登录直接进，未登录弹登录框
+function guardNav(e,url){
+  e.preventDefault();
+  if(AUTH.ok){location.href=url;return}
+  pendingTarget=url;
+  openAuth();
+}
+
+// —— 右上角账号菜单（用户名 → 订阅 / 发码后台 / 退出登录）——
+function toggleAcct(e){
+  if(e)e.stopPropagation();
+  const m=document.getElementById('acctMenu'),b=document.getElementById('acctBtn');
+  if(!m)return;
+  const open=m.classList.toggle('show');
+  if(b)b.setAttribute('aria-expanded',open?'true':'false');
+}
+document.addEventListener('click',function(){
+  const m=document.getElementById('acctMenu'),b=document.getElementById('acctBtn');
+  if(m&&m.classList.contains('show')){m.classList.remove('show');if(b)b.setAttribute('aria-expanded','false');}
+});
+document.addEventListener('keydown',function(e){
+  if(e.key!=='Escape')return;
+  const m=document.getElementById('acctMenu'),b=document.getElementById('acctBtn');
+  if(m&&m.classList.contains('show')){m.classList.remove('show');if(b)b.setAttribute('aria-expanded','false');}
+});
+
+// 退出登录：回到主页并恢复未登录（显示“登录”）
+async function logout(){
+  try{await fetch('/api/auth/logout',{method:'POST'});}catch(e){}
+  AUTH.ok=false;AUTH.email='';
+  location.href='/';
+}
+
+// —— 联系表单 ——
+function openContact(type){
+  const modal=document.getElementById('contactModal');
+  const sel=document.getElementById('cm_type');
+  const setType=type||'other';
+  if(['upgrade','technical','other'].includes(setType))sel.value=setType;
+  document.getElementById('cm_err').style.display='none';
+  document.getElementById('cm_message').value='';
+  const email=document.getElementById('cm_email');
+  email.value='';email.disabled=false;
+  modal.classList.add('active');
+  setTimeout(()=>email.focus(),50);
+}
+function closeContact(){
+  const modal=document.getElementById('contactModal');
+  if(modal)modal.classList.remove('active');
+}
+async function submitContact(){
+  if(CM_SENDING)return;
+  const email=document.getElementById('cm_email').value.trim();
+  const type=document.getElementById('cm_type').value;
+  const message=document.getElementById('cm_message').value.trim();
+  const err=document.getElementById('cm_err');
+  if(!email){err.textContent='请填写联系方式（邮箱或微信号）';err.style.display='block';return;}
+  if(!message){err.textContent='请填写留言内容';err.style.display='block';return;}
+  CM_SENDING=true;
+  const btn=document.getElementById('cm_submit');
+  const oldTxt=btn.textContent;btn.textContent='提交中…';btn.disabled=true;
+  try{
+    const r=await fetch('/api/contact',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email,type,message})});
+    const d=await r.json().catch(()=>({}));
+    if(r.ok&&d.success){closeContact();openTip('已收到，会尽快回复');}
+    else{err.textContent=d.error||'提交失败，请稍后再试';err.style.display='block';}
+  }catch(e){err.textContent='网络错误';err.style.display='block';}
+  finally{CM_SENDING=false;btn.disabled=false;btn.textContent=oldTxt;}
+}
+function openTip(msg){
+  const t=document.createElement('div');
+  t.textContent=msg;
+  t.style.cssText='position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:var(--card);color:var(--text);border:1px solid var(--border);padding:12px 20px;border-radius:8px;font-size:14px;z-index:400;box-shadow:0 10px 30px rgba(0,0,0,.4)';
+  document.body.appendChild(t);
+  setTimeout(()=>t.remove(),2200);
+}
+
+
+// —— 弹窗控制 ——
+function openAuth(){document.getElementById('authModal').classList.add('active');setMode('login')}
+function closeAuth(){document.getElementById('authModal').classList.remove('active');pendingTarget=null}
+function setMode(m){
+  mode=m;
+  document.getElementById('tabLogin').classList.toggle('active',m==='login');
+  document.getElementById('tabRegister').classList.toggle('active',m==='register');
+  document.getElementById('authNameWrap').style.display=m==='register'?'block':'none';
+  document.getElementById('authContactWrap').style.display=m==='register'?'block':'none';
+  document.getElementById('authForgot').style.display=m==='login'?'block':'none';
+  document.getElementById('authSubmitBtn').textContent=m==='login'?'登录':'注册';
+  document.getElementById('authError').style.display='none';
+  document.getElementById('authPass').autocomplete='new-password'; // 阻止浏览器“记住密码/自动填充”
+  document.getElementById('authEmail').setAttribute('autocomplete','off');
+  document.getElementById('authName').setAttribute('autocomplete','off');
+  document.getElementById('authContact').setAttribute('autocomplete','off');
+  document.getElementById('authTip').textContent=m==='login'
+    ? '还没有账号？点击上方「注册」，或直接返回继续浏览工具。'
+    : '已有账号？点击上方「登录」。注册即可使用短链与发码平台。';
+}
+async function submitAuth(ev){
+  ev.preventDefault();
+  const email=document.getElementById('authEmail').value.trim();
+  const pass=document.getElementById('authPass').value;
+  const name=document.getElementById('authName').value.trim();
+  const err=document.getElementById('authError');
+  err.style.display='none';
+  if(!email||!pass){err.textContent='请填写邮箱和密码';err.style.display='block';return}
+  const btn=document.getElementById('authSubmitBtn');
+  btn.disabled=true;const old=btn.textContent;btn.textContent='请稍候…';
+  try{
+    const url=mode==='login'?'/api/auth/login':'/api/auth/register';
+    const body=mode==='login'?{email,password:pass}:{email,password:pass,display_name:name,contact:document.getElementById('authContact').value.trim()};
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json().catch(()=>({}));
+    if(d.error||!d.success){err.textContent=d.error||'操作失败';err.style.display='block';return}
+    AUTH.ok=true;
+    const target=pendingTarget||'/';
+    pendingTarget=null;
+    closeAuth();
+    location.href=target;
+  }catch(e){err.textContent='网络错误';err.style.display='block'}
+  finally{btn.disabled=false;btn.textContent=old}
+}
+// 拦截“短链 / 发码”等需要登录的入口（顶部导航 + 产品卡）：已登录直接进，未登录弹登录框
+document.querySelectorAll('[data-gate]').forEach(el=>{
+  el.addEventListener('click',ev=>guardNav(ev,el.getAttribute('href')));
+});
+document.getElementById('authModal').addEventListener('click',e=>{if(e.target.id==='authModal')closeAuth()});
+document.getElementById('contactModal').addEventListener('click',e=>{if(e.target.id==='contactModal')closeContact()});
+document.addEventListener('keydown',e=>{
+  if(e.key==='Escape'){closeAuth();closeContact();}
+});
+
+checkAuth();
+</script>
+</body>
+</html>

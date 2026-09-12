@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>重置密码 — Shademark</title>
+<meta name="description" content="设置 Shademark 账号新密码。" />
+<link rel="canonical" href="https://shademark.cn/reset">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/logo.png" type="image/png">
+<style>
+:root{
+  --bg:#0d0d0f;--card:#17171b;--border:#2a2a33;
+  --text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;
+  --danger:#f87171;--success:#4ade80;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;overflow-x:hidden}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:32px;width:100%;max-width:400px}
+.logo{text-align:center;margin-bottom:24px}
+.logo img{width:32px;height:32px;object-fit:contain;border-radius:8px;margin-bottom:12px}
+.logo h1{font-size:20px;font-weight:700;letter-spacing:-0.02em}
+.logo p{color:var(--muted);font-size:13px;margin-top:4px;line-height:1.6}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.form-group input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s}
+.form-group input:focus{border-color:var(--accent)}
+.btn{width:100%;padding:11px;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;background:var(--accent);color:#fff;text-decoration:none;display:block;text-align:center}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{border-color:var(--accent);opacity:1}
+.error{color:var(--danger);font-size:13px;margin-top:8px;display:none;line-height:1.6}
+.hint{color:var(--muted);font-size:12px;margin-top:14px;line-height:1.7;text-align:center}
+.state{display:none}
+.state.active{display:block}
+.muted-line{color:var(--muted);font-size:13px;line-height:1.7;text-align:center}
+.ok{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+.ok .mark{width:36px;height:36px;border-radius:50%;background:#14432c;color:var(--success);display:flex;align-items:center;justify-content:center;font-size:18px}
+.ok p{font-size:14px;line-height:1.7}
+.footer{text-align:center;margin-top:20px;font-size:12px;color:var(--muted);display:flex;justify-content:center;gap:10px;flex-wrap:wrap}
+.footer a{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;transition:all .2s}
+.footer a:hover{color:var(--text);border-color:var(--accent)}
+@media(max-width:480px){
+  body{padding:16px;align-items:flex-start;padding-top:48px}
+  .card{padding:24px 20px}
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <img src="/logo.png" alt="Shademark">
+    <h1>重置密码</h1>
+    <p id="subTitle">正在检查链接…</p>
+  </div>
+
+  <!-- 校验中 -->
+  <div class="state active" id="stateLoading">
+    <p class="muted-line">正在检查链接…</p>
+  </div>
+
+  <!-- 链接失效 -->
+  <div class="state" id="stateInvalid">
+    <p class="muted-line" id="invalidText">这个链接失效了，重新发一个。</p>
+    <div style="margin-top:20px"><a class="btn" href="/forgot">重新获取链接</a></div>
+  </div>
+
+  <!-- 设置新密码 -->
+  <div class="state" id="stateForm">
+    <div class="form-group"><label>新密码</label><input id="pw1" type="password" placeholder="至少6位" autocomplete="new-password" /></div>
+    <div class="form-group"><label>确认新密码</label><input id="pw2" type="password" placeholder="再输一次" autocomplete="new-password" /></div>
+    <div class="error" id="pwError"></div>
+    <button class="btn" id="pwBtn" onclick="doReset()">设置新密码</button>
+    <p class="hint">设置成功后，其他设备上的登录会失效，需要用新密码重新登录。</p>
+  </div>
+
+  <!-- 完成 -->
+  <div class="state" id="stateDone">
+    <div class="ok">
+      <div class="mark">✓</div>
+      <p>密码已重置，用新密码登录即可。</p>
+    </div>
+    <div style="margin-top:20px"><a class="btn" href="/login">去登录</a></div>
+  </div>
+
+  <div class="footer"><a href="/login">← 返回登录</a><a href="/">← 返回主页</a></div>
+</div>
+<script>
+const TOKEN=new URLSearchParams(location.search).get('token')||'';
+function show(id){
+  document.querySelectorAll('.state').forEach(function(el){el.classList.remove('active')});
+  document.getElementById(id).classList.add('active');
+}
+async function verify(){
+  if(!TOKEN){document.getElementById('subTitle').textContent='';return show('stateInvalid')}
+  try{
+    const r=await fetch('/api/auth/reset-verify',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN})});
+    const d=await r.json().catch(function(){return {}});
+    if(!d.valid){document.getElementById('subTitle').textContent='';return show('stateInvalid')}
+    document.getElementById('subTitle').textContent='正在为 '+d.account+' 设置新密码';
+    show('stateForm');
+    document.getElementById('pw1').focus();
+  }catch(e){
+    document.getElementById('invalidText').textContent='网络错误，没能校验这个链接。';
+    show('stateInvalid');
+  }
+}
+async function doReset(){
+  const pw1=document.getElementById('pw1').value;
+  const pw2=document.getElementById('pw2').value;
+  const err=document.getElementById('pwError');
+  const btn=document.getElementById('pwBtn');
+  err.style.display='none';
+  if(!pw1||!pw2){err.textContent='请填写两次新密码';err.style.display='block';return}
+  if(pw1.length<6){err.textContent='密码至少6位';err.style.display='block';return}
+  if(pw1!==pw2){err.textContent='两次输入的密码不一致';err.style.display='block';return}
+  btn.disabled=true;btn.textContent='提交中...';
+  try{
+    const r=await fetch('/api/auth/reset-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:TOKEN,password:pw1})});
+    const d=await r.json().catch(function(){return {}});
+    if(d.error){
+      err.textContent=d.error;err.style.display='block';
+      // 令牌已被用过 / 过期 → 直接转为失效态，避免用户反复试
+      if(/失效/.test(d.error)){document.getElementById('subTitle').textContent='';show('stateInvalid')}
+      return;
+    }
+    if(history.replaceState)history.replaceState(null,'','/reset');
+    document.getElementById('subTitle').textContent='';
+    show('stateDone');
+  }catch(e){err.textContent='网络错误，请稍后再试';err.style.display='block'}
+  finally{btn.disabled=false;btn.textContent='设置新密码'}
+}
+document.getElementById('pw2').addEventListener('keydown',e=>{if(e.key==='Enter')doReset()});
+verify();
+</script>
+</body>
+</html>

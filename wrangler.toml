@@ -1,0 +1,35 @@
+name = "shademark"
+compatibility_date = "2026-09-01"
+
+# Pages 必需：指定静态产物目录，否则整个配置文件会被忽略、绑定不生效
+pages_build_output_dir = "dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "shademark"
+database_id = "d55736bc-a1ca-47db-96f1-a1394ee80c91"
+
+[vars]
+ENVIRONMENT = "production"
+# 内部清理鉴权（/api/internal/cleanup 与 cron worker 共享同值）
+# ⚠️ CRON_SECRET 是密钥，不写在此处、不进仓库。
+# 生产注入：wrangler pages secret put CRON_SECRET --project-name shademark
+# 本地 dev：见仓库根 .dev.vars（已 gitignore）
+
+# ---- 邮件推送（阿里云 DirectMail）----
+# 注意：Workers/Pages 无 TCP，不能走 SMTP，这里是 HTTP OpenAPI 的配置
+# 敏感的 AccessKey 不入库、不入配置文件，用 secret 注入：
+#   npx wrangler pages secret put DM_ACCESS_KEY_ID --project-name shademark
+#   npx wrangler pages secret put DM_ACCESS_KEY_SECRET --project-name shademark
+DM_ACCOUNT_NAME = "no-reply@mail.shademark.cn"
+# 阿里云官方建议用二级域名发信（避免影响主域名邮件信誉），若要换成
+# no-reply@mail.shademark.cn，只需改上面这行 + 在邮件推送控制台重新配置域名
+DM_FROM_ALIAS = "Shademark"
+DM_REGION = "cn-hangzhou"
+DM_ENDPOINT = "dm.aliyuncs.com"
+# v2 = HMAC-SHA1（默认，已按官方测试向量离线校验）；备选 v3 = ACS3-HMAC-SHA256
+DM_SIGN_VERSION = "v2"
+
+# 重置邮件里的链接域名，以及链接有效期（分钟）
+APP_ORIGIN = "https://shademark.cn"
+RESET_TTL_MINUTES = "30"

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>忘记密码 — Shademark</title>
+<meta name="description" content="用注册邮箱找回 Shademark 账号密码。" />
+<link rel="canonical" href="https://shademark.cn/forgot">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/logo.png" type="image/png">
+<style>
+:root{
+  --bg:#0d0d0f;--card:#17171b;--border:#2a2a33;
+  --text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;
+  --danger:#f87171;--success:#4ade80;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;overflow-x:hidden}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:32px;width:100%;max-width:400px}
+.logo{text-align:center;margin-bottom:24px}
+.logo img{width:32px;height:32px;object-fit:contain;border-radius:8px;margin-bottom:12px}
+.logo h1{font-size:20px;font-weight:700;letter-spacing:-0.02em}
+.logo p{color:var(--muted);font-size:13px;margin-top:4px;line-height:1.6}
+.form-group{margin-bottom:14px}
+.form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.form-group input{width:100%;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;outline:none;transition:border-color .2s}
+.form-group input:focus{border-color:var(--accent)}
+.btn{width:100%;padding:11px;border:none;border-radius:6px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s;background:var(--accent);color:#fff}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{border-color:var(--accent);opacity:1}
+.error{color:var(--danger);font-size:13px;margin-top:8px;display:none;line-height:1.6}
+.hint{color:var(--muted);font-size:12px;margin-top:14px;line-height:1.7;text-align:center}
+.ok{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px}
+.ok .mark{width:36px;height:36px;border-radius:50%;background:#14432c;color:var(--success);display:flex;align-items:center;justify-content:center;font-size:18px}
+.ok p{font-size:14px;line-height:1.7;color:var(--text)}
+.footer{text-align:center;margin-top:20px;font-size:12px;color:var(--muted)}
+.footer a{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;transition:all .2s}
+.footer a:hover{color:var(--text);border-color:var(--accent)}
+@media(max-width:480px){
+  body{padding:16px;align-items:flex-start;padding-top:48px}
+  .card{padding:24px 20px}
+}
+</style>
+</head>
+<body>
+<div class="card">
+  <div class="logo">
+    <img src="/logo.png" alt="Shademark">
+    <h1>忘记密码</h1>
+    <p>填注册邮箱，我们把重置链接发给你</p>
+  </div>
+
+  <div id="stepForm">
+    <div class="form-group"><label>邮箱</label><input id="fpEmail" type="email" placeholder="your@email.com" autocomplete="email" /></div>
+    <div class="error" id="fpError"></div>
+    <button class="btn" id="fpBtn" onclick="doForgot()">发送重置链接</button>
+    <p class="hint">同一个邮箱 15 分钟内最多发 3 次<br>链接 30 分钟内有效</p>
+  </div>
+
+  <div id="stepDone" style="display:none">
+    <div class="ok">
+      <div class="mark">✓</div>
+      <p id="doneText">如果这个邮箱已注册，重置链接已经发过去了。请查收（也看一眼垃圾邮件箱）。</p>
+    </div>
+    <div style="margin-top:20px"><button class="btn btn-ghost" onclick="showForm()">换一个邮箱再试</button></div>
+  </div>
+
+  <div class="footer"><a href="/login">← 返回登录</a></div>
+</div>
+<script>
+function showForm(){
+  document.getElementById('stepDone').style.display='none';
+  document.getElementById('stepForm').style.display='block';
+  document.getElementById('fpError').style.display='none';
+  document.getElementById('fpEmail').focus();
+}
+async function doForgot(){
+  const email=document.getElementById('fpEmail').value.trim();
+  const err=document.getElementById('fpError');
+  const btn=document.getElementById('fpBtn');
+  err.style.display='none';
+  if(!email){err.textContent='请填写邮箱';err.style.display='block';return}
+  btn.disabled=true;btn.textContent='发送中...';
+  try{
+    const r=await fetch('/api/auth/forgot-password',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email})});
+    const d=await r.json().catch(()=>({}));
+    if(d.error){err.textContent=d.error;err.style.display='block';return}
+    document.getElementById('doneText').textContent=d.message||'如果这个邮箱已注册，重置链接已经发过去了。请查收（也看一眼垃圾邮件箱）。';
+    document.getElementById('stepForm').style.display='none';
+    document.getElementById('stepDone').style.display='block';
+  }catch(e){err.textContent='网络错误，请稍后再试';err.style.display='block'}
+  finally{btn.disabled=false;btn.textContent='发送重置链接'}
+}
+document.getElementById('fpEmail').addEventListener('keydown',e=>{if(e.key==='Enter')doForgot()});
+</script>
+</body>
+</html>

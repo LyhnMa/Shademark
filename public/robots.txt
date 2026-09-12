@@ -1,0 +1,12 @@
+User-agent: *
+Allow: /
+
+# 屏蔽后台与平台管理页爬取（数据页本身需登录/权限，声明更稳妥）
+Disallow: /platform
+Disallow: /admin
+Disallow: /order-query
+# 找回密码相关页面带一次性令牌，不收录
+Disallow: /forgot
+Disallow: /reset
+
+Sitemap: https://shademark.cn/sitemap.xml

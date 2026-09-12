@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>平台管理 — Shademark</title>
+<link rel="icon" href="/logo.png" type="image/png">
+<style>
+:root{
+  --bg:#0d0d0f;--card:#17171b;--sidebar:#101014;--border:#2a2a33;
+  --text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;
+  --danger:#f87171;--success:#4ade80;--warn:#ffd166;--info:#60a5fa;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex}
+
+/* 侧边栏 */
+.sidebar{width:220px;border-right:1px solid var(--border);padding:20px 12px;display:flex;flex-direction:column;background:var(--sidebar);flex-shrink:0}
+.sidebar .logo{display:flex;align-items:center;gap:10px;padding:8px 8px;margin-bottom:16px;text-decoration:none;color:var(--text);flex-shrink:0}
+.sidebar .logo img{width:32px;height:32px;object-fit:contain;border-radius:8px}
+.sidebar .logo span{font-size:15px;font-weight:700;letter-spacing:-0.02em}
+.sidebar .menu-item{padding:10px 12px;border-radius:6px;cursor:pointer;color:var(--muted);font-size:14px;font-weight:500;margin-bottom:2px;transition:all .15s}
+.sidebar .menu-item:hover{color:var(--text);background:#1a1a22}
+.sidebar .menu-item.active{color:var(--text);background:#1e1e28}
+
+/* 主内容区 */
+.main{flex:1;padding:clamp(20px,3vh,32px) clamp(20px,3vw,40px);overflow-y:auto;max-width:calc(100vw - 220px);min-width:0}
+/* 顶部：当前模块标题 + 右侧当前登录账号（平台方）+ 退出 */
+.topbar{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:24px;flex-wrap:wrap}
+.topbar h1{font-size:24px;font-weight:700;display:flex;align-items:center;gap:12px}
+.topbar .account{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;font-weight:500;white-space:nowrap}
+.topbar .account .dot{width:8px;height:8px;border-radius:50%;background:var(--success);flex-shrink:0}
+.topbar .account .mail{color:var(--text);font-weight:600;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.topbar .account .logout-mini{background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--muted);font-size:12px;font-weight:600;padding:5px 10px;cursor:pointer;font-family:inherit;transition:color .2s,border-color .2s;margin-left:2px}
+.topbar .account .logout-mini:hover{color:var(--danger);border-color:#5c2020}
+.topbar .role-tag{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;background:#2a2440;color:var(--accent);border:1px solid rgba(124,108,240,.35)}
+
+.section{display:none}
+.section.active{display:block}
+.toolbar{display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
+.toolbar .search{flex:1 1 220px;max-width:340px;position:relative;display:flex;align-items:center}
+.toolbar .search input{width:100%;padding-left:36px}
+.toolbar .search svg{position:absolute;left:11px;top:50%;transform:translateY(-50%);width:16px;height:16px;stroke:var(--muted);pointer-events:none}
+input,select,textarea{background:var(--card);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:6px;font-size:14px;outline:none}
+input:focus,select:focus,textarea:focus{border-color:var(--accent)}
+select{cursor:pointer}
+.btn{background:var(--accent);color:#fff;border:none;padding:10px 16px;border-radius:6px;cursor:pointer;font-size:14px;font-weight:600;transition:opacity .2s;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap}
+.btn:hover{opacity:.88}
+.btn-ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.btn-ghost:hover{border-color:var(--accent);color:var(--accent);opacity:1}
+.btn-danger{background:transparent;border:1px solid #5c2020;color:var(--danger)}
+.btn-danger:hover{background:#6b2626;border-color:var(--danger);opacity:1}
+.btn-sm{padding:6px 10px;font-size:12px}
+.btn-pro{background:transparent;border-color:rgba(124,108,240,.5);color:var(--accent)}
+.btn-pro:hover{background:#1e1a33;border-color:var(--accent)}
+.cell-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
+.table-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:14px;min-width:760px}
+th,td{text-align:left;padding:12px 10px;border-bottom:1px solid var(--border)}
+th{color:var(--muted);font-weight:500;font-size:12px;white-space:nowrap}
+tr:hover td{background:#14141a}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:12px;font-weight:600;white-space:nowrap}
+.badge-pro{background:#2a2440;color:var(--accent)}
+.badge-free{background:#22222a;color:var(--muted)}
+.badge-done{background:#2a3a35;color:var(--success)}
+.badge-unread{background:#2a2440;color:var(--accent)}
+.badge-perm{background:#2a3a3a;color:var(--info)}
+/* 到期状态标签：正常 / 即将到期 / 宽限期中 / 待降级 / 已降级 */
+.badge-active{background:#2a3a35;color:var(--success)}
+.badge-expiring{background:#3a3420;color:var(--warn)}
+.badge-grace{background:#3a2f14;color:var(--warn);border:1px solid rgba(255,209,102,.5)}
+.badge-expired{background:#3a2a2a;color:var(--danger)}
+.badge-downgraded{background:#22222a;color:var(--muted)}
+/* 到期提醒块 */
+.attn{background:#1a1710;border:1px solid rgba(255,209,102,.45);border-radius:10px;padding:12px 16px;margin-bottom:16px}
+.attn .attn-head{font-size:13px;font-weight:700;color:var(--warn);margin-bottom:8px}
+.attn .attn-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:6px 0;border-top:1px solid rgba(255,209,102,.18);font-size:13px}
+.attn .attn-row:first-of-type{border-top:none}
+.attn .attn-mail{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;color:var(--text);word-break:break-all}
+.attn .attn-days{color:var(--muted)}
+.attn .attn-btn{margin-left:auto;background:transparent;border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:12px;font-weight:600;padding:4px 10px;cursor:pointer;font-family:inherit}
+.attn .attn-btn:hover{border-color:var(--accent);color:var(--accent)}
+.empty{text-align:center;padding:56px 0;color:var(--muted);font-size:14px}
+.loading{color:var(--muted);text-align:center;padding:40px;font-size:14px}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+.contact-cell{font-size:13px;color:var(--text);word-break:break-all;display:inline-block;max-width:100%}
+.hint{color:var(--muted);font-size:12px;margin-top:14px;line-height:1.6}
+/* 留言摘要 */
+.c-msg{max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
+.locked{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:40px;text-align:center;color:var(--muted);font-size:14px}
+/* 弹窗（通用） */
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.72);z-index:100;align-items:center;justify-content:center;padding:20px}
+.modal.active{display:flex}
+.modal-content{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:420px;width:100%;max-height:88vh;overflow-y:auto}
+.modal-content h2{font-size:17px;font-weight:700;margin-bottom:6px}
+.modal-sub{color:var(--muted);font-size:12px;margin-bottom:18px;line-height:1.6}
+.modal-user{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:16px;flex-wrap:wrap}
+.modal-user .mail{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;word-break:break-all;flex:1 1 auto;min-width:0}
+.exp-presets{display:flex;flex-direction:column;gap:10px;margin-bottom:18px}
+.exp-presets .pbtn{padding:12px 14px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:var(--text);font-size:14px;cursor:pointer;text-align:left;display:flex;align-items:center;justify-content:space-between;gap:10px;transition:all .15s;font-family:inherit}
+.exp-presets .pbtn:hover{border-color:var(--accent);background:#1e1a33}
+.exp-presets .pbtn .lab{font-weight:600}
+.exp-presets .pbtn .desc{color:var(--muted);font-size:12px}
+.exp-presets .pbtn.permanent:hover{border-color:var(--success);background:#0f241b}
+.exp-presets .pbtn.permanent .lab{color:var(--success)}
+.modal-actions{display:flex;gap:10px;flex-wrap:wrap}
+.modal-actions .btn{flex:1 1 auto}
+.modal-actions .btn-danger{flex:1 1 100%}
+.close-x{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
+.close-x:hover{color:var(--text)}
+/* —— 登录 / 注册弹窗（与首页 #authModal 完全一致，仅命名空间隔离）—— */
+.auth-modal .modal-card{background:var(--card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:380px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.auth-modal .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.auth-modal .tabs{display:flex;gap:6px}
+.auth-modal .tab{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.auth-modal .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.auth-modal .modal-close{background:none;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
+.auth-modal .modal-close:hover{color:var(--text)}
+.auth-modal .modal-card input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:11px 12px;font-size:14px;outline:none;margin-bottom:12px;min-height:44px}
+.auth-modal .modal-card input:focus{border-color:var(--accent)}
+.auth-modal .auth-submit{width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;transition:filter .2s;min-height:46px;font-family:inherit}
+.auth-modal .auth-submit:hover{filter:brightness(.9)}
+.auth-modal .auth-submit:disabled{opacity:.5}
+.auth-modal .auth-error{color:var(--danger);font-size:13px;margin:-4px 0 12px;display:none}
+.auth-modal .auth-forgot{display:none;text-align:right;margin:-6px 0 12px}
+.auth-modal .auth-forgot a{color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(138,138,148,.45);transition:color .2s,text-decoration-color .2s}
+.auth-modal .auth-forgot a:hover{color:var(--accent);text-decoration-color:var(--accent)}
+.auth-modal .auth-tip{color:var(--muted);font-size:12px;margin-top:12px;text-align:center;line-height:1.6}
+@media(max-width:600px){.auth-modal .modal-card{padding:20px}}
+/* toast */
+.sd-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1e1e28;border:1px solid var(--border);color:var(--text);padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;max-width:86vw;word-break:break-all;box-shadow:0 6px 20px rgba(0,0,0,.4)}
+
+@media(min-width:801px) and (max-width:1100px){
+  .sidebar{width:192px}
+  .main{max-width:calc(100vw - 192px);padding:20px}
+}
+/* 手机端：侧边栏变顶部横向菜单 */
+@media(max-width:800px){
+  body{flex-direction:column;overflow-x:hidden}
+  .sidebar{width:100%;border-right:none;border-bottom:1px solid var(--border);padding:10px 12px;flex-direction:row;overflow-x:auto;align-items:center;gap:4px;position:sticky;top:0;z-index:50;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+  .sidebar::-webkit-scrollbar{display:none}
+  .sidebar .logo{margin-bottom:0;padding-right:12px;flex-shrink:0}
+  .sidebar .logo span{display:none}
+  .sidebar .menu-item{padding:8px 12px;font-size:13px;white-space:nowrap;flex-shrink:0}
+  .main{padding:18px 16px;max-width:100vw}
+  .topbar{margin-bottom:18px}
+  .topbar h1{font-size:20px}
+  .table-wrap{border:1px solid var(--border);border-radius:8px}
+  table{min-width:760px}
+}
+/* 窄屏：表格行转卡片，去掉横向滚动 */
+@media(max-width:820px){
+  .table-wrap{overflow:visible;border:none;background:transparent}
+  table{min-width:0;display:block;width:100%}
+  thead{display:none}
+  tbody{display:block}
+  tbody tr{display:block;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px}
+  tbody tr:hover td{background:transparent}
+  tbody tr.loading td{border:none;text-align:center}
+  tbody td{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px;text-align:right}
+  tbody td:last-child{border-bottom:none}
+  tbody td::before{content:attr(data-label);color:var(--muted);font-size:12px;font-weight:600;flex:0 0 auto;margin-right:12px;padding-top:1px;text-align:left}
+  tbody td.rd-main{display:block;border-bottom:1px solid var(--border);margin-bottom:6px;text-align:left}
+  tbody td.rd-main::before{content:''}
+  tbody td.rd-main .u-email{font-size:14px;font-weight:600}
+  tbody td.rd-main .u-meta{color:var(--muted);font-size:11px;margin-top:4px}
+  tbody td.rd-ops{display:block;border-bottom:none;padding-top:6px}
+  tbody td.rd-ops::before{content:''}
+  tbody td.rd-ops .cell-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;width:100%}
+  tbody td.rd-ops .cell-actions .btn{width:100%;margin:0;justify-content:center;min-height:38px}
+  tbody td.rd-ops .cell-actions .btn-danger{grid-column:1 / -1}
+  .c-msg{max-width:none;white-space:normal;word-break:break-word}
+}
+</style>
+</head>
+<body>
+
+<!-- 侧边栏 -->
+<aside class="sidebar">
+  <a href="/" class="logo" title="返回主页"><img src="/logo.png" alt="Shademark"><span>Shademark</span></a>
+  <div class="menu-item active" data-section="subscriptions">订阅管理</div>
+  <div class="menu-item" data-section="contacts">联系消息</div>
+</aside>
+
+<!-- 主内容 -->
+<div class="main">
+  <div class="topbar">
+    <h1 id="pageTitle">订阅管理</h1>
+    <div class="account"><span class="dot"></span>平台方 · <span class="mail" id="curAccount">…</span>
+      <button class="logout-mini" onclick="logout()">退出</button>
+    </div>
+  </div>
+
+  <!-- 订阅管理 -->
+  <div class="section active" id="section-subscriptions">
+    <div class="toolbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+        <input id="userSearch" type="text" placeholder="按邮箱搜索用户…" oninput="renderUsers()" autocomplete="off" />
+      </div>
+      <select id="tierFilter" onchange="renderUsers()">
+        <option value="">全部状态</option>
+        <option value="soon">即将到期 / 宽限期</option>
+        <option value="grace">宽限期中</option>
+        <option value="expiring">即将到期</option>
+        <option value="downgraded">已降级</option>
+        <option value="pro">Pro 有效</option>
+      </select>
+    </div>
+
+    <!-- 到期提醒：即将到期 / 宽限期中 -->
+    <div class="attn" id="attnBox" style="display:none"></div>
+
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th style="min-width:190px">用户（邮箱）</th>
+        <th style="min-width:170px">联系方式</th>
+        <th style="width:90px">当前等级</th>
+        <th style="width:220px">到期 / 状态</th>
+        <th style="width:150px">注册时间</th>
+        <th style="width:190px">操作</th>
+      </tr></thead>
+      <tbody id="userTable"><tr class="loading"><td colspan="6">加载中...</td></tr></tbody>
+    </table></div>
+    <div class="hint">平台方只管订阅状态：把账号设为 Pro 后，发码平台 / 短链 / 水印等付费功能在该账号下同时生效（平台级统一订阅）。Pro 到期后有 <b>3 天宽限期</b>（权益保留、页面提示续费），宽限期结束由系统每天 03:00 自动降为 Free；<b>降级只改等级，历史数据保留</b>，续费即恢复。「升级 Pro / 改到期」立即生效，无需对方重新登录。</div>
+  </div>
+
+  <!-- 联系消息 -->
+  <div class="section" id="section-contacts">
+    <div class="toolbar">
+      <select id="contactFilter" onchange="loadContacts()">
+        <option value="">全部状态</option>
+        <option value="unread">未处理</option>
+        <option value="done">已处理</option>
+      </select>
+    </div>
+    <div class="table-wrap"><table>
+      <thead><tr>
+        <th style="width:150px">时间</th>
+        <th style="min-width:170px">联系方式</th>
+        <th style="width:90px">类型</th>
+        <th>留言摘要</th>
+        <th style="width:80px">状态</th>
+        <th style="width:170px">操作</th>
+      </tr></thead>
+      <tbody id="contactTable"><tr class="loading"><td colspan="6">加载中...</td></tr></tbody>
+    </table></div>
+    <div class="hint">用户通过站内「联系」表单发来的消息。点击「复制联系方式」可将对方填写的邮箱或微信号复制到剪贴板回复。</div>
+  </div>
+</div>
+
+<!-- 到期时间设置弹窗 -->
+<div class="modal" id="expiryModal">
+  <div class="modal-content" style="position:relative">
+    <button class="close-x" onclick="closeExpiry()" aria-label="关闭">&times;</button>
+    <h2 id="expTitle">升级 Pro</h2>
+    <div class="modal-sub" id="expSub">选择 Pro 到期时间，操作立即生效，无需对方重新登录。</div>
+    <div class="modal-user"><span class="mail" id="expMail"></span></div>
+    <div class="exp-presets">
+      <button class="pbtn" data-days="30"><span class="lab">30 天</span><span class="desc">按当前时间起 30 天</span></button>
+      <button class="pbtn" data-days="90"><span class="lab">90 天</span><span class="desc">按当前时间起 90 天</span></button>
+      <button class="pbtn" data-days="365"><span class="lab">一年</span><span class="desc">按当前时间起 365 天</span></button>
+      <button class="pbtn permanent" data-days="0"><span class="lab">永久</span><span class="desc">不限期（subscription_expires_at = NULL）</span></button>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-danger" id="expDowngrade" onclick="downgradeUser()" style="display:none">降级为 Free</button>
+      <button class="btn btn-ghost" onclick="closeExpiry()">取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- 登录 / 注册弹窗（与首页完全一致） -->
+<div class="modal auth-modal" id="authModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="tabs">
+        <button class="tab active" id="tabLogin" onclick="setMode('login')">登录</button>
+        <button class="tab" id="tabRegister" onclick="setMode('register')">注册</button>
+      </div>
+      <button class="modal-close" onclick="closeAuth()" aria-label="关闭">&times;</button>
+    </div>
+    <form onsubmit="return submitAuth(event)">
+      <input type="email" id="authEmail" placeholder="邮箱" autocomplete="off" />
+      <input type="password" id="authPass" placeholder="密码" autocomplete="new-password" />
+      <div class="auth-forgot" id="authForgot"><a href="/forgot">忘记密码？</a></div>
+      <div id="authNameWrap" style="display:none">
+        <input id="authName" placeholder="昵称（可选）" autocomplete="off" />
+      </div>
+      <div id="authContactWrap" style="display:none">
+        <input id="authContact" placeholder="联系方式（可选）：微信号或手机号" autocomplete="off" />
+      </div>
+      <div class="auth-error" id="authError"></div>
+      <button class="auth-submit" id="authSubmitBtn" type="submit">登录</button>
+    </form>
+    <p class="auth-tip" id="authTip"></p>
+  </div>
+</div>
+
+<script>
+// ===== 通用 =====
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function fmtTs(ts){if(!ts)return '—';return new Date(Number(ts)*1000).toLocaleString('zh-CN')}
+function fmtDate(ts){if(!ts)return '—';const d=new Date(Number(ts)*1000);const p=n=>String(n).padStart(2,'0');return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`}
+
+let sdToastT;
+function sdToast(msg){
+  let t=document.getElementById('sdToast');
+  if(!t){t=document.createElement('div');t.id='sdToast';t.className='sd-toast';document.body.appendChild(t);}
+  t.textContent=msg;t.style.display='block';
+  clearTimeout(sdToastT);sdToastT=setTimeout(()=>{t.style.display='none'},2200);
+}
+
+async function logout(){await fetch('/api/auth/logout',{method:'POST'});location.href='/'}
+
+// ===== 侧边栏导航 =====
+function setSection(name){
+  document.querySelectorAll('.menu-item').forEach(m=>m.classList.toggle('active',m.dataset.section===name));
+  document.querySelectorAll('.section').forEach(s=>s.classList.toggle('active',s.id==='section-'+name));
+  const titles={subscriptions:'订阅管理',contacts:'联系消息'};
+  document.getElementById('pageTitle').textContent=titles[name]||'平台管理';
+  if(name==='subscriptions'){loadUsers();}
+  if(name==='contacts'){loadContacts();}
+}
+document.querySelectorAll('.menu-item').forEach(item=>{
+  item.addEventListener('click',()=>setSection(item.dataset.section));
+});
+
+// ===== 顶部显示当前账号（平台方）=====
+// 未登录：弹出与首页一致的登录弹窗（不再直接跳登录页）；非平台方：提示无权限
+async function loadAccount(){
+  try{
+    const r=await fetch('/api/auth/session');const d=await r.json();
+    const mail=d.authenticated&&d.user?d.user.email:null;
+    document.getElementById('curAccount').textContent=mail||'未登录';
+    if(!mail){openAuth();return false;}
+    if(d.user.role!=='platform'){sdToast('没有平台管理权限');showDenied('没有平台管理权限');return false;}
+    return true;
+  }catch(e){document.getElementById('curAccount').textContent='—';return false;}
+}
+
+// ===== 登录 / 注册弹窗（与首页 #authModal 一致）=====
+let mode='login';
+function openAuth(){document.getElementById('authModal').classList.add('active');setMode('login')}
+function closeAuth(){document.getElementById('authModal').classList.remove('active')}
+function setMode(m){
+  mode=m;
+  document.getElementById('tabLogin').classList.toggle('active',m==='login');
+  document.getElementById('tabRegister').classList.toggle('active',m==='register');
+  document.getElementById('authNameWrap').style.display=m==='register'?'block':'none';
+  document.getElementById('authContactWrap').style.display=m==='register'?'block':'none';
+  document.getElementById('authForgot').style.display=m==='login'?'block':'none';
+  document.getElementById('authSubmitBtn').textContent=m==='login'?'登录':'注册';
+  document.getElementById('authError').style.display='none';
+  document.getElementById('authPass').autocomplete='new-password'; // 阻止浏览器“记住密码/自动填充”
+  document.getElementById('authEmail').setAttribute('autocomplete','off');
+  document.getElementById('authName').setAttribute('autocomplete','off');
+  document.getElementById('authContact').setAttribute('autocomplete','off');
+  document.getElementById('authTip').textContent=m==='login'
+    ? '还没有账号？点击上方「注册」，或直接返回继续浏览工具。'
+    : '已有账号？点击上方「登录」。注册即可使用短链与发码平台。';
+}
+async function submitAuth(ev){
+  ev.preventDefault();
+  const email=document.getElementById('authEmail').value.trim();
+  const pass=document.getElementById('authPass').value;
+  const name=document.getElementById('authName').value.trim();
+  const err=document.getElementById('authError');
+  err.style.display='none';
+  if(!email||!pass){err.textContent='请填写邮箱和密码';err.style.display='block';return}
+  const btn=document.getElementById('authSubmitBtn');
+  btn.disabled=true;const old=btn.textContent;btn.textContent='请稍候…';
+  try{
+    const url=mode==='login'?'/api/auth/login':'/api/auth/register';
+    const body=mode==='login'?{email,password:pass}:{email,password:pass,display_name:name,contact:document.getElementById('authContact').value.trim()};
+    const r=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    const d=await r.json().catch(()=>({}));
+    if(d.error||!d.success){err.textContent=d.error||'操作失败';err.style.display='block';return}
+    closeAuth();
+    location.reload();   // 登录成功：重新加载本页，按当前账号权限渲染
+  }catch(e){err.textContent='网络错误';err.style.display='block'}
+  finally{btn.disabled=false;btn.textContent=old}
+}
+document.getElementById('authModal').addEventListener('click',e=>{if(e.target.id==='authModal')closeAuth()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){closeAuth();closeExpiry();}});
+
+// ===== 订阅管理 =====
+let allUsers=[];
+let subSummary=null;
+let attnList=[];
+async function loadUsers(){
+  const tbody=document.getElementById('userTable');
+  tbody.innerHTML='<tr class="loading"><td colspan="6">加载中...</td></tr>';
+  try{
+    const r=await fetch('/api/platform/users');const d=await r.json();
+    if(d.error){showDenied(d.error);return;}
+    allUsers=d.users||[];subSummary=d.summary||null;attnList=d.attention||[];
+    renderAttention();renderUsers();
+  }catch(e){tbody.innerHTML='<tr><td colspan="6" class="empty">加载失败</td></tr>';}
+}
+// 到期状态：permanent 永久 / active 正常 / expiring 即将到期 / grace 宽限期中 / expired 待降级 / downgraded 已降级 / free
+const SUB_STATUS={
+  permanent:{t:'永久 Pro',c:'badge-perm'},
+  active:{t:'正常',c:'badge-active'},
+  expiring:{t:'即将到期',c:'badge-expiring'},
+  grace:{t:'宽限期中',c:'badge-grace'},
+  expired:{t:'已过期（待降级）',c:'badge-expired'},
+  downgraded:{t:'已降级',c:'badge-downgraded'},
+  free:{t:'免费',c:'badge-free'}
+};
+function statusBadge(u){
+  const s=SUB_STATUS[u.status]||SUB_STATUS.free;
+  return `<span class="badge ${s.c}">${s.t}</span>`;
+}
+function expiryText(u){
+  const b=statusBadge(u);
+  if(u.status==='permanent')return '<span style="color:var(--info)">不限期</span> '+b;
+  if(u.status==='downgraded')return `<span style="color:var(--muted)">已降为 Free${u.subscription_expires_at?'（原到期 '+fmtDate(u.subscription_expires_at)+'）':''}</span> `+b;
+  if(u.status==='expired')return `<span style="color:var(--danger)">${fmtDate(u.subscription_expires_at)} 已超宽限期</span> `+b;
+  if(u.status==='grace')return `<span style="color:var(--warn)">${fmtDate(u.subscription_expires_at)} 到期 · 宽限剩 ${u.grace_days_left} 天</span> `+b;
+  if(u.subscription_expires_at){
+    const d=`<span style="color:var(--muted);font-size:11px">（剩 ${u.days_left} 天）</span>`;
+    return fmtDate(u.subscription_expires_at)+d+' '+b;
+  }
+  return '<span style="color:var(--muted)">—</span> '+b;
+}
+// 即将到期 / 宽限期提醒
+function renderAttention(){
+  const box=document.getElementById('attnBox');
+  if(!box)return;
+  if(!attnList.length){box.style.display='none';return;}
+  const s=subSummary||{};
+  box.innerHTML=`<div class="attn-head">到期提醒 · 即将到期 ${s.expiring||0} 个（${s.expiring_days||7} 天内）· 宽限期中 ${s.grace||0} 个（宽限 ${s.grace_days||3} 天）</div>`+
+    attnList.map(u=>{
+      const tag=u.status==='grace'
+        ? `<span class="badge badge-grace">宽限期中</span><span class="attn-days">宽限剩 ${u.grace_days_left} 天，到期后功能保留、${s.grace_days||3} 天宽限结束自动降为 Free</span>`
+        : `<span class="badge badge-expiring">即将到期</span><span class="attn-days">${fmtDate(u.subscription_expires_at)} 到期（剩 ${u.days_left} 天）</span>`;
+      return `<div class="attn-row"><span class="attn-mail">${esc(u.email)}</span>${tag}
+        <button class="attn-btn" onclick="openExpiry('${u.id}')">续费 / 改到期</button></div>`;
+    }).join('');
+  box.style.display='block';
+}
+function renderUsers(){
+  const kw=(document.getElementById('userSearch').value||'').trim().toLowerCase();
+  const f=(document.getElementById('tierFilter')||{}).value||'';
+  const tbody=document.getElementById('userTable');
+  let list=allUsers;
+  if(kw)list=list.filter(u=>(u.email||'').toLowerCase().includes(kw));
+  if(f==='soon')list=list.filter(u=>u.status==='expiring'||u.status==='grace');
+  else if(f==='grace')list=list.filter(u=>u.status==='grace');
+  else if(f==='expiring')list=list.filter(u=>u.status==='expiring');
+  else if(f==='downgraded')list=list.filter(u=>u.status==='downgraded');
+  else if(f==='pro')list=list.filter(u=>u.is_pro);
+  if(!list.length){
+    tbody.innerHTML='<tr><td colspan="6" class="empty">'+(allUsers.length?'没有匹配的用户':'还没有注册用户')+'</td></tr>';return;
+  }
+  tbody.innerHTML=list.map(u=>{
+    const isPro=!!u.is_pro;                       // 宽限期内仍算可用 Pro
+    const contact=((u.contact||'').trim())||(u.email||'');
+    const meta=u.status==='grace'?'Pro 已到期 · 宽限期':(u.status==='downgraded'?'已降级为 Free':(isPro?'Pro 订阅':'Free 用户'));
+    const ops=isPro
+      ? `<button class="btn btn-ghost btn-sm" onclick="openExpiry('${u.id}')">${u.status==='grace'?'续费':'改到期'}</button>
+         <button class="btn btn-danger btn-sm" onclick="downgradeUser('${u.id}')">降级 Free</button>`
+      : `<button class="btn btn-pro btn-sm" onclick="openExpiry('${u.id}')">升级 Pro</button>`;
+    return `<tr>
+      <td data-label="用户" class="rd-main"><div class="u-email mono">${esc(u.email)}</div>
+        <div class="u-meta">${meta}</div></td>
+      <td data-label="联系方式"><span class="contact-cell mono">${esc(contact)}</span></td>
+      <td data-label="当前等级"><span class="badge ${isPro?'badge-pro':'badge-free'}">${isPro?'Pro':'Free'}</span></td>
+      <td data-label="到期状态">${expiryText(u)}</td>
+      <td data-label="注册时间" class="mono" style="font-size:12px;color:var(--muted);white-space:nowrap">${fmtTs(u.created_at)}</td>
+      <td data-label="操作" class="rd-ops"><div class="cell-actions">${ops}</div></td>
+    </tr>`;
+  }).join('');
+}
+
+// 到期弹窗
+let curUserId=null;
+function openExpiry(userId){
+  const u=allUsers.find(x=>x.id===userId);if(!u)return;
+  curUserId=userId;
+  const isPro=!!u.is_pro;
+  document.getElementById('expTitle').textContent=isPro?(u.status==='grace'?'续费（宽限期中）':'修改到期时间'):'升级 Pro';
+  const sub=document.getElementById('expSub');
+  if(sub)sub.textContent=u.status==='grace'
+    ? `Pro 已于 ${fmtDate(u.subscription_expires_at)} 到期，宽限期还剩 ${u.grace_days_left} 天；重新设置到期时间即恢复 Pro。`
+    : '选择 Pro 到期时间，操作立即生效，无需对方重新登录。';
+  document.getElementById('expMail').textContent=u.email;
+  const dw=document.getElementById('expDowngrade');
+  dw.style.display=isPro?'inline-flex':'none';
+  document.querySelectorAll('.pbtn').forEach(b=>{
+    b.onclick=()=>applyProDays(parseInt(b.dataset.days,10),u.email);
+  });
+  document.getElementById('expiryModal').classList.add('active');
+}
+function closeExpiry(){document.getElementById('expiryModal').classList.remove('active');curUserId=null;}
+async function applyProDays(days,email){
+  if(!curUserId)return;
+  const label=days===0?'永久':(days>=365?'一年':days+' 天');
+  try{
+    const r=await fetch('/api/platform/users',{
+      method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id:curUserId,tier:'pro',days})
+    });
+    const d=await r.json();
+    if(d.error){sdToast(d.error);return;}
+    closeExpiry();sdToast('已将 '+email+' 设为 Pro（'+label+'）');loadUsers();
+  }catch(e){sdToast('操作失败，请重试');}
+}
+async function downgradeUser(userId){
+  const id=userId||curUserId;if(!id)return;
+  const u=allUsers.find(x=>x.id===id);const mail=u?u.email:'';
+  if(!confirm('确认将该账号降级为 Free？降级后立即生效，付费功能将关闭。'))return;
+  try{
+    const r=await fetch('/api/platform/users',{
+      method:'PUT',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({user_id:id,tier:'free',days:0})
+    });
+    const d=await r.json();
+    if(d.error){sdToast(d.error);return;}
+    closeExpiry();sdToast('已将 '+mail+' 降级为 Free');loadUsers();
+  }catch(e){sdToast('操作失败，请重试');}
+}
+
+// ===== 联系消息 =====
+const TYPE_CN={privacy:'隐私相关请求',upgrade:'升级 Pro',technical:'技术问题',other:'其他'};
+function typeLabel(t){return TYPE_CN[t]||'其他'}
+function fmtMsgTime(ts){return fmtTs(ts)}
+async function loadContacts(){
+  const tbody=document.getElementById('contactTable');
+  tbody.innerHTML='<tr class="loading"><td colspan="6">加载中...</td></tr>';
+  try{
+    const r=await fetch('/api/platform/contacts');const d=await r.json();
+    if(d.error){showDenied(d.error);return;}
+    const filter=document.getElementById('contactFilter').value;
+    let list=(d.contacts||[]).slice();
+    if(filter==='unread')list=list.filter(c=>c.status!=='done');
+    else if(filter==='done')list=list.filter(c=>c.status==='done');
+    if(!list.length){tbody.innerHTML='<tr><td colspan="6" class="empty">'+(d.contacts&&d.contacts.length?'没有该状态的联系消息':'还没有联系消息')+'</td></tr>';return;}
+    tbody.innerHTML=list.map(c=>`
+      <tr style="${c.status==='done'?'opacity:.55':''}">
+        <td data-label="时间" class="mono" style="font-size:12px;white-space:nowrap">${fmtMsgTime(c.created_at)}</td>
+        <td data-label="联系方式" class="rd-main">
+          <div class="u-email mono" style="font-size:13px">${esc(c.email)}</div>
+          <div class="u-meta">${c.user_id?'已登录用户':'游客'}</div>
+        </td>
+        <td data-label="类型">${esc(typeLabel(c.type))}</td>
+        <td data-label="留言" class="c-msg" title="${esc(c.message)}">${esc(c.message.length>90?c.message.slice(0,90)+'…':c.message)}</td>
+        <td data-label="状态"><span class="badge ${c.status==='done'?'badge-done':'badge-unread'}">${c.status==='done'?'已处理':'未处理'}</span></td>
+        <td data-label="操作" class="rd-ops"><div class="cell-actions">
+          <button class="btn btn-ghost btn-sm c-copy" data-email="${esc(c.email)}">复制联系方式</button>
+          ${c.status!=='done'?`<button class="btn btn-sm c-done" data-id="${c.id}">标记已处理</button>`:''}
+          <button class="btn btn-danger btn-sm c-del" data-id="${c.id}">删除</button>
+        </div></td>
+      </tr>`).join('');
+  }catch(e){tbody.innerHTML='<tr><td colspan="6" class="empty">加载失败</td></tr>';}
+}
+document.addEventListener('click',(e)=>{
+  const cp=e.target.closest('.c-copy');if(cp){copyContact(cp.dataset.email);return;}
+  const dn=e.target.closest('.c-done');if(dn){markDone(dn.dataset.id);return;}
+  const dl=e.target.closest('.c-del');if(dl){delContact(dl.dataset.id);return;}
+});
+async function copyContact(email){
+  try{await navigator.clipboard.writeText(email);sdToast('已复制联系方式：'+email);}
+  catch(e){
+    const ta=document.createElement('textarea');ta.value=email;document.body.appendChild(ta);ta.select();
+    try{document.execCommand('copy');sdToast('已复制联系方式：'+email);}
+    catch(_){sdToast('复制失败，请手动复制：'+email);}
+    ta.remove();
+  }
+}
+async function markDone(id){
+  try{await fetch('/api/platform/contacts/'+id,{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'done'})});loadContacts();}
+  catch(e){sdToast('操作失败');}
+}
+async function delContact(id){
+  if(!confirm('删除这条联系消息，确认？'))return;
+  try{await fetch('/api/platform/contacts/'+id,{method:'DELETE'});loadContacts();}
+  catch(e){sdToast('操作失败');}
+}
+
+// ===== 错误提示 / 鉴权 =====
+function showDenied(msg){
+  document.querySelectorAll('#userTable,#contactTable').forEach(t=>{
+    if(t){t.innerHTML=`<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:40px">${esc(msg||'没有平台管理权限')}</td></tr>`;}
+  });
+}
+
+// ===== 启动 =====
+document.getElementById('expiryModal').addEventListener('click',e=>{if(e.target.id==='expiryModal')closeExpiry()});
+// 未登录先弹登录框（与首页一致），登录后再拉列表，避免无权限的红色报错行闪现
+(async function(){ if(await loadAccount()) loadUsers(); })();
+</script>
+</body>
+</html>

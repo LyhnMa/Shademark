@@ -1,0 +1,1238 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>水印工具 — Shademark</title>
+<link rel="icon" href="/logo.png" type="image/png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --bg:#0d0d0f;--surface:#101014;--panel:#17171b;--elevated:#1e1e28;--border:#2a2a33;
+  --text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;--accent2:#5a4fd0;
+  --success:#4ade80;--warn:#ffd166;--error:#f87171;--radius:12px;--radius-sm:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+.app-header{height:60px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:24px;padding:0 24px;position:relative;z-index:100;flex-shrink:0}
+.brand{display:flex;align-items:center;flex-shrink:0}
+.brand a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand img{width:32px;height:32px;border-radius:8px;object-fit:contain}
+.brand-text{font-size:18px;font-weight:700;background:linear-gradient(135deg,#fff 0%,#c4b5fd 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+/* 顶栏工具导航（主页排布：紧跟 Shademark） */
+.nav-tools{display:flex;align-items:center;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.nav-tools::-webkit-scrollbar{display:none}
+.nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap;flex-shrink:0}
+.nav-tools a:hover{color:var(--text);background:#141419}
+/* 口号徽标：顶栏水平居中悬浮（空间不足自动隐藏，防重叠） */
+.brand-slogan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;pointer-events:none;z-index:1}
+.brand-slogan span{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:20px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.mode-switch{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;gap:4px;margin-left:auto}.mode-btn{padding:8px 18px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.mode-btn:hover{color:var(--text)}
+.mode-btn.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(124,108,240,0.3)}
+.app-body{display:flex;height:calc(100vh - 60px);overflow:hidden}
+.sidebar{width:372px;min-width:372px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-scroll{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px}
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.panel-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.form-group{margin-bottom:16px}.form-group:last-child{margin-bottom:0}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
+input[type="text"],input[type="number"],select,input[type="email"]{width:100%;padding:10px 12px;background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;outline:none;transition:border-color 0.2s}
+input:focus,select:focus{border-color:var(--accent)}
+input[type="range"]{width:100%;accent-color:var(--accent);margin-top:4px}
+input[type="color"]{width:100%;height:38px;padding:4px;background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer}
+input[type="checkbox"]{accent-color:var(--accent)}
+.range-value{min-width:52px;text-align:right;font-size:12px;color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}
+.hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
+.color-row{display:flex;gap:8px;align-items:center}
+.color-row input[type="color"]{flex:1}
+.color-swatch{width:30px;height:30px;border-radius:6px;border:1px solid var(--border);cursor:pointer;flex-shrink:0;transition:transform .15s}
+.color-swatch:hover{transform:scale(1.15)}
+.row2{display:flex;gap:10px;align-items:flex-end}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:40px 20px;text-align:center;transition:all 0.2s;cursor:pointer;background:var(--surface)}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(124,108,240,0.06)}
+.upload-zone.compact{padding:16px;display:flex;align-items:center;gap:14px;text-align:left}
+.upload-icon{font-size:32px;margin-bottom:12px;opacity:0.5;flex-shrink:0}
+.upload-zone.compact .upload-icon{font-size:24px;margin:0}
+.upload-zone.large{padding:40px 20px;min-height:150px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.upload-zone.large .upload-icon{font-size:36px;margin:0}
+.upload-text{color:var(--muted);font-size:14px}.upload-text strong{color:var(--text)}
+.bridge-btn{width:100%;margin-top:10px;padding:10px;border:1px dashed var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.bridge-btn:hover{color:var(--accent);border-color:var(--accent);background:rgba(124,108,240,.06)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(124,108,240,0.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,108,240,0.4)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--elevated);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:#25252f}
+.btn-block{width:100%}
+.content-header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);flex-shrink:0}
+.content-title{font-size:16px;font-weight:700}.content-meta{color:var(--muted);font-size:13px}
+.file-list{flex:1;overflow-y:auto}
+.file-table{width:100%;border-collapse:collapse;font-size:13px}
+.file-table th{text-align:left;padding:12px 24px;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:10}
+.file-table td{padding:12px 24px;border-bottom:1px solid var(--border);color:var(--muted);vertical-align:middle}
+.file-table tr:hover td{background:rgba(255,255,255,0.02)}
+.file-table tr.selected td{background:rgba(124,108,240,0.08)}
+.file-table tr.dragging{opacity:.35}
+.file-table tr.drag-over td{border-top:2px solid var(--accent)}
+.file-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;background:var(--elevated);border:1px solid var(--border)}
+.file-name{color:var(--text);font-weight:500;word-break:break-all}
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:700;text-transform:uppercase}
+.badge-main{background:rgba(124,108,240,0.16);color:#c4b5fd}
+.badge-detail{background:rgba(74,222,128,0.14);color:#86efac}
+.badge-banner{background:rgba(255,209,102,0.14);color:#fde68a}
+.badge-other{background:var(--elevated);color:var(--muted)}
+.status-pending{color:var(--muted)}.status-processing{color:var(--accent)}.status-done{color:var(--success)}.status-error{color:var(--error)}.status-stale{color:var(--warn)}
+.preview-area{height:230px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;flex-shrink:0}
+.preview-placeholder{color:var(--muted);font-size:14px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.preview-canvas{max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--radius-sm);box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+.preview-label{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.7);padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.preview-actions{position:absolute;top:12px;right:12px;display:flex;gap:8px;z-index:5}
+.preview-actions .btn{width:auto;padding:6px 14px;font-size:12px}
+.progress-bar{height:3px;background:var(--elevated);border-radius:2px;overflow:hidden;margin-top:12px}
+.progress-fill{height:100%;background:var(--accent);transition:width 0.3s ease;border-radius:2px}
+.pos-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;margin-top:8px}
+.pos-cell{aspect-ratio:1;background:var(--elevated);border:1px solid var(--border);border-radius:6px;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;font-size:12px;color:var(--muted)}
+.pos-cell:hover{border-color:var(--accent)}
+.pos-cell.active{background:var(--accent);border-color:transparent;color:#fff;font-weight:700}
+.pos-cell.locked{opacity:0.3;cursor:not-allowed;position:relative}
+.pos-cell.locked::after{content:'🔒';position:absolute;font-size:8px}
+.extract-result{background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-top:12px}
+.extract-result.success{border-color:var(--success)}.extract-result.fail{border-color:var(--error)}
+.extract-title{font-weight:700;margin-bottom:8px;font-size:13px}
+.extract-data{font-family:"SF Mono",Monaco,monospace;font-size:12px;background:var(--bg);padding:10px;border-radius:6px;word-break:break-all;color:var(--accent)}
+.toggle-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.toggle-label{font-size:13px;color:var(--text)}
+.toggle-switch{width:40px;height:22px;background:var(--elevated);border-radius:11px;position:relative;cursor:pointer;border:1px solid var(--border);transition:background 0.2s;flex-shrink:0}
+.toggle-switch.on{background:var(--accent);border-color:transparent}
+.toggle-switch::after{content:'';position:absolute;width:16px;height:16px;background:#fff;border-radius:50%;top:2px;left:2px;transition:transform 0.2s;box-shadow:0 1px 3px rgba(0,0,0,0.3)}
+.toggle-switch.on::after{transform:translateX(18px)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.animate-in{animation:fadeIn 0.3s ease}
+.drop-overlay{position:fixed;inset:0;background:rgba(13,13,15,0.85);backdrop-filter:blur(4px);z-index:9998;display:none;align-items:center;justify-content:center;pointer-events:none}
+.drop-overlay.show{display:flex}
+.drop-overlay-box{border:2px dashed var(--accent);border-radius:16px;padding:48px 64px;text-align:center;background:rgba(124,108,240,0.08)}
+.drop-overlay-box .icon{font-size:48px;margin-bottom:12px}
+.drop-overlay-box .text{font-size:18px;font-weight:700}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--elevated);color:var(--muted);cursor:pointer;font-size:13px;transition:all .15s;margin-right:4px}
+.icon-btn:hover{color:var(--text);border-color:var(--accent)}
+.icon-btn.dl:hover{color:var(--success);border-color:var(--success)}
+.icon-btn.del:hover{color:var(--error);border-color:var(--error)}
+.icon-btn.move:hover{color:var(--accent);border-color:var(--accent)}
+.seq-cell{font-family:"SF Mono",Monaco,monospace;font-size:13px;color:var(--accent);font-weight:700;white-space:nowrap}
+.drag-grip{cursor:grab;color:var(--muted);opacity:.55;user-select:none;margin-right:8px;font-size:13px;letter-spacing:-2px}
+.drag-grip:hover{opacity:1;color:var(--accent)}
+.out-name{color:var(--accent);font-family:"SF Mono",Monaco,monospace;font-size:11px}
+.extract-preview{position:relative;display:inline-block;line-height:0}
+.extract-preview img{max-width:100%;max-height:160px;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.4)}
+.extract-close{position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;border:1px solid var(--border);background:var(--elevated);color:var(--muted);font-size:11px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;box-shadow:0 2px 8px rgba(0,0,0,0.4)}
+.extract-close:hover{background:var(--error);color:#fff;border-color:transparent}
+.upload-zone.dragover{border-color:var(--accent);background:rgba(124,108,240,0.12);transform:scale(1.01)}
+@keyframes spin{to{transform:rotate(360deg)}}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:16px;padding:40px}
+.empty-state .icon{font-size:48px;opacity:0.3}
+/* 顶栏口号悬浮居中：空间不足（会与左右内容重叠）时自动隐藏 */
+@media(max-width:1350px){
+  .brand-slogan{display:none}
+}
+@media(max-width:1020px){
+  html,body{overflow:auto;height:auto;min-height:100%}
+  .app-header{height:auto;min-height:60px;flex-wrap:wrap;padding:10px 14px;gap:10px}
+  .nav-tools{display:none}
+  .app-body{flex-direction:column;height:auto!important;overflow:visible}
+  .sidebar{width:100%;min-width:0;border-right:none;border-bottom:1px solid var(--border)}
+  .sidebar-scroll{padding:16px}
+  .main-content{overflow:visible}
+  .file-list{overflow-x:auto}
+  .content-header{padding:12px 16px;flex-wrap:wrap;gap:10px}
+  .preview-area{height:200px}
+  .mode-btn{padding:8px 12px;font-size:12px}
+}
+
+/* —— 登录弹窗（未登录点「发码 / 短链」时弹出，规格同首页）—— */
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(6,6,9,.72);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal.active{display:flex}
+.modal-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:380px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.modal .tabs{display:flex;gap:6px}
+.modal .tab{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.modal .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.modal-close{background:none;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
+.modal-close:hover{color:var(--text)}
+.modal-card input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:11px 12px;font-size:14px;outline:none;margin-bottom:12px;min-height:44px;font-family:inherit}
+.modal-card input:focus{border-color:var(--accent)}
+.auth-submit{width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;transition:filter .2s;min-height:46px;font-family:inherit}
+.auth-submit:hover{filter:brightness(.9)}
+.auth-submit:disabled{opacity:.5}
+.auth-error{color:var(--error);font-size:13px;margin:-4px 0 12px;display:none}
+.auth-forgot{display:none;text-align:right;margin:-6px 0 12px}
+.auth-forgot a{color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(138,138,148,.45);transition:color .2s,text-decoration-color .2s}
+.auth-forgot a:hover{color:var(--accent);text-decoration-color:var(--accent)}
+.auth-tip{color:var(--muted);font-size:12px;margin-top:12px;text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="brand">
+    <a href="/"><img src="/logo.png" alt="Shademark"><span class="brand-text">Shademark</span></a>
+  </div>
+  <div class="nav-tools">
+    <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/admin" data-gate="1">发码</a><a href="/links" data-gate="1">短链</a>
+  </div>
+  <div class="brand-slogan"><span>🔒 文件不离本地</span><span>🛡️ 水印加工 / 隐形追踪</span></div>
+  <div class="mode-switch">
+    <button class="mode-btn active" data-mode="commerce" onclick="App.switchMode('commerce')"><span>🛡️</span>水印加工</button>
+    <button class="mode-btn" data-mode="stealth" onclick="App.switchMode('stealth')"><span>🕵️</span>隐形追踪</button>
+  </div>
+</div>
+
+<div class="app-body">
+  <aside class="sidebar">
+    <div class="sidebar-scroll" id="sidebarContent"></div>
+  </aside>
+  <main class="main-content">
+    <div class="content-header">
+      <div>
+        <div class="content-title" id="contentTitle">文件队列</div>
+        <div class="content-meta" id="contentMeta">拖拽图片到页面任意位置，或点击左侧上传</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:13px;border-style:dashed" onclick="App.sendToCompress()" id="btnToCompress" disabled title="把文件送往压缩工具继续优化体积（已处理送成品，未处理送原图）">送进压缩工具 →</button>
+        <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:13px;" onclick="App.clearFiles()" id="btnClear" disabled>清空</button>
+        <button class="btn btn-primary" style="width:auto;padding:8px 16px;font-size:13px;" onclick="App.downloadZip()" id="btnDownload" disabled>⬇️ 打包下载</button>
+      </div>
+    </div>
+    <div class="file-list" id="fileListArea">
+      <div class="empty-state" id="emptyState">
+        <div class="icon">🛡️</div>
+        <div>暂无文件，请从左侧上传或拖拽图片到页面</div>
+        <div style="font-size:12px;opacity:.7">批量加水印 / 隐形追踪 → 调整顺序自动编号 → 打包下载</div>
+      </div>
+      <table class="file-table" id="fileTable" style="display:none;">
+        <thead><tr>
+          <th style="width:56px">序号</th>
+          <th style="width:60px">预览</th>
+          <th>文件名</th>
+          <th style="width:96px">尺寸</th>
+          <th style="width:86px">分类</th>
+          <th style="width:88px">状态</th>
+          <th style="width:92px">输出大小</th>
+          <th style="width:150px">排序 / 操作</th>
+        </tr></thead>
+        <tbody id="fileTableBody"></tbody>
+      </table>
+    </div>
+    <div class="preview-area" id="previewArea">
+      <div class="preview-placeholder" id="previewPlaceholder"><span style="font-size:24px">👁️</span><span>点击文件列表中的图片可预览水印效果</span></div>
+      <canvas id="previewCanvas" class="preview-canvas" style="display:none;"></canvas>
+      <div class="preview-label" id="previewLabel" style="display:none;">预览</div>
+      <div class="preview-actions" id="previewActions" style="display:none;">
+        <button class="btn btn-secondary" onclick="App.downloadSingle()">⬇️ 下载此图</button>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="drop-overlay" id="dropOverlay"><div class="drop-overlay-box"><div class="icon">🛡️</div><div class="text">释放鼠标，上传图片</div></div></div>
+
+<script>
+// ===================== 配置区（只改这里）=====================
+const CONFIG = {
+  API_BASE: 'https://shademark-api.mowl0311.workers.dev',
+};
+
+// ===================== 跨页面桥接（与 /compress 互通）=====================
+const BRIDGE_KEY = 'shademark_file_bridge';
+function bridgeRead() {
+  try {
+    const raw = sessionStorage.getItem(BRIDGE_KEY);
+    if (!raw) return null;
+    sessionStorage.removeItem(BRIDGE_KEY);
+    const d = JSON.parse(raw);
+    if (!d || !Array.isArray(d.files)) return null;
+    return d;
+  } catch (e) { console.warn('桥接读取失败', e); return null; }
+}
+function bridgeWrite(from, files) {
+  try { sessionStorage.setItem(BRIDGE_KEY, JSON.stringify({ from, files })); return true; }
+  catch (e) { console.warn('桥接写入失败', e); alert('文件体积过大，sessionStorage 无法暂存。请先用「打包下载」保存，再到另一工具里直接上传。'); return false; }
+}
+function dataUrlToBlob(dataUrl) {
+  const [head, b64] = dataUrl.split(',');
+  const mime = /data:(.*?);/.exec(head)?.[1] || 'application/octet-stream';
+  const bin = atob(b64); const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+function blobToDataUrl(blob) {
+  return new Promise((resolve) => { const r = new FileReader(); r.onload = (e) => resolve(e.target.result); r.readAsDataURL(blob); });
+}
+function blobToFile(blob, name) { return new File([blob], name, { type: blob.type || 'image/png' }); }
+
+// ===================== APP =====================
+const App = {
+  mode: 'commerce',
+  files: [],
+  selectedId: null,
+  isProcessing: false,
+  deviceId: null,
+
+  settings: {
+    commerce: {
+      watermarkText: '© Shademark', position: 'bottom-right', opacity: 0.7,
+      fontSize: 48, rotation: 0, targetSizeMB: 2, outputFormat: 'jpeg', color: '#ffffff',
+      renameTemplate: '{prefix}_{index}_{ratio}', prefix: 'SKU', startIndex: 1,
+      autoClassify: true, padding: 24
+    },
+    stealth: { traceId: '' }
+  },
+
+  async init() {
+    this.initDeviceId();
+    this.renderSidebar();
+    this.setupDragDrop();
+    const params = new URLSearchParams(location.search);
+    if (params.get('from') === 'compress') this.importFromCompress();
+  },
+
+  // ---- 设备ID（每台浏览器唯一）----
+  initDeviceId() {
+    let id = localStorage.getItem('shademark_device_id');
+    if (!id) {
+      id = 'dev_' + Math.random().toString(36).substr(2, 12) + '_' + Date.now();
+      localStorage.setItem('shademark_device_id', id);
+    }
+    this.deviceId = id;
+  },
+
+  switchMode(mode) {
+    this.mode = mode;
+    document.querySelectorAll('.mode-btn').forEach(b => b.classList.toggle('active', b.dataset.mode === mode));
+    this.renderSidebar();
+    this.updateContentMeta();
+    this.renderFileList();
+    this.clearPreview();
+  },
+
+  renderSidebar() {
+    document.getElementById('sidebarContent').innerHTML =
+      this.mode === 'commerce' ? this.renderCommerceSidebar() : this.renderStealthSidebar();
+    this.mode === 'commerce' ? this.bindCommerceEvents() : this.bindStealthEvents();
+  },
+
+  renderCommerceSidebar() {
+    const s = this.settings.commerce;
+    const posLabels = {'top-left':'↖','top-center':'↑','top-right':'↗','center-left':'←','center':'•','center-right':'→','bottom-left':'↙','bottom-center':'↓','bottom-right':'↘'};
+    let posGrid = '';
+    for (const p of ['top-left','top-center','top-right','center-left','center','center-right','bottom-left','bottom-center','bottom-right']) {
+      const isActive = s.position === p;
+      posGrid += `<div class="pos-cell ${isActive?'active':''}" data-pos="${p}">${posLabels[p]}</div>`;
+    }
+    return `
+      <div class="panel animate-in">
+        <div class="upload-zone compact" id="uploadZone">
+          <div class="upload-icon">🛡️</div>
+          <div class="upload-text"><strong>点击上传</strong> 或拖拽图片到页面任意位置<br><small style="opacity:0.6">支持 JPG / PNG / WebP，可批量</small></div>
+          <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
+        </div>
+      </div>
+      <div class="panel animate-in">
+        <div class="panel-title">✏️ 水印设置</div>
+        <div class="form-group">
+          <label class="form-label">水印内容</label>
+          <input type="text" id="wmText" value="${s.watermarkText}">
+          <div class="hint">写入 {index} 可在图片上显示该图序号，如 No.{index}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">水印颜色</label>
+          <div class="color-row">
+            <input type="color" id="wmColor" value="${s.color}">
+            <div class="color-swatch" data-color="#ffffff" style="background:#ffffff" title="白色"></div>
+            <div class="color-swatch" data-color="#000000" style="background:#000000" title="黑色"></div>
+            <div class="color-swatch" data-color="#f87171" style="background:#f87171" title="红色"></div>
+            <div class="color-swatch" data-color="#7c6cf0" style="background:#7c6cf0" title="品牌紫"></div>
+          </div>
+          <div class="hint">浅色底图片建议用深色水印，反之用白色</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">水印位置</label>
+          <div class="pos-grid" id="posGrid">${posGrid}</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">透明度 <span class="range-value" id="valOpacity">${Math.round(s.opacity*100)}%</span></label>
+          <input type="range" id="opacity" min="0" max="100" value="${Math.round(s.opacity*100)}">
+          <div class="hint">0% = 不透明，100% = 完全透明</div>
+        </div>
+        <div class="row2" style="gap:14px;align-items:center;">
+          <div class="form-group" style="flex:1;margin-bottom:0;">
+            <label class="form-label">字体大小 <span class="range-value" id="valFontSize">${s.fontSize}px</span></label>
+            <input type="range" id="fontSize" min="12" max="200" value="${s.fontSize}">
+          </div>
+          <div class="form-group" style="flex:1;margin-bottom:0;">
+            <label class="form-label">旋转 <span class="range-value" id="valRotation">${s.rotation}°</span></label>
+            <input type="range" id="rotation" min="-180" max="180" value="${s.rotation}">
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0;">
+          <label class="form-label">边距 <span class="range-value" id="valPadding">${s.padding}px</span></label>
+          <input type="range" id="padding" min="0" max="100" value="${s.padding}">
+        </div>
+      </div>
+      <div class="panel animate-in">
+        <div class="panel-title">⚙️ 输出设置</div>
+        <div class="form-group">
+          <label class="form-label">输出格式</label>
+          <select id="outputFormat">
+            <option value="jpeg" ${s.outputFormat==='jpeg'?'selected':''}>JPEG（小体积）</option>
+            <option value="png" ${s.outputFormat==='png'?'selected':''}>PNG（无损）</option>
+            <option value="webp" ${s.outputFormat==='webp'?'selected':''}>WebP（现代）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">目标大小 <span class="range-value" id="valTargetSize">${s.targetSizeMB}MB</span></label>
+          <input type="range" id="targetSize" min="0.1" max="10" step="0.1" value="${s.targetSizeMB}">
+          <div class="hint">0.1MB = 100KB。设为 0 则关闭压缩。</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">重命名模板</label>
+          <input type="text" id="renameTemplate" value="${s.renameTemplate}">
+          <div class="hint">可用变量：{prefix} {index} {ratio} {width} {height}。{index} 为列表序号，自动补零（01、02、03…），调整顺序后会重新编号。</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">前缀 / 起始序号</label>
+          <div style="display:flex;gap:8px;">
+            <input type="text" id="prefix" value="${s.prefix}" style="flex:1">
+            <input type="number" id="startIndex" value="${s.startIndex}" style="width:80px" min="0">
+          </div>
+        </div>
+        <div class="toggle-row" style="margin-bottom:0;">
+          <span class="toggle-label">自动分类打包</span>
+          <div class="toggle-switch ${s.autoClassify?'on':''}" id="toggleClassify"></div>
+        </div>
+      </div>
+      <div class="panel animate-in" style="margin-top:auto;">
+        <button class="btn btn-primary btn-block" id="btnProcess" onclick="App.processBatch()">🚀 开始处理</button>
+        <div class="progress-bar" id="progressBar" style="display:none;"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="hint" style="text-align:center;margin-top:8px;" id="processHint"></div>
+        <div class="hint" style="margin-top:8px;">💡 已处理的图片在修改设置后会标记为「可更新」，再次点击开始处理将基于原图按新设置覆盖旧结果。</div>
+      </div>
+    `;
+  },
+
+  renderStealthSidebar() {
+    const s = this.settings.stealth;
+    return `
+      <div class="panel animate-in">
+        <div class="panel-title">🔏 嵌入追踪</div>
+        <div class="upload-zone compact" id="uploadZone" style="margin-bottom:16px;">
+          <div class="upload-icon">🕵️</div>
+          <div class="upload-text"><strong>点击上传</strong> 或拖拽到页面任意位置<br><small style="opacity:0.6">支持 PNG（推荐）、JPG</small></div>
+          <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
+        </div>
+        <div class="form-group" style="margin-top:14px">
+          <label class="form-label">追踪 ID</label>
+          <input type="text" id="traceId" value="${s.traceId}" placeholder="例如：zhangsan_20260829_logo_v3">
+          <div class="hint">建议格式：客户名_日期_版本</div>
+        </div>
+        <button class="btn btn-primary btn-block" id="btnEmbed" onclick="App.embedStealth()">🔒 嵌入隐形水印</button>
+        <div class="hint" style="margin-top:8px;">输出格式强制为 PNG。已嵌入的图片在修改追踪 ID 后标记为「可更新」，再次嵌入将覆盖旧水印。</div>
+      </div>
+      <div class="panel animate-in">
+        <div class="panel-title">🔍 提取追踪</div>
+        <input type="file" id="extractInput" accept="image/*" style="display:none">
+        <div class="upload-zone large" id="extractZone">
+          <div id="extractPlaceholder" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
+            <div class="upload-icon">🔍</div>
+            <div class="upload-text" style="text-align:center;"><strong>拖拽疑似泄露的图片到此处</strong><br>或点击上传<br><small style="opacity:0.6">将解析图片中是否嵌入了 Shademark 隐形水印</small></div>
+          </div>
+          <div class="extract-preview" id="extractPreview" style="display:none;">
+            <img id="extractPreviewImg" alt="待提取图片">
+            <button class="extract-close" onclick="event.stopPropagation();App.clearExtract()" title="关闭，进行下一张提取">✕</button>
+          </div>
+        </div>
+        <div id="extractResult"></div>
+      </div>
+    `;
+  },
+
+  bindCommerceEvents() {
+    const s = this.settings.commerce;
+    document.getElementById('uploadZone').onclick = () => document.getElementById('fileInput').click();
+    document.getElementById('fileInput').onchange = (e) => { this.handleFiles(e.target.files); e.target.value = ''; };
+    this.bindZoneHighlight('uploadZone');
+
+    document.querySelectorAll('.pos-cell').forEach(cell => {
+      cell.onclick = () => {
+        document.querySelectorAll('.pos-cell').forEach(c => c.classList.remove('active'));
+        cell.classList.add('active');
+        s.position = cell.dataset.pos;
+        this.onCommerceChange();
+      };
+    });
+
+    const bindSlider = (id, key, suffix, scale=1) => {
+      const el = document.getElementById(id);
+      const valEl = document.getElementById('val' + key.charAt(0).toUpperCase() + key.slice(1));
+      el.oninput = () => { s[key] = parseFloat(el.value) * scale; if (valEl) valEl.textContent = el.value + suffix; this.onCommerceChange(); };
+    };
+    bindSlider('opacity', 'opacity', '%', 0.01);
+    bindSlider('fontSize', 'fontSize', 'px');
+    bindSlider('rotation', 'rotation', '°');
+    bindSlider('padding', 'padding', 'px');
+    bindSlider('targetSize', 'targetSizeMB', 'MB');
+
+    document.getElementById('wmText').oninput = (e) => { s.watermarkText = e.target.value; this.onCommerceChange(); };
+    document.getElementById('wmColor').oninput = (e) => { s.color = e.target.value; this.onCommerceChange(); };
+    document.querySelectorAll('.color-swatch').forEach(sw => {
+      sw.onclick = () => { s.color = sw.dataset.color; document.getElementById('wmColor').value = s.color; this.onCommerceChange(); };
+    });
+    document.getElementById('outputFormat').onchange = (e) => { s.outputFormat = e.target.value; this.onCommerceChange(); };
+    document.getElementById('renameTemplate').oninput = (e) => { s.renameTemplate = e.target.value; this.renumberDone(); this.renderFileList(); };
+    document.getElementById('prefix').oninput = (e) => { s.prefix = e.target.value; this.renumberDone(); this.renderFileList(); };
+    document.getElementById('startIndex').oninput = (e) => { s.startIndex = parseInt(e.target.value); if (isNaN(s.startIndex) || s.startIndex < 0) s.startIndex = 0; this.renumberDone(); this.renderFileList(); };
+
+    document.getElementById('toggleClassify').onclick = function() {
+      this.classList.toggle('on'); s.autoClassify = this.classList.contains('on');
+    };
+  },
+
+  bindStealthEvents() {
+    document.getElementById('uploadZone').onclick = () => document.getElementById('fileInput').click();
+    document.getElementById('fileInput').onchange = (e) => { this.handleFiles(e.target.files); e.target.value = ''; };
+    this.bindZoneHighlight('uploadZone');
+    this.bindZoneHighlight('extractZone');
+    document.getElementById('traceId').oninput = (e) => { this.settings.stealth.traceId = e.target.value; this.renderFileList(); this.updateContentMeta(); };
+    document.getElementById('extractZone').onclick = () => document.getElementById('extractInput').click();
+    document.getElementById('extractInput').onchange = (e) => { if (e.target.files[0]) this.extractStealth(e.target.files[0]); e.target.value = ''; };
+  },
+
+  setupDragDrop() {
+    let depth = 0;
+    const overlay = document.getElementById('dropOverlay');
+    const hasFiles = (e) => e.dataTransfer && Array.from(e.dataTransfer.types || []).includes('Files');
+
+    window.addEventListener('dragenter', (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      depth++;
+      overlay.classList.add('show');
+    });
+    window.addEventListener('dragover', (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault(); // 必须阻止默认行为，drop 才会触发
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+    });
+    window.addEventListener('dragleave', (e) => {
+      if (!hasFiles(e)) return;
+      depth = Math.max(0, depth - 1);
+      if (depth === 0) overlay.classList.remove('show');
+    });
+    window.addEventListener('drop', (e) => {
+      if (!hasFiles(e)) return;
+      e.preventDefault();
+      depth = 0;
+      overlay.classList.remove('show');
+      document.querySelectorAll('.upload-zone.dragover').forEach(z => z.classList.remove('dragover'));
+      // 隐形追踪模式：拖入“提取追踪”区域 → 直接解析水印
+      const extractZone = document.getElementById('extractZone');
+      if (this.mode === 'stealth' && extractZone && extractZone.contains(e.target)) {
+        const f = e.dataTransfer.files[0];
+        if (f) this.extractStealth(f);
+        return;
+      }
+      if (e.dataTransfer.files.length) this.handleFiles(e.dataTransfer.files);
+    });
+  },
+
+  // 上传区视觉反馈（侧边栏每次重渲染后重新绑定）
+  bindZoneHighlight(zoneId) {
+    const zone = document.getElementById(zoneId);
+    if (!zone) return;
+    ['dragenter', 'dragover'].forEach(ev => zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.add('dragover'); }));
+    ['dragleave', 'drop'].forEach(ev => zone.addEventListener(ev, () => zone.classList.remove('dragover')));
+  },
+
+  async handleFiles(fileList) {
+    const newFiles = Array.from(fileList).filter(f => f.type.startsWith('image/'));
+    if (!newFiles.length) {
+      if (fileList && fileList.length) alert('仅支持图片文件（JPG / PNG / WebP 等）');
+      return;
+    }
+    if (this.files.length + newFiles.length > 200) { alert('单次最多导入 200 张，请分批处理。'); return; }
+    for (const file of newFiles) {
+      if (file.size > 50*1024*1024) { alert(`「${file.name}」超过 50MB 上限，已跳过。`); continue; }
+      const id = 'f_' + Math.random().toString(36).substr(2, 9);
+      const item = { id, file, name: file.name, size: file.size, width: 0, height: 0, ratio: 0, ratioLabel: '其他', status: 'pending', processedBlob: null, processedSize: 0, newName: '' };
+      try {
+        const bitmap = await createImageBitmap(file);
+        item.width = bitmap.width; item.height = bitmap.height; item.ratio = bitmap.width / bitmap.height;
+        item.ratioLabel = this.classifyRatio(item.ratio);
+        bitmap.close();
+      } catch(e) {}
+      item.preview = await this.fileToDataURL(file);
+      this.files.push(item);
+    }
+    if (!this.selectedId && this.files.length) this.selectedId = this.files[0].id;
+    this.renderFileList();
+    this.updateButtons();
+    this.updateContentMeta();
+    if (this.selectedId) this.updatePreview();
+  },
+
+  classifyRatio(ratio) {
+    const r = ratio;
+    if (r >= 0.95 && r <= 1.05) return '主图';
+    if ((r >= 0.72 && r < 0.95) || (r > 1.05 && r <= 1.38)) return '详情';
+    if (r >= 1.7 && r <= 1.85) return '横幅';
+    return '其他';
+  },
+
+  fileToDataURL(file) {
+    return new Promise((resolve) => { const reader = new FileReader(); reader.onload = (e) => resolve(e.target.result); reader.readAsDataURL(file); });
+  },
+
+  // ---- 设置快照与“可更新”判断 ----
+  // 电商模式：记录处理时的水印/输出设置快照，设置变化后旧结果可覆盖更新
+  commerceSignature() {
+    const s = this.settings.commerce;
+    return JSON.stringify({ t: s.watermarkText, p: s.position, o: s.opacity, f: s.fontSize, r: s.rotation, pad: s.padding, fmt: s.outputFormat, size: s.targetSizeMB, c: s.color });
+  },
+
+  // 已处理文件是否与当前设置不一致（需要更新覆盖）
+  isStale(f) {
+    if (f.status !== 'done') return false;
+    if (this.mode === 'commerce') return !!f.appliedSettings && f.appliedSettings !== this.commerceSignature();
+    return !!f.embeddedTraceId && f.embeddedTraceId !== this.settings.stealth.traceId.trim();
+  },
+
+  // 电商设置变化：刷新预览 + 文件列表状态 + 统计
+  onCommerceChange() {
+    this.updatePreview();
+    this.renderFileList();
+    this.updateContentMeta();
+  },
+
+  updateContentMeta() {
+    const count = this.files.length;
+    const done = this.files.filter(f => f.status === 'done' && !this.isStale(f)).length;
+    const stale = this.files.filter(f => this.isStale(f)).length;
+    const pending = this.files.filter(f => f.status === 'pending').length;
+    document.getElementById('contentMeta').textContent = count === 0
+      ? '拖拽图片到页面任意位置，或点击左侧上传'
+      : `${count} 个文件 · ${done} 已完成 · ${pending} 待处理` + (stale ? ` · ${stale} 可更新` : '') + ' · 拖动行可调整顺序';
+  },
+
+  updateButtons() {
+    document.getElementById('btnDownload').disabled = !this.files.some(f => f.status === 'done');
+    const tc = document.getElementById('btnToCompress');
+    if (tc) tc.disabled = this.files.length === 0;
+    document.getElementById('btnClear').disabled = this.files.length === 0;
+  },
+
+  clearFiles() { this.files = []; this.selectedId = null; this.renderFileList(); this.clearPreview(); this.updateButtons(); this.updateContentMeta(); },
+
+  renderFileList() {
+    const empty = document.getElementById('emptyState');
+    const table = document.getElementById('fileTable');
+    const tbody = document.getElementById('fileTableBody');
+    if (!this.files.length) { empty.style.display = 'flex'; table.style.display = 'none'; return; }
+    empty.style.display = 'none'; table.style.display = 'table';
+    tbody.innerHTML = this.files.map((f, i) => {
+      const badgeClass = {'主图':'badge-main','详情':'badge-detail','横幅':'badge-banner','其他':'badge-other'}[f.ratioLabel] || 'badge-other';
+      const stale = this.isStale(f);
+      const statusKey = stale ? 'stale' : f.status;
+      const statusIcon = {'pending':'⏳','processing':'⚙️','done':'✅','error':'❌','stale':'🔄'}[statusKey] || '⏳';
+      const statusLabel = {'pending':'待处理','processing':'处理中','done':'已完成','error':'失败','stale':'可更新'}[statusKey] || f.status;
+      const dlTitle = f.status === 'done' ? (stale ? '下载（旧设置的结果，可重新处理更新）' : '下载处理后图片') : '下载（将按当前设置即时处理）';
+      const seq = this.fmtSeq(i + this.settings.commerce.startIndex);
+      const outName = (f.status === 'done' && f.newName) ? `<div class="out-name">→ ${f.newName}</div>` : '';
+      return `<tr class="${f.id === this.selectedId ? 'selected' : ''}" data-id="${f.id}" draggable="true" onclick="App.selectFile('${f.id}')" ondragstart="App.onRowDragStart(event,'${f.id}')" ondragover="App.onRowDragOver(event,'${f.id}')" ondragleave="App.onRowDragLeave(event)" ondrop="App.onRowDrop(event,'${f.id}')" ondragend="App.onRowDragEnd(event)">`
+        + `<td class="seq-cell"><span class="drag-grip" title="按住拖动可调整顺序">⋮⋮</span>${seq}</td>`
+        + `<td><img src="${f.preview}" class="file-thumb" draggable="false"></td>`
+        + `<td><div class="file-name">${f.name}</div><small>${this.formatSize(f.size)}</small>${outName}</td>`
+        + `<td>${f.width}×${f.height}</td>`
+        + `<td><span class="badge ${badgeClass}">${f.ratioLabel}</span></td>`
+        + `<td class="status-${statusKey}">${statusIcon} ${statusLabel}</td>`
+        + `<td>${f.processedSize ? this.formatSize(f.processedSize) : '-'}</td>`
+        + `<td><button class="icon-btn move" title="上移" onclick="event.stopPropagation();App.moveFile('${f.id}',-1)">↑</button>`
+        + `<button class="icon-btn move" title="下移" onclick="event.stopPropagation();App.moveFile('${f.id}',1)">↓</button>`
+        + `<button class="icon-btn dl" title="${dlTitle}" onclick="event.stopPropagation();App.downloadSingle('${f.id}')">⬇️</button>`
+        + `<button class="icon-btn del" title="移除" onclick="event.stopPropagation();App.removeFile('${f.id}')">🗑️</button></td></tr>`;
+    }).join('');
+  },
+
+  // ---- 顺序调整：拖拽 + 上下移动 ----
+  fmtSeq(n) { return String(n).padStart(2, '0'); },
+
+  // 某文件在当前列表中的导出序号（起始序号 + 位置）
+  seqOf(id) {
+    const i = this.files.findIndex(f => f.id === id);
+    return i === -1 ? this.settings.commerce.startIndex : i + this.settings.commerce.startIndex;
+  },
+
+  onRowDragStart(e, id) {
+    this._dragId = id;
+    e.dataTransfer.effectAllowed = 'move';
+    try { e.dataTransfer.setData('text/plain', id); } catch (err) {}
+    const tr = e.currentTarget.closest('tr');
+    if (tr) tr.classList.add('dragging');
+  },
+
+  onRowDragOver(e, id) {
+    if (!this._dragId || this._dragId === id) return;
+    e.preventDefault();
+    e.stopPropagation();
+    e.dataTransfer.dropEffect = 'move';
+    document.querySelectorAll('#fileTableBody tr').forEach(r => r.classList.remove('drag-over'));
+    const tr = e.currentTarget.closest('tr');
+    if (tr) tr.classList.add('drag-over');
+  },
+
+  onRowDragLeave(e) {
+    const tr = e.currentTarget.closest('tr');
+    if (tr) tr.classList.remove('drag-over');
+  },
+
+  onRowDrop(e, id) {
+    if (!this._dragId || this._dragId === id) return;
+    e.preventDefault();
+    e.stopPropagation();
+    const fromId = this._dragId;
+    this._dragId = null;
+    this.reorderFiles(fromId, id);
+  },
+
+  onRowDragEnd() {
+    this._dragId = null;
+    document.querySelectorAll('#fileTableBody tr').forEach(r => r.classList.remove('dragging', 'drag-over'));
+  },
+
+  // 把 fromId 移动到 toId 所在位置
+  reorderFiles(fromId, toId) {
+    const from = this.files.findIndex(f => f.id === fromId);
+    const to = this.files.findIndex(f => f.id === toId);
+    if (from === -1 || to === -1 || from === to) return;
+    const [item] = this.files.splice(from, 1);
+    this.files.splice(to, 0, item);
+    this.afterReorder();
+  },
+
+  moveFile(id, delta) {
+    const i = this.files.findIndex(f => f.id === id);
+    const j = i + delta;
+    if (i === -1 || j < 0 || j >= this.files.length) return;
+    const tmp = this.files[i]; this.files[i] = this.files[j]; this.files[j] = tmp;
+    this.afterReorder();
+  },
+
+  afterReorder() {
+    this.renumberDone();
+    this.renderFileList();
+    this.updateContentMeta();
+  },
+
+  // 按当前顺序重算已处理文件的输出名，使编号始终与列表顺序一致
+  renumberDone() {
+    if (this.mode !== 'commerce') return;
+    let n = this.settings.commerce.startIndex;
+    for (const f of this.files) {
+      if (f.status !== 'done' || !f.processedBlob || f.embeddedTraceId) continue;
+      f.newName = this.buildName(f, n);
+      n++;
+    }
+  },
+
+  // 按重命名模板生成输出文件名（{index} 为当前顺序编号，两位数起步）
+  buildName(file, index) {
+    const s = this.settings.commerce;
+    let ext = 'jpg';
+    if (s.outputFormat === 'png') ext = 'png';
+    else if (s.outputFormat === 'webp') ext = 'webp';
+    const vars = { prefix: s.prefix, index: this.fmtSeq(index), ratio: file.ratioLabel, width: file.width, height: file.height };
+    let newName = s.renameTemplate;
+    for (const [k, v] of Object.entries(vars)) newName = newName.replace(new RegExp('{' + k + '}', 'g'), v);
+    if (!newName.includes('.')) newName += '.' + ext;
+    return newName;
+  },
+
+  removeFile(id) {
+    const idx = this.files.findIndex(f => f.id === id);
+    if (idx === -1) return;
+    this.files.splice(idx, 1);
+    if (this.selectedId === id) { this.selectedId = null; this.clearPreview(); }
+    this.renumberDone();
+    this.renderFileList();
+    this.updateButtons();
+    this.updateContentMeta();
+  },
+
+  // 单张下载：已处理 → 下载成品；未处理 → 电商模式按当前设置即时处理后下载，隐形模式下载原图
+  async downloadSingle(id) {
+    const f = this.files.find(x => x.id === (id || this.selectedId));
+    if (!f) return;
+    let blob, name;
+    if (this.mode === 'commerce') this.renumberDone();
+    if (f.status === 'done' && f.processedBlob) {
+      blob = f.processedBlob; name = f.newName || f.name;
+    } else if (this.mode === 'commerce') {
+      try {
+        const result = await this.processSingle(f, this.seqOf(f.id));
+        blob = result.blob; name = result.name;
+      } catch (e) { console.error(e); blob = f.file; name = f.name; }
+    } else {
+      blob = f.file; name = f.name;
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  },
+
+  formatSize(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+    return (bytes/(1024*1024)).toFixed(2) + ' MB';
+  },
+
+  selectFile(id) { this.selectedId = id; this.renderFileList(); this.updatePreview(); },
+
+  clearPreview() {
+    document.getElementById('previewPlaceholder').style.display = 'flex';
+    document.getElementById('previewCanvas').style.display = 'none';
+    document.getElementById('previewLabel').style.display = 'none';
+    document.getElementById('previewActions').style.display = 'none';
+  },
+
+  async updatePreview() {
+    const file = this.files.find(f => f.id === this.selectedId);
+    if (!file) return this.clearPreview();
+    const canvas = document.getElementById('previewCanvas');
+    const ctx = canvas.getContext('2d');
+    document.getElementById('previewPlaceholder').style.display = 'none';
+    canvas.style.display = 'block';
+    document.getElementById('previewLabel').style.display = 'block';
+    document.getElementById('previewActions').style.display = 'flex';
+    const img = await this.loadImage(file.preview);
+    canvas.width = img.width; canvas.height = img.height;
+    ctx.drawImage(img, 0, 0);
+    if (this.mode === 'commerce') { this.drawWatermark(ctx, canvas.width, canvas.height, this.seqOf(file.id)); document.getElementById('previewLabel').textContent = '水印加工 · 预览 · 序号 ' + this.fmtSeq(this.seqOf(file.id)); }
+    else { document.getElementById('previewLabel').textContent = '隐形追踪 · 原图'; }
+  },
+
+  loadImage(src) {
+    return new Promise((resolve, reject) => { const img = new Image(); img.onload = () => resolve(img); img.onerror = reject; img.src = src; });
+  },
+
+  drawWatermark(ctx, w, h, index) {
+    const s = this.settings.commerce;
+    if (!s.watermarkText) return;
+    ctx.save(); ctx.globalAlpha = 1 - s.opacity; // 透明度 100% = 完全透明，0% = 不透明
+    let text = s.watermarkText;
+    if (index != null) text = text.replace(/\{index\}/g, this.fmtSeq(index));
+    if (!text) { ctx.restore(); return; }
+    const pad = s.padding;
+    // 优先使用用户设定的字号；仅当文字整体超出图片可用宽度时才等比缩小到刚好放下
+    let fontSize = s.fontSize;
+    ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+    const maxWidth = Math.max(20, w - pad * 2);
+    let tw = ctx.measureText(text).width;
+    if (tw > maxWidth) {
+      fontSize = Math.max(12, Math.floor(fontSize * maxWidth / tw));
+      ctx.font = `bold ${fontSize}px -apple-system, BlinkMacSystemFont, sans-serif`;
+      tw = ctx.measureText(text).width;
+    }
+    ctx.fillStyle = s.color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    const th = fontSize;
+    let x = w/2, y = h/2;
+    switch (s.position) {
+      case 'top-left': x = pad + tw/2; y = pad + th/2; break;
+      case 'top-center': x = w/2; y = pad + th/2; break;
+      case 'top-right': x = w - pad - tw/2; y = pad + th/2; break;
+      case 'center-left': x = pad + tw/2; y = h/2; break;
+      case 'center-right': x = w - pad - tw/2; y = h/2; break;
+      case 'bottom-left': x = pad + tw/2; y = h - pad - th/2; break;
+      case 'bottom-center': x = w/2; y = h - pad - th/2; break;
+      case 'bottom-right': x = w - pad - tw/2; y = h - pad - th/2; break;
+    }
+    ctx.shadowColor = 'rgba(0,0,0,0.6)'; ctx.shadowBlur = 8; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 2;
+    ctx.translate(x, y); ctx.rotate(s.rotation * Math.PI / 180); ctx.fillText(text, 0, 0);
+    ctx.restore();
+  },
+
+  sleep(ms) { return new Promise(r => setTimeout(r, ms)); },
+
+  async processBatch() {
+    if (this.isProcessing) return;
+    // 待处理 + 已处理但设置已变更（可更新）的文件都会重新处理，基于原图覆盖旧结果
+    const pending = this.files.filter(f => f.status === 'pending' || this.isStale(f));
+    if (!pending.length) return alert('没有待处理的文件（已处理的图片与当前设置一致）');
+
+    this.isProcessing = true;
+    const btn = document.getElementById('btnProcess');
+    const bar = document.getElementById('progressBar');
+    const fill = document.getElementById('progressFill');
+    const hint = document.getElementById('processHint');
+    btn.disabled = true; bar.style.display = 'block';
+
+    const s = this.settings.commerce;
+    const snapshot = this.commerceSignature();
+    const redoCount = pending.filter(f => f.status === 'done').length;
+
+    for (let i = 0; i < pending.length; i++) {
+      const file = pending[i];
+      const index = this.seqOf(file.id); // 序号取自当前列表顺序
+      file.status = 'processing'; this.renderFileList();
+      hint.textContent = `正在处理 [${this.fmtSeq(index)}] ${file.name}...`;
+      try {
+        const result = await this.processSingle(file, index);
+        file.processedBlob = result.blob; file.processedSize = result.blob.size; file.newName = result.name;
+        file.appliedSettings = snapshot; file.status = 'done';
+      } catch(err) { console.error(err); file.status = 'error'; }
+      fill.style.width = (((i + 1) / pending.length) * 100) + '%';
+      this.renderFileList(); await this.sleep(50);
+    }
+
+    this.isProcessing = false; btn.disabled = false;
+    this.renumberDone(); // 统一按最终顺序重排编号
+    this.renderFileList();
+    hint.textContent = redoCount > 0
+      ? `完成！共处理 ${pending.length} 个文件（含 ${redoCount} 个更新覆盖）`
+      : `完成！共处理 ${pending.length} 个文件`;
+    this.updateButtons(); this.updateContentMeta();
+  },
+
+  async processSingle(file, index) {
+    const s = this.settings.commerce;
+    const img = await this.loadImage(file.preview);
+    const canvas = document.createElement('canvas');
+    canvas.width = img.width; canvas.height = img.height;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+    this.drawWatermark(ctx, canvas.width, canvas.height, index);
+
+    let mime = 'image/jpeg', ext = 'jpg';
+    if (s.outputFormat === 'png') { mime = 'image/png'; ext = 'png'; }
+    else if (s.outputFormat === 'webp') { mime = 'image/webp'; ext = 'webp'; }
+
+    let blob;
+    const targetBytes = s.targetSizeMB > 0 ? s.targetSizeMB * 1024 * 1024 : Infinity;
+    if (s.outputFormat === 'png' || targetBytes === Infinity) {
+      blob = await this.canvasToBlob(canvas, mime, 1.0);
+    } else {
+      let minQ = 0.01, maxQ = 1.0, bestBlob = null;
+      for (let iter = 0; iter < 8; iter++) {
+        const mid = (minQ + maxQ) / 2;
+        const test = await this.canvasToBlob(canvas, mime, mid);
+        if (test.size > targetBytes) maxQ = mid;
+        else { minQ = mid; bestBlob = test; }
+      }
+      blob = bestBlob || await this.canvasToBlob(canvas, mime, minQ);
+    }
+
+    const vars = { prefix: s.prefix, index: this.fmtSeq(index), ratio: file.ratioLabel, width: file.width, height: file.height };
+    let newName = s.renameTemplate;
+    for (const [k, v] of Object.entries(vars)) newName = newName.replace(new RegExp('{' + k + '}', 'g'), v);
+    if (!newName.includes('.')) newName += '.' + ext;
+    return { blob, name: newName };
+  },
+
+  canvasToBlob(canvas, mime, quality) {
+    return new Promise(resolve => canvas.toBlob(resolve, mime, quality));
+  },
+
+  async downloadZip() {
+    this.renumberDone(); // 导出前按最新顺序重新编号
+    const done = this.files.filter(f => f.status === 'done' && f.processedBlob);
+    if (!done.length) return;
+    const s = this.settings.commerce;
+    const zip = new JSZip();
+    if (s.autoClassify) {
+      const groups = {};
+      for (const f of done) { const folder = f.ratioLabel || '其他'; if (!groups[folder]) groups[folder] = []; groups[folder].push(f); }
+      for (const [folder, files] of Object.entries(groups)) { const folderRef = zip.folder(folder); for (const f of files) folderRef.file(f.newName, f.processedBlob); }
+    } else {
+      for (const f of done) zip.file(f.newName, f.processedBlob);
+    }
+    const content = await zip.generateAsync({ type: 'blob' });
+    const url = URL.createObjectURL(content);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'shademark_batch_' + new Date().toISOString().slice(0,10).replace(/-/g,'') + '.zip';
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+
+  // 从压缩工具送达时自动导入（?from=compress）：读取桥接暂存，恢复为待处理文件
+  async importFromCompress() {
+    const d = bridgeRead();
+    if (!d || !d.files.length) { alert('暂存区为空。请先在压缩工具里点「送进水印工具 →」把文件送过来。'); return; }
+    const files = d.files.map(f => blobToFile(dataUrlToBlob(f.dataUrl), f.name));
+    const arrLike = { length: files.length };
+    files.forEach((f, i) => { arrLike[i] = f; });
+    const before = this.files.length;
+    await this.handleFiles(arrLike);
+    if (this.files.length > before) {
+      document.getElementById('contentMeta').textContent = `已从${d.from==='compress'?'压缩工具':'水印工具'}导入 ${this.files.length - before} 张`;
+    }
+  },
+
+  // 把当前文件送进压缩工具（已处理送成品，未处理送原图）
+  async sendToCompress() {
+    if (!this.files.length) { alert('没有可送出的文件。请先上传图片。'); return; }
+    this.renumberDone();
+    const files = [];
+    for (const f of this.files) {
+      if (f.status === 'done' && f.processedBlob) {
+        const name = (f.embeddedTraceId) ? f.name.replace(/\.[^.]+$/, '') + '_stealth.png' : f.newName;
+        files.push({ name: name || f.name, mime: f.processedBlob.type, size: f.processedBlob.size, dataUrl: await blobToDataUrl(f.processedBlob) });
+      } else {
+        const mime = (f.file && f.file.type) || f.mime || 'image/png';
+        files.push({ name: f.name, mime, size: f.size, dataUrl: f.preview });
+      }
+    }
+    if (!bridgeWrite('watermark', files)) return;
+    const base = (location.origin || '') + '/compress/';
+    location.href = base + '?from=watermark';
+  },
+
+  async embedStealth() {
+    const s = this.settings.stealth;
+    const traceId = s.traceId.trim();
+    // 待处理 + 已嵌入但追踪 ID 已变更（可更新）的文件都会重新嵌入，覆盖旧水印
+    const pending = this.files.filter(f => f.status === 'pending' || this.isStale(f));
+    if (!pending.length) return alert(this.files.length ? '所有图片均已嵌入当前追踪 ID，无需更新' : '请先上传图片');
+    if (!traceId) return alert('请输入追踪 ID');
+
+    const btn = document.getElementById('btnEmbed');
+    btn.disabled = true; btn.textContent = '🔒 处理中...';
+    const redoCount = pending.filter(f => f.status === 'done').length;
+
+    for (const file of pending) {
+      file.status = 'processing'; this.renderFileList();
+      try {
+        const img = await this.loadImage(file.preview);
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width; canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+        const payload = 'SHADEMARK:' + traceId + '\0';
+        const success = this.embedLSB(imageData, payload);
+        if (!success) { file.status = 'error'; continue; }
+        ctx.putImageData(imageData, 0, 0);
+        const blob = await this.canvasToBlob(canvas, 'image/png', 1.0);
+        file.processedBlob = blob; file.processedSize = blob.size;
+        file.newName = file.name.replace(/\.[^.]+$/, '') + '_stealth.png';
+        file.embeddedTraceId = traceId;
+        file.status = 'done';
+      } catch(e) { console.error(e); file.status = 'error'; }
+      this.renderFileList(); await this.sleep(50);
+    }
+    btn.disabled = false; btn.textContent = '🔒 嵌入隐形水印';
+    this.updateButtons(); this.updateContentMeta();
+    const doneCount = pending.filter(f=>f.status==='done').length;
+    alert(redoCount > 0
+      ? `已在 ${doneCount} 张图片中嵌入追踪 ID：${traceId}（含 ${redoCount} 张覆盖更新）`
+      : `已在 ${doneCount} 张图片中嵌入追踪 ID：${traceId}`);
+  },
+
+  embedLSB(imageData, text) {
+    const bits = this.textToBits(text);
+    const data = imageData.data;
+    const maxBits = Math.floor(data.length / 4);
+    if (bits.length > maxBits) return false;
+    let bitIdx = 0;
+    for (let i = 3; i < data.length && bitIdx < bits.length; i += 4) { data[i] = (data[i] & 0xFE) | bits[bitIdx]; bitIdx++; }
+    return true;
+  },
+
+  textToBits(text) {
+    const encoder = new TextEncoder();
+    const bytes = encoder.encode(text);
+    const bits = [];
+    for (const byte of bytes) { for (let i = 7; i >= 0; i--) bits.push((byte >> i) & 1); }
+    return bits;
+  },
+
+  async extractStealth(file) {
+    const resultDiv = document.getElementById('extractResult');
+    if (!file.type.startsWith('image/')) {
+      resultDiv.innerHTML = `<div class="extract-result fail"><div class="extract-title">❌ 格式不支持</div><div class="hint">请拖入图片文件（PNG / JPG）。</div></div>`;
+      return;
+    }
+    resultDiv.innerHTML = '<div class="hint">正在解析...</div>';
+    try {
+      const dataUrl = await this.fileToDataURL(file);
+      // 在提取区内显示当前图片，方便逐张核对
+      document.getElementById('extractPreviewImg').src = dataUrl;
+      document.getElementById('extractPreview').style.display = 'inline-block';
+      document.getElementById('extractPlaceholder').style.display = 'none';
+      const img = await this.loadImage(dataUrl);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width; canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+      const extracted = this.extractLSB(imageData);
+      if (extracted && extracted.includes('SHADEMARK:')) {
+        const id = extracted.split('SHADEMARK:')[1].split('\0')[0];
+        resultDiv.innerHTML = `<div class="extract-result success"><div class="extract-title">✅ 追踪成功</div><div style="margin-bottom:8px;font-size:13px;color:var(--muted);">提取到的追踪 ID：</div><div class="extract-data">${id}</div><div style="margin-top:12px;font-size:12px;color:var(--muted);">该图片嵌入了 Shademark 隐形水印。<br>建议核对：此 ID 是否为你分发时使用的标识。</div></div>`;
+      } else {
+        resultDiv.innerHTML = `<div class="extract-result fail"><div class="extract-title">❌ 未检测到水印</div><div style="font-size:13px;color:var(--muted);">可能原因：<br>· 该图片未经过 Shademark 嵌入<br>· 图片经过重度压缩或裁剪<br>· 图片格式不支持（JPG 有损压缩可能破坏 LSB）</div></div>`;
+      }
+    } catch(e) {
+      resultDiv.innerHTML = `<div class="extract-result fail"><div class="extract-title">解析失败</div><div class="hint">${e.message}</div></div>`;
+    }
+  },
+
+  // 关闭提取区图片，恢复占位，准备下一张
+  clearExtract() {
+    const preview = document.getElementById('extractPreview');
+    const placeholder = document.getElementById('extractPlaceholder');
+    if (preview) { preview.style.display = 'none'; document.getElementById('extractPreviewImg').src = ''; }
+    if (placeholder) placeholder.style.display = 'flex';
+    const resultDiv = document.getElementById('extractResult');
+    if (resultDiv) resultDiv.innerHTML = '';
+  },
+
+  extractLSB(imageData) {
+    const data = imageData.data;
+    const bits = [];
+    for (let i = 3; i < data.length; i += 4) bits.push(data[i] & 0x01);
+    const bytes = [];
+    for (let i = 0; i < bits.length; i += 8) {
+      if (i + 8 > bits.length) break;
+      let byte = 0;
+      for (let j = 0; j < 8; j++) byte = (byte << 1) | bits[i + j];
+      if (byte === 0) break;
+      bytes.push(byte);
+    }
+    try { return new TextDecoder().decode(new Uint8Array(bytes)); } catch(e) { return ''; }
+  }
+};
+
+App.init();
+</script>
+
+<!-- 登录弹窗：未登录点击「发码 / 短链」时弹出（规格同首页） -->
+<div class="modal" id="authModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="tabs">
+        <button class="tab active" id="tabLogin">登录</button>
+        <button class="tab" id="tabRegister">注册</button>
+      </div>
+      <button class="modal-close" id="authCloseBtn" aria-label="关闭">&times;</button>
+    </div>
+    <form id="authForm">
+      <input type="email" id="authEmail" placeholder="邮箱" autocomplete="off" />
+      <input type="password" id="authPass" placeholder="密码" autocomplete="new-password" />
+      <div class="auth-forgot" id="authForgot"><a href="/forgot">忘记密码？</a></div>
+      <div id="authNameWrap" style="display:none"><input id="authName" placeholder="昵称（可选）" autocomplete="off" /></div>
+      <div id="authContactWrap" style="display:none"><input id="authContact" placeholder="联系方式（可选）：微信号或手机号" autocomplete="off" /></div>
+      <div class="auth-error" id="authError"></div>
+      <button class="auth-submit" id="authSubmitBtn" type="submit">登录</button>
+    </form>
+    <p class="auth-tip" id="authTip"></p>
+  </div>
+</div>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var S={ok:false,ready:false,offline:false}, pendingTarget=null, mode='login', sending=false;
+
+  function checkAuth(){
+    return fetch('/api/auth/session')
+      .then(function(r){return r.json()})
+      .then(function(d){S.ok=!!(d&&d.authenticated)})
+      .catch(function(){S.offline=true;S.ok=false})
+      .then(function(){S.ready=true});
+  }
+  function openAuth(){
+    $('authModal').classList.add('active');
+    setMode('login');
+  }
+  function closeAuth(){
+    $('authModal').classList.remove('active');
+    pendingTarget=null;
+  }
+  function setMode(m){
+    mode=m;
+    $('tabLogin').classList.toggle('active',m==='login');
+    $('tabRegister').classList.toggle('active',m==='register');
+    $('authNameWrap').style.display=m==='register'?'block':'none';
+    $('authContactWrap').style.display=m==='register'?'block':'none';
+    $('authForgot').style.display=m==='login'?'block':'none';
+    $('authSubmitBtn').textContent=m==='login'?'登录':'注册';
+    $('authError').style.display='none';
+    $('authPass').autocomplete='new-password';
+    $('authEmail').setAttribute('autocomplete','off');
+    $('authName').setAttribute('autocomplete','off');
+    $('authContact').setAttribute('autocomplete','off');
+    $('authTip').textContent=m==='login'
+      ? '还没有账号？点击上方「注册」，或直接返回继续浏览工具。'
+      : '已有账号？点击上方「登录」。注册即可使用短链与发码平台。';
+  }
+  function submitAuth(ev){
+    ev.preventDefault();
+    if(sending)return;
+    var email=$('authEmail').value.trim();
+    var pass=$('authPass').value;
+    var err=$('authError');
+    err.style.display='none';
+    if(!email||!pass){err.textContent='请填写邮箱和密码';err.style.display='block';return}
+    var btn=$('authSubmitBtn');
+    sending=true;
+    btn.disabled=true;
+    var old=btn.textContent;
+    btn.textContent='请稍候…';
+    var url=mode==='login'?'/api/auth/login':'/api/auth/register';
+    var body=mode==='login'
+      ? {email:email,password:pass}
+      : {email:email,password:pass,display_name:$('authName').value.trim(),contact:$('authContact').value.trim()};
+    fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){return r.json().catch(function(){return {}})})
+      .then(function(d){
+        if(d.error||!d.success){err.textContent=d.error||'操作失败';err.style.display='block';return}
+        S.ok=true;
+        var target=pendingTarget||'/';
+        pendingTarget=null;
+        closeAuth();
+        location.href=target;
+      })
+      .catch(function(){err.textContent='网络错误';err.style.display='block'})
+      .then(function(){sending=false;btn.disabled=false;btn.textContent=old});
+  }
+  // 需要登录的入口：已登录直接进，未登录弹登录框；离线/本地打开时保持原有直跳行为
+  function guardNav(ev,url){
+    ev.preventDefault();
+    var go=function(){
+      if(S.ok||S.offline){location.href=url;return}
+      pendingTarget=url;
+      openAuth();
+    };
+    if(S.ready){go()}else{checkAuth().then(go)}
+  }
+
+  document.querySelectorAll('.nav-tools a[data-gate]').forEach(function(el){
+    el.addEventListener('click',function(ev){guardNav(ev,el.getAttribute('href'))});
+  });
+  $('tabLogin').addEventListener('click',function(){setMode('login')});
+  $('tabRegister').addEventListener('click',function(){setMode('register')});
+  $('authCloseBtn').addEventListener('click',closeAuth);
+  $('authForm').addEventListener('submit',submitAuth);
+  $('authModal').addEventListener('click',function(e){if(e.target.id==='authModal')closeAuth()});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAuth()});
+
+  checkAuth();
+})();
+</script>
+</body>
+</html>

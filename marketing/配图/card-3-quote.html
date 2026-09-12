@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>card-3</title>
+<style>
+  :root{
+    --bg:#0d0d0f; --card:#17171b; --surface:#1c1c22; --border:#2a2a33;
+    --text:#e8e8ea; --muted:#8a8a94; --accent:#7c6cf0;
+    --success:#4ade80; --warn:#ffd166; --danger:#f87171;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#000;font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;padding:40px;display:flex;flex-wrap:wrap;gap:40px;justify-content:center}
+  .hint{width:100%;color:#666;font-size:14px;text-align:center;margin-bottom:10px;font-family:monospace}
+
+  .card{
+    width:1080px;height:1350px;background:var(--bg);position:relative;overflow:hidden;
+    display:flex;flex-direction:column;padding:84px 76px;border-radius:24px;
+    color:var(--text);
+  }
+  .glow{position:absolute;width:900px;height:900px;border-radius:50%;filter:blur(160px);opacity:.16;background:var(--accent);pointer-events:none}
+  .glow.a{top:-380px;right:-300px}
+  .glow.b{bottom:-420px;left:-320px;opacity:.10}
+
+  .brand{display:flex;align-items:center;gap:14px;position:relative;z-index:2}
+  .brand img{width:52px;height:52px;border-radius:13px}
+  .brand .nm{font-size:30px;font-weight:700;letter-spacing:.5px}
+  .brand .nm sup{font-size:14px;color:var(--muted);font-weight:400}
+
+  .kicker{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;
+    padding:9px 18px;border:1px solid rgba(124,108,240,.45);border-radius:999px;
+    color:var(--accent);font-size:24px;font-weight:600;position:relative;z-index:2}
+  .kicker .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+
+  h1{font-size:96px;line-height:1.18;font-weight:800;letter-spacing:-1px;position:relative;z-index:2}
+  h1 .hl{color:var(--accent)}
+  .sub{font-size:34px;line-height:1.6;color:var(--muted);position:relative;z-index:2}
+  .spacer{flex:1;min-height:40px}
+
+  .tags{display:flex;gap:14px;flex-wrap:wrap;position:relative;z-index:2}
+  .tag{padding:12px 24px;border-radius:12px;background:var(--surface);border:1px solid var(--border);
+    font-size:26px;color:var(--text)}
+  .tag.on{background:rgba(124,108,240,.14);border-color:rgba(124,108,240,.45);color:var(--accent);font-weight:700}
+
+  .list{display:flex;flex-direction:column;gap:22px;position:relative;z-index:2}
+  .item{display:flex;align-items:center;gap:22px;background:var(--card);border:1px solid var(--border);
+    border-radius:18px;padding:26px 30px}
+  .item .num{width:56px;height:56px;flex:none;border-radius:14px;background:rgba(124,108,240,.14);
+    color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800}
+  .item .tt{font-size:32px;font-weight:700}
+  .item .dd{font-size:24px;color:var(--muted);margin-top:6px}
+
+  .rows{display:flex;flex-direction:column;gap:24px;position:relative;z-index:2}
+  .row{display:flex;align-items:center;gap:20px;font-size:34px}
+  .row .ic{width:52px;height:52px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800}
+  .row.bad .ic{background:rgba(248,113,113,.14);color:var(--danger)}
+  .row.good .ic{background:rgba(74,222,128,.14);color:var(--success)}
+  .row.good{font-weight:700}
+  .row.bad{color:var(--muted)}
+
+  .foot{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2;
+    border-top:1px solid var(--border);padding-top:30px}
+  .foot .url{font-size:34px;font-weight:700;color:var(--accent);font-family:ui-monospace,Consolas,monospace}
+  .foot .note{font-size:26px;color:var(--muted)}
+
+  html,body{margin:0;padding:0;background:#0d0d0f;overflow:hidden}
+  body{display:block}
+  .card{border-radius:0}
+</style></head><body>
+<div class="card" id="card-quote">
+  <div class="glow a"></div><div class="glow b"></div>
+  <div class="brand">
+    <img src="./logo.png" alt="">
+    <div class="nm">Shademark<sup>™</sup></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="kicker"><span class="dot"></span>做小生意必备</div>
+  <div style="height:36px"></div>
+  <h1>报价不用<br>再手敲 <span class="hl">Word</span> 了</h1>
+  <div style="height:52px"></div>
+  <div class="list">
+    <div class="item"><div class="num">1</div><div><div class="tt">填完自动算价</div><div class="dd">总价、税率自动计算，不怕算错</div></div></div>
+    <div class="item"><div class="num">2</div><div><div class="tt">自动编号 + 存历史</div><div class="dd">每单自动生成编号，随时翻查</div></div></div>
+    <div class="item"><div class="num">3</div><div><div class="tt">模板一键复用</div><div class="dd">常用商品存成模板，下次直接填</div></div></div>
+    <div class="item"><div class="num">4</div><div><div class="tt">导出即用</div><div class="dd">生成正式报价单，直接发给客户</div></div></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="foot">
+    <div class="url">shademark.cn</div>
+    <div class="note">免费 · 打开即用</div>
+  </div>
+</div>
+</body></html>

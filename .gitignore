@@ -1,0 +1,45 @@
+# ===== 依赖 / 构建缓存 / 构建产物 =====
+node_modules/
+.wrangler/
+dist/
+dist-fns/
+
+# ===== 密钥 / 本地环境变量（绝不进仓库）=====
+.env
+.env.*
+.dev.vars
+*.key
+*.pem
+
+# ===== 日志 =====
+*.log
+
+# ===== 系统垃圾文件 =====
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ===== 项目本地记忆（agent 用，非源码）=====
+.workbuddy/
+
+# ===== 游离的旧首页（构建只认 src/pages/index.html，根为旧版导出，勿提交）=====
+/index.html
+
+# ===== 测试 / 验证产生的残留文件（tools/ 脚本生成，非源码）=====
+rt*.txt
+rt-*.txt
+_ls*.txt
+*result.txt
+clean-*.txt
+check-*.txt
+build-status.txt
+deploy-result.txt
+seed-result.txt
+verify-result.txt
+tmp-*.sql
+tmp-*.txt
+tmp-retention-*.sql
+*-seed.txt
+*-sql.txt
+*-probe.txt
+shot_*.png

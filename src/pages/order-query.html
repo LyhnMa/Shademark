@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>订单查询 — Shademark</title>
+<link rel="icon" href="/logo.png" type="image/png">
+<style>
+:root{--bg:#0d0d0f;--card:#17171b;--border:#2a2a33;--text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;--danger:#f87171;--success:#4ade80;--warn:#ffd166;--info:#60a5fa}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden}
+.nav{height:60px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:24px;background:var(--bg)}
+.nav .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);flex-shrink:0}
+.nav .brand img{width:32px;height:32px;object-fit:contain;border-radius:8px}
+.nav .brand span{font-size:15px;font-weight:700;letter-spacing:-0.02em}
+.nav-tools{display:flex;gap:4px;align-items:center}
+.nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap}
+.nav-tools a:hover{color:var(--text);background:#141419}
+.home-link{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border:1px solid var(--border);border-radius:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;white-space:nowrap;transition:all .2s;margin-left:auto}
+.home-link:hover{color:var(--text);border-color:var(--accent)}
+.main{max-width:600px;margin:0 auto;padding:clamp(24px,4vh,40px) 24px;min-height:calc(100vh - 60px);display:flex;flex-direction:column}
+.main h1{font-size:24px;font-weight:700;margin-bottom:6px}
+.main .subtitle{color:var(--muted);font-size:14px;margin-bottom:clamp(20px,4vh,32px)}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px}
+.form-row{display:flex;gap:12px;margin-bottom:14px}
+.form-row input{flex:1;padding:10px 12px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:14px;outline:none}
+.form-row input:focus{border-color:var(--accent)}
+.btn{padding:10px 20px;border-radius:6px;border:none;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;background:var(--accent);color:#fff}
+.btn:hover{opacity:.88}
+.btn:disabled{opacity:.5}
+.result{margin-top:24px;display:none}
+.result.show{display:block}
+.order-detail{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+.order-detail .row{display:flex;justify-content:space-between;padding:12px 20px;border-bottom:1px solid var(--border)}
+.order-detail .row:last-child{border-bottom:none}
+.order-detail .label{color:var(--muted);font-size:13px}
+.order-detail .value{font-size:14px;font-weight:600;text-align:right;word-break:break-all}
+.badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:12px;font-weight:600}
+.badge-pending{background:#3a3a45;color:var(--warn)}
+.badge-paid{background:#2a3a35;color:var(--success)}
+.badge-delivered{background:#2a3a35;color:var(--success)}
+.badge-cancelled{background:#3a2a2a;color:var(--danger)}
+.badge-refunded{background:#3a2a2a;color:var(--danger)}
+.code-box{background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:16px;text-align:center;margin-top:16px}
+.code-box .code{font-size:20px;font-weight:700;letter-spacing:2px;color:var(--success);font-family:'ui-monospace',SFMono-Regular,Menlo,monospace;word-break:break-all}
+.code-box .hint{font-size:12px;color:var(--muted);margin-top:8px}
+.code-box.expired{border-color:var(--danger)}
+.code-box.expired .code{color:var(--danger)}
+.error-msg{color:var(--danger);font-size:13px;margin-top:10px;display:none}
+.footer{text-align:center;margin-top:28px}
+.footer a{display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;transition:all .2s}
+.footer a:hover{color:var(--text);border-color:var(--accent)}
+@media(max-width:600px){.nav{padding:0 16px;gap:8px}.nav-tools{display:none}.form-row{flex-direction:column;gap:10px}.main{padding:24px 16px}.order-detail .row{padding:11px 16px;flex-direction:column;gap:4px}.order-detail .value{text-align:left}.code-box .code{font-size:16px;letter-spacing:1px}}
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="/" class="brand"><img src="/logo.png" alt="Logo"><span>Shademark</span></a>
+  <div class="nav-tools">
+    <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/admin">发码</a><a href="/links">短链</a>
+  </div>
+</nav>
+<div class="main">
+  <h1>订单查询</h1>
+  <p class="subtitle">输入订单号和备注（建议邮箱），查看订单状态和激活码</p>
+  <div class="card">
+    <div class="form-row">
+      <input id="orderNumber" placeholder="订单号（如 ORD-xxx）" />
+      <input id="orderEmail" placeholder="备注 / 下单邮箱" />
+    </div>
+    <button class="btn" onclick="queryOrder()">查询</button>
+    <div class="error-msg" id="errorMsg"></div>
+  </div>
+  <div class="result" id="result">
+    <div class="order-detail" id="orderDetail"></div>
+  </div>
+  <div class="footer"><a href="/">← 返回主页</a></div>
+</div>
+<script>
+function fmtDateY(ts){if(!ts)return '—';const d=new Date(Number(ts)*1000);const p=n=>String(n).padStart(2,'0');return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate())}
+async function queryOrder(){
+  const orderNumber=document.getElementById('orderNumber').value.trim();
+  const email=document.getElementById('orderEmail').value.trim();
+  const err=document.getElementById('errorMsg');const result=document.getElementById('result');
+  err.style.display='none';result.classList.remove('show');
+  if(!orderNumber){err.textContent='请输入订单号';err.style.display='block';return}
+  const btn=document.querySelector('.btn');btn.disabled=true;btn.textContent='查询中...';
+  try{
+    const r=await fetch(`/api/orders/${encodeURIComponent(orderNumber)}`);
+    const d=await r.json();
+    if(d.error){err.textContent=d.error;err.style.display='block';return}
+    const statusLabels={pending:'待支付',paid:'已支付',delivered:'已发码',cancelled:'已取消',refunded:'已退款'};
+    const fmtTime=t=>t?new Date(t*1000).toLocaleString('zh-CN'):'—';
+    document.getElementById('orderDetail').innerHTML=`
+      <div class="row"><span class="label">订单号</span><span class="value" style="font-family:'ui-monospace',SFMono-Regular,Menlo,monospace">${esc(d.order_number)}</span></div>
+      <div class="row"><span class="label">商品</span><span class="value">${esc(d.product_name||'—')}</span></div>
+      <div class="row"><span class="label">备注</span><span class="value">${esc(d.buyer_email||'—')}</span></div>
+      <div class="row"><span class="label">金额</span><span class="value">¥${(d.amount/100).toFixed(2)}</span></div>
+      <div class="row"><span class="label">状态</span><span class="value"><span class="badge badge-${d.status}">${statusLabels[d.status]||d.status}</span></span></div>
+      <div class="row"><span class="label">下单时间</span><span class="value">${fmtTime(d.created_at)}</span></div>
+      <div class="row"><span class="label">支付时间</span><span class="value">${fmtTime(d.paid_at)}</span></div>
+      <div class="row"><span class="label">发码时间</span><span class="value">${fmtTime(d.delivered_at)}</span></div>
+    `;
+    // delivered 显示激活码；若 code_status=revoked 或已过期则标注
+    if(d.status==='delivered'&&d.activation_code){
+      const revoked=d.code_status==='revoked';
+      const expired=d.expires_at&&Number(d.expires_at)*1000<Date.now();
+      const cls=(revoked||expired)?'code-box expired':'code-box';
+      const tip=revoked?'该激活码已作废':(expired?'该激活码已过期（有效期至 '+fmtDateY(d.expires_at)+'）':'请妥善保管');
+      document.getElementById('orderDetail').innerHTML+=`
+        <div style="padding:12px 20px"><div class="label" style="margin-bottom:8px">激活码</div><div class="${cls}" style="margin-top:0"><div class="code">${esc(d.activation_code)}</div><div class="hint">${esc(tip)}</div></div></div>`;
+    }else if(d.status==='delivered'){
+      document.getElementById('orderDetail').innerHTML+=`<div style="padding:12px 20px"><div class="label">激活码</div><div class="value" style="color:var(--danger)">未关联 / 已失效</div></div>`;
+    }
+    result.classList.add('show');
+  }catch(e){err.textContent='网络错误';err.style.display='block'}
+  finally{btn.disabled=false;btn.textContent='查询'}
+}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+document.getElementById('orderNumber').addEventListener('keydown',e=>{if(e.key==='Enter')queryOrder()});
+// URL 参数自动填充并自动查询：/order-query?order=ORD-xxx&email=备注
+(function(){
+  try{
+    const p=new URLSearchParams(location.search);
+    const order=p.get('order');const email=p.get('email');
+    if(order)document.getElementById('orderNumber').value=order;
+    if(email)document.getElementById('orderEmail').value=email;
+    if(order)queryOrder();
+  }catch(e){}
+})();
+</script>
+</body>
+</html>

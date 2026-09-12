@@ -1,0 +1,21 @@
+# Shademark 定时任务 Worker —— 独立部署配置（与 Pages 的根 wrangler.toml 互不影响）
+# 部署（在 cron-cleanup 目录下执行）：
+#   node <wrangler.js> deploy -c wrangler.cron.toml
+name = "shademark-cleanup"
+main = "worker.ts"
+compatibility_date = "2026-09-01"
+
+# 两个触发器（UTC）：
+#   0 * * * *  每小时 → 过期数据清理（free 30 天 / pro 90 天）
+#   0 3 * * *  每天 03:00 → Pro 到期超 3 天宽限后自动降级为 free
+[triggers]
+crons = ["0 * * * *", "0 3 * * *"]
+
+[observability]
+enabled = true
+
+[vars]
+# 与 Pages 侧 CRON_SECRET 同值（通过 secret 注入，不写明文）
+# 生产注入：wrangler secret put CRON_SECRET --name shademark-cleanup
+# Pages 生产域名（固定，不随 preview 每次部署变化）
+PAGES_ORIGIN = "https://shademark.pages.dev"

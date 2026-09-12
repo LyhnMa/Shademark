@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN"><head><meta charset="UTF-8"><title>card-2</title>
+<style>
+  :root{
+    --bg:#0d0d0f; --card:#17171b; --surface:#1c1c22; --border:#2a2a33;
+    --text:#e8e8ea; --muted:#8a8a94; --accent:#7c6cf0;
+    --success:#4ade80; --warn:#ffd166; --danger:#f87171;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#000;font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;padding:40px;display:flex;flex-wrap:wrap;gap:40px;justify-content:center}
+  .hint{width:100%;color:#666;font-size:14px;text-align:center;margin-bottom:10px;font-family:monospace}
+
+  .card{
+    width:1080px;height:1350px;background:var(--bg);position:relative;overflow:hidden;
+    display:flex;flex-direction:column;padding:84px 76px;border-radius:24px;
+    color:var(--text);
+  }
+  .glow{position:absolute;width:900px;height:900px;border-radius:50%;filter:blur(160px);opacity:.16;background:var(--accent);pointer-events:none}
+  .glow.a{top:-380px;right:-300px}
+  .glow.b{bottom:-420px;left:-320px;opacity:.10}
+
+  .brand{display:flex;align-items:center;gap:14px;position:relative;z-index:2}
+  .brand img{width:52px;height:52px;border-radius:13px}
+  .brand .nm{font-size:30px;font-weight:700;letter-spacing:.5px}
+  .brand .nm sup{font-size:14px;color:var(--muted);font-weight:400}
+
+  .kicker{display:inline-flex;align-items:center;gap:8px;align-self:flex-start;
+    padding:9px 18px;border:1px solid rgba(124,108,240,.45);border-radius:999px;
+    color:var(--accent);font-size:24px;font-weight:600;position:relative;z-index:2}
+  .kicker .dot{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+
+  h1{font-size:96px;line-height:1.18;font-weight:800;letter-spacing:-1px;position:relative;z-index:2}
+  h1 .hl{color:var(--accent)}
+  .sub{font-size:34px;line-height:1.6;color:var(--muted);position:relative;z-index:2}
+  .spacer{flex:1;min-height:40px}
+
+  .tags{display:flex;gap:14px;flex-wrap:wrap;position:relative;z-index:2}
+  .tag{padding:12px 24px;border-radius:12px;background:var(--surface);border:1px solid var(--border);
+    font-size:26px;color:var(--text)}
+  .tag.on{background:rgba(124,108,240,.14);border-color:rgba(124,108,240,.45);color:var(--accent);font-weight:700}
+
+  .list{display:flex;flex-direction:column;gap:22px;position:relative;z-index:2}
+  .item{display:flex;align-items:center;gap:22px;background:var(--card);border:1px solid var(--border);
+    border-radius:18px;padding:26px 30px}
+  .item .num{width:56px;height:56px;flex:none;border-radius:14px;background:rgba(124,108,240,.14);
+    color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800}
+  .item .tt{font-size:32px;font-weight:700}
+  .item .dd{font-size:24px;color:var(--muted);margin-top:6px}
+
+  .rows{display:flex;flex-direction:column;gap:24px;position:relative;z-index:2}
+  .row{display:flex;align-items:center;gap:20px;font-size:34px}
+  .row .ic{width:52px;height:52px;flex:none;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800}
+  .row.bad .ic{background:rgba(248,113,113,.14);color:var(--danger)}
+  .row.good .ic{background:rgba(74,222,128,.14);color:var(--success)}
+  .row.good{font-weight:700}
+  .row.bad{color:var(--muted)}
+
+  .foot{display:flex;align-items:center;justify-content:space-between;position:relative;z-index:2;
+    border-top:1px solid var(--border);padding-top:30px}
+  .foot .url{font-size:34px;font-weight:700;color:var(--accent);font-family:ui-monospace,Consolas,monospace}
+  .foot .note{font-size:26px;color:var(--muted)}
+
+  html,body{margin:0;padding:0;background:#0d0d0f;overflow:hidden}
+  body{display:block}
+  .card{border-radius:0}
+</style></head><body>
+<div class="card" id="card-privacy">
+  <div class="glow a"></div>
+  <div class="brand">
+    <img src="./logo.png" alt="">
+    <div class="nm">Shademark<sup>™</sup></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="kicker"><span class="dot"></span>隐私提醒</div>
+  <div style="height:36px"></div>
+  <h1>给证件加水印，<br>别再<span class="hl">上传</span>到<br>别人服务器了</h1>
+  <div style="height:48px"></div>
+  <div class="rows">
+    <div class="row bad"><div class="ic">✕</div><div>上传服务器处理 —— 文件脱离你的掌控</div></div>
+    <div class="row good"><div class="ic">✓</div><div>浏览器本地处理 —— 文件不出你的电脑</div></div>
+  </div>
+  <div class="spacer"></div>
+  <div class="sub">水印 / 压缩都在本地完成<br>断网也能用，因为文件根本没上传</div>
+  <div style="height:40px"></div>
+  <div class="foot">
+    <div class="url">shademark.cn</div>
+    <div class="note">免费 · 免登录</div>
+  </div>
+</div>
+</body></html>

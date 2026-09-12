@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>压缩工具 — Shademark</title>
+<link rel="icon" href="/logo.png" type="image/png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<style>
+:root{
+  --bg:#0d0d0f;--surface:#101014;--panel:#17171b;--elevated:#1e1e28;--border:#2a2a33;
+  --text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;--accent2:#5a4fd0;
+  --success:#4ade80;--warn:#ffd166;--error:#f87171;--radius:12px;--radius-sm:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+.app-header{height:60px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:24px;padding:0 24px;position:relative;z-index:100;flex-shrink:0}
+.brand{display:flex;align-items:center;flex-shrink:0}
+.brand a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand img{width:32px;height:32px;border-radius:8px;object-fit:contain}
+.brand-text{font-size:18px;font-weight:700;background:linear-gradient(135deg,#fff 0%,#c4b5fd 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+/* 顶栏工具导航（主页排布：紧跟 Shademark） */
+.nav-tools{display:flex;align-items:center;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.nav-tools::-webkit-scrollbar{display:none}
+.nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap;flex-shrink:0}
+.nav-tools a:hover{color:var(--text);background:#141419}
+/* 口号徽标：顶栏水平居中悬浮（空间不足自动隐藏，防重叠） */
+.brand-slogan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;pointer-events:none;z-index:1}
+.brand-slogan span{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:20px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.app-body{display:flex;height:calc(100vh - 60px);overflow:hidden}
+.sidebar{width:360px;min-width:360px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-scroll{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px}
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.panel-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.form-group{margin-bottom:16px}.form-group:last-child{margin-bottom:0}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
+input[type="text"],input[type="number"],select{width:100%;padding:10px 12px;background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;outline:none;transition:border-color 0.2s}
+input:focus,select:focus{border-color:var(--accent)}
+input[type="range"]{width:100%;accent-color:var(--accent);margin-top:4px}
+input[type="checkbox"]{accent-color:var(--accent)}
+.range-value{min-width:52px;text-align:right;font-size:12px;color:var(--accent);font-weight:600;font-variant-numeric:tabular-nums}
+.hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.4}
+.row2{display:flex;gap:10px;align-items:flex-end}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:40px 20px;text-align:center;transition:all 0.2s;cursor:pointer;background:var(--surface)}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(124,108,240,0.06)}
+.upload-zone.compact{padding:16px;display:flex;align-items:center;gap:14px;text-align:left}
+.upload-icon{font-size:32px;margin-bottom:12px;opacity:0.5;flex-shrink:0}
+.upload-zone.compact .upload-icon{font-size:24px;margin:0}
+.upload-text{color:var(--muted);font-size:14px}.upload-text strong{color:var(--text)}
+.bridge-btn{width:100%;margin-top:10px;padding:10px;border:1px dashed var(--border);border-radius:var(--radius-sm);background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:6px}
+.bridge-btn:hover{color:var(--accent);border-color:var(--accent);background:rgba(124,108,240,.06)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(124,108,240,0.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,108,240,0.4)}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;transform:none}
+.btn-secondary{background:var(--elevated);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:#25252f}
+.btn-block{width:100%}
+.content-header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);flex-shrink:0}
+.content-title{font-size:16px;font-weight:700}.content-meta{color:var(--muted);font-size:13px}
+.file-list{flex:1;overflow-y:auto}
+.file-table{width:100%;border-collapse:collapse;font-size:13px}
+.file-table th{text-align:left;padding:12px 24px;color:var(--muted);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--bg);z-index:10}
+.file-table td{padding:12px 24px;border-bottom:1px solid var(--border);color:var(--muted);vertical-align:middle}
+.file-table tr:hover td{background:rgba(255,255,255,0.02)}
+.file-table tr{cursor:pointer}
+.file-table tr.selected td{background:rgba(124,108,240,0.08)}
+.file-table tr.dragging{opacity:.35}
+.file-table tr.drag-over td{border-top:2px solid var(--accent)}
+.file-thumb{width:44px;height:44px;border-radius:6px;object-fit:cover;background:var(--elevated);border:1px solid var(--border)}
+.file-name{color:var(--text);font-weight:500;word-break:break-all}
+.out-name{color:var(--accent);font-family:"SF Mono",Monaco,monospace;font-size:11px}
+.seq-cell{font-family:"SF Mono",Monaco,monospace;font-size:13px;color:var(--accent);font-weight:700;white-space:nowrap}
+.drag-grip{cursor:grab;color:var(--muted);opacity:.55;user-select:none;margin-right:8px;font-size:13px;letter-spacing:-2px}
+.drag-grip:hover{opacity:1;color:var(--accent)}
+.icon-btn{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--elevated);color:var(--muted);cursor:pointer;font-size:13px;transition:all .15s;margin-right:4px}
+.icon-btn:hover{color:var(--text);border-color:var(--accent)}
+.icon-btn.dl:hover{color:var(--success);border-color:var(--success)}
+.icon-btn.del:hover{color:var(--error);border-color:var(--error)}
+.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:16px;padding:40px}
+.empty-state .icon{font-size:48px;opacity:0.3}
+.preview-area{height:220px;background:var(--surface);border-top:1px solid var(--border);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;flex-shrink:0}
+.preview-placeholder{color:var(--muted);font-size:14px;display:flex;flex-direction:column;align-items:center;gap:8px}
+.preview-canvas{max-width:100%;max-height:100%;object-fit:contain;border-radius:var(--radius-sm);box-shadow:0 8px 32px rgba(0,0,0,0.5)}
+.preview-label{position:absolute;top:12px;left:12px;background:rgba(0,0,0,0.7);padding:4px 12px;border-radius:6px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.5px}
+.preview-actions{position:absolute;top:12px;right:12px;display:flex;gap:8px;z-index:5}
+.preview-actions .btn{width:auto;padding:6px 14px;font-size:12px}
+.progress-bar{height:3px;background:var(--elevated);border-radius:2px;overflow:hidden;margin-top:12px}
+.progress-fill{height:100%;background:var(--accent);transition:width 0.3s ease;border-radius:2px}
+.est-row{display:flex;justify-content:space-between;padding:8px 0;border-top:1px solid var(--border);margin-top:8px;font-size:12px}
+.est-row .k{color:var(--muted)}.est-row .v{font-weight:600;color:var(--text);font-variant-numeric:tabular-nums}
+.est-row .v.green{color:var(--success)}.est-row .v.red{color:var(--error)}
+.status-pending{color:var(--muted)}.status-processing{color:var(--accent)}.status-done{color:var(--success)}.status-error{color:var(--error)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.animate-in{animation:fadeIn 0.3s ease}
+.drop-overlay{position:fixed;inset:0;background:rgba(13,13,15,0.85);backdrop-filter:blur(4px);z-index:9998;display:none;align-items:center;justify-content:center;pointer-events:none}
+.drop-overlay.show{display:flex}
+.drop-overlay-box{border:2px dashed var(--accent);border-radius:16px;padding:48px 64px;text-align:center;background:rgba(124,108,240,0.08)}
+.drop-overlay-box .icon{font-size:48px;margin-bottom:12px}
+.drop-overlay-box .text{font-size:18px;font-weight:700}
+/* 顶栏口号悬浮居中：空间不足（会与左右内容重叠）时自动隐藏 */
+@media(max-width:1350px){
+  .brand-slogan{display:none}
+}
+@media(max-width:900px){
+  html,body{overflow:auto;height:auto;min-height:100%}
+  .app-header{height:auto;min-height:60px;flex-wrap:wrap;padding:10px 12px;gap:10px}
+  .nav-tools{display:none}
+  .app-body{flex-direction:column;height:auto!important;overflow:visible}
+  .sidebar{width:100%;min-width:0;border-right:none;border-bottom:1px solid var(--border)}
+  .sidebar-scroll{padding:16px}
+  .main-content{overflow:visible}
+  .file-list{overflow-x:auto}
+  .content-header{padding:12px 16px;flex-wrap:wrap;gap:10px}
+  .preview-area{height:200px}
+}
+
+/* —— 登录弹窗（未登录点「发码 / 短链」时弹出，规格同首页）—— */
+.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(6,6,9,.72);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:20px}
+.modal.active{display:flex}
+.modal-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:380px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.modal .tabs{display:flex;gap:6px}
+.modal .tab{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.modal .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.modal-close{background:none;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:0 4px}
+.modal-close:hover{color:var(--text)}
+.modal-card input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:11px 12px;font-size:14px;outline:none;margin-bottom:12px;min-height:44px;font-family:inherit}
+.modal-card input:focus{border-color:var(--accent)}
+.auth-submit{width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;transition:filter .2s;min-height:46px;font-family:inherit}
+.auth-submit:hover{filter:brightness(.9)}
+.auth-submit:disabled{opacity:.5}
+.auth-error{color:var(--error);font-size:13px;margin:-4px 0 12px;display:none}
+.auth-forgot{display:none;text-align:right;margin:-6px 0 12px}
+.auth-forgot a{color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(138,138,148,.45);transition:color .2s,text-decoration-color .2s}
+.auth-forgot a:hover{color:var(--accent);text-decoration-color:var(--accent)}
+.auth-tip{color:var(--muted);font-size:12px;margin-top:12px;text-align:center;line-height:1.6}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="brand">
+    <a href="/"><img src="/logo.png" alt="Shademark"><span class="brand-text">Shademark</span></a>
+  </div>
+  <div class="nav-tools">
+    <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/admin" data-gate="1">发码</a><a href="/links" data-gate="1">短链</a>
+  </div>
+  <div class="brand-slogan"><span>🔒 文件不离本地</span><span>⚡ 全部浏览器处理</span></div>
+</div>
+
+<div class="app-body">
+  <aside class="sidebar">
+    <div class="sidebar-scroll">
+      <div class="panel animate-in">
+        <div class="upload-zone compact" id="uploadZone">
+          <div class="upload-icon">📂</div>
+          <div class="upload-text"><strong>点击上传</strong> 或拖拽图片到页面任意位置<br><small style="opacity:0.6">支持 JPG / PNG / WebP / GIF，单文件 ≤50MB，一次最多 100 张</small></div>
+          <input type="file" id="fileInput" multiple accept="image/*" style="display:none">
+        </div>
+      </div>
+
+      <div class="panel animate-in">
+        <div class="panel-title">⚙️ 输出设置</div>
+        <div class="form-group">
+          <label class="form-label">输出格式</label>
+          <select id="outFormat">
+            <option value="png">PNG（无损）</option>
+            <option value="jpeg" selected>JPG（有损压缩）</option>
+            <option value="webp">WebP（体积小）</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">压缩方式</label>
+          <select id="compressMode">
+            <option value="quality" selected>按质量压缩</option>
+            <option value="target">按目标体积（自动调质）</option>
+            <option value="none">不压缩（仅转格式 / 缩放）</option>
+          </select>
+        </div>
+        <div class="form-group" id="qualityGroup">
+          <label class="form-label">质量 <span class="range-value" id="valQuality">90</span></label>
+          <input type="range" id="quality" min="1" max="100" value="90">
+          <div class="hint">质量越低体积越小，但画质损失越多。JPG / WebP 建议 70–90。</div>
+        </div>
+        <div class="form-group" id="targetGroup" style="display:none">
+          <label class="form-label">目标体积上限 <span class="range-value" id="valTarget">500 KB</span></label>
+          <input type="range" id="targetKB" min="10" max="5000" step="10" value="500">
+          <div class="hint">工具将自动尝试把每张图压到该体积以内（最小质量 10 兜底）。</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">尺寸调整</label>
+          <select id="resizeMode">
+            <option value="none" selected>保持原尺寸</option>
+            <option value="scale">按百分比缩放</option>
+            <option value="width">限制宽度</option>
+            <option value="height">限制高度</option>
+            <option value="max">限制最长边</option>
+          </select>
+        </div>
+        <div class="form-group" id="resizeValueGroup">
+          <div class="row2">
+            <input type="number" id="resizeValue" placeholder="100" min="1" value="100" style="flex:1">
+            <span class="hint" id="resizeUnit" style="margin:0 0 6px">%</span>
+          </div>
+          <div class="hint">等比例调整，不会变形。填 0 或留空则保持原尺寸。</div>
+        </div>
+      </div>
+
+      <div class="panel animate-in">
+        <div class="panel-title">🏷️ 导出命名</div>
+        <div class="form-group">
+          <label class="form-label">文件名模板</label>
+          <input type="text" id="nameTemplate" value="compressed_{index}">
+          <div class="hint">{index} = 列表顺序编号（自动补零 01、02、03…），调整顺序后重新编号。</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">起始序号</label>
+          <input type="number" id="startIndex" value="1" min="0" style="width:110px">
+        </div>
+      </div>
+
+      <div class="panel animate-in" style="margin-top:auto">
+        <button class="btn btn-primary btn-block" id="btnProcess" onclick="App.processBatch()" disabled>🚀 开始处理</button>
+        <div class="progress-bar" id="progressBar" style="display:none"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+        <div class="hint" style="text-align:center;margin-top:8px" id="processHint"></div>
+        <div class="hint" style="margin-top:8px">💡 点击「开始处理」生成压缩成品，完成后用右上角「打包下载」保存。</div>
+      </div>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="content-header">
+      <div><div class="content-title" id="contentTitle">文件队列</div><div class="content-meta" id="contentMeta">拖入图片开始压缩</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:13px;border-style:dashed" onclick="App.sendToWatermark()" id="bridgeToWM" disabled title="把文件送往水印工具继续加水印（已处理送成品，未处理送原图）">送进水印工具 →</button>
+        <button class="btn btn-secondary" style="width:auto;padding:8px 16px;font-size:13px" onclick="App.clearFiles()" id="btnClear" disabled>清空</button>
+        <button class="btn btn-primary" style="width:auto;padding:8px 16px;font-size:13px" onclick="App.downloadZip()" id="btnDownload" disabled title="把已开始处理的成品打包为 ZIP 下载">⬇️ 打包下载</button>
+      </div>
+    </div>
+    <div class="file-list" id="fileListArea">
+      <div class="empty-state" id="emptyState">
+        <div class="icon">🗜️</div>
+        <div>拖入图片开始压缩</div>
+        <div style="font-size:12px;opacity:.7">批量导入 → 调整顺序 → 设置格式 / 质量 / 尺寸 → 开始处理 → 打包下载</div>
+      </div>
+      <table class="file-table" id="fileTable" style="display:none">
+        <thead><tr>
+          <th style="width:56px">序号</th><th style="width:60px">预览</th><th>文件名</th>
+          <th style="width:110px">原始大小</th><th style="width:110px">预计输出</th>
+          <th style="width:100px">状态</th><th style="width:196px">排序 / 操作</th>
+        </tr></thead>
+        <tbody id="fileTableBody"></tbody>
+      </table>
+    </div>
+    <div class="preview-area" id="previewArea">
+      <div class="preview-placeholder" id="previewPlaceholder">
+        <span style="font-size:24px">👁️</span>
+        <span>点击文件列表中的图片，预览当前设置下的处理效果与预计体积</span>
+      </div>
+      <canvas id="previewCanvas" class="preview-canvas" style="display:none"></canvas>
+      <div class="preview-label" id="previewLabel" style="display:none">预览</div>
+      <div class="preview-actions" id="previewActions" style="display:none">
+        <button class="btn btn-secondary" onclick="App.downloadSingle()">⬇️ 下载此图</button>
+      </div>
+      <div class="est-row" id="estRow" style="display:none;position:absolute;bottom:12px;left:12px;right:12px;background:rgba(13,13,15,0.85);backdrop-filter:blur(8px);padding:8px 12px;border-radius:8px;border:1px solid var(--border)">
+        <div><span class="k">原大小</span> <span class="v" id="estOrig">-</span></div>
+        <div><span class="k">预计输出</span> <span class="v" id="estOut">-</span></div>
+        <div><span class="k">节省</span> <span class="v" id="estSave">-</span></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="drop-overlay" id="dropOverlay"><div class="drop-overlay-box"><div class="icon">🗜️</div><div class="text">释放鼠标，导入图片</div></div></div>
+
+<script>
+// ===================== 桥接：与 /watermark 互通 =====================
+const BRIDGE_KEY = 'shademark_file_bridge';
+// 从目标页读取暂存并清除；返回 {from, files:[{name,dataUrl,mime,size}]} 或 null
+function bridgeRead() {
+  try {
+    const raw = sessionStorage.getItem(BRIDGE_KEY);
+    if (!raw) return null;
+    sessionStorage.removeItem(BRIDGE_KEY);
+    const d = JSON.parse(raw);
+    if (!d || !Array.isArray(d.files)) return null;
+    return d;
+  } catch (e) { console.warn('桥接读取失败', e); return null; }
+}
+// 写入暂存；返回是否成功（超限会失败）
+function bridgeWrite(from, files) {
+  try {
+    sessionStorage.setItem(BRIDGE_KEY, JSON.stringify({ from, files }));
+    return true;
+  } catch (e) {
+    console.warn('桥接写入失败（可能超出 sessionStorage 容量）', e);
+    alert('文件体积过大，sessionStorage 无法暂存。请用「导出下载」先保存到本地，再在另一工具里直接上传。');
+    return false;
+  }
+}
+// dataUrl → Blob
+function dataUrlToBlob(dataUrl) {
+  const [head, b64] = dataUrl.split(',');
+  const mime = /data:(.*?);/.exec(head)?.[1] || 'application/octet-stream';
+  const bin = atob(b64);
+  const arr = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) arr[i] = bin.charCodeAt(i);
+  return new Blob([arr], { type: mime });
+}
+// Blob → dataUrl
+function blobToDataUrl(blob) {
+  return new Promise((resolve) => {
+    const r = new FileReader();
+    r.onload = (e) => resolve(e.target.result);
+    r.readAsDataURL(blob);
+  });
+}
+// 把 blob 重建为 File
+function blobToFile(blob, name) {
+  return new File([blob], name, { type: blob.type || 'image/png' });
+}
+
+// ===================== APP =====================
+const App = {
+  files: [],           // {id,name,file,size,width,height,preview,status,outBlob,outSize,estSize}
+  settings: {
+    outFormat:'jpeg', compressMode:'quality', quality:90, targetKB:500,
+    resizeMode:'none', resizeValue:100,
+    nameTemplate:'compressed_{index}', startIndex:1
+  },
+  _dragId:null, isProcessing:false, selectedId:null,
+
+  async init() {
+    this.renderSidebar();
+    this.setupDragDrop();
+    // 若由水印工具跳转而来（?from=watermark），自动读取
+    this.autoBridgeIn();
+  },
+
+  fmtSeq(n){ return String(n).padStart(2,'0'); },
+  seqOf(id){ const i=this.files.findIndex(f=>f.id===id); return i===-1?this.settings.startIndex:i+this.settings.startIndex; },
+
+  // ---- 侧栏绑定 ----
+  renderSidebar(){
+    document.getElementById('fileInput').onchange=(e)=>{ this.handleFiles(e.target.files); e.target.value=''; };
+    ['outFormat','compressMode','resizeMode'].forEach(id=>{ const el=document.getElementById(id); el.onchange=()=>this.onSettingChange(); });
+    ['nameTemplate','startIndex'].forEach(id=>{ const el=document.getElementById(id); if(el) el.addEventListener('input',()=>this.onSettingChange()); });
+    document.getElementById('quality').oninput=()=>{ document.getElementById('valQuality').textContent=document.getElementById('quality').value; this.onSettingChange(); };
+    document.getElementById('targetKB').oninput=()=>{ document.getElementById('valTarget').textContent=document.getElementById('targetKB').value+' KB'; this.onSettingChange(); };
+    document.getElementById('resizeValue').oninput=()=>this.onSettingChange();
+    this.syncModeUI();
+  },
+  syncModeUI(){
+    const mode=document.getElementById('compressMode').value;
+    document.getElementById('qualityGroup').style.display = mode==='quality' ? '' : 'none';
+    document.getElementById('targetGroup').style.display = mode==='target' ? '' : 'none';
+    const rm=document.getElementById('resizeMode').value;
+    document.getElementById('resizeValueGroup').style.display = rm==='none' ? 'none' : '';
+    const unit = rm==='scale' ? '%' : 'px';
+    const unitEl=document.getElementById('resizeUnit'); if(unitEl) unitEl.textContent=unit;
+    const ph = rm==='scale' ? '50' : (rm==='max'?'2000':'1200');
+    const rv=document.getElementById('resizeValue'); if(rv) rv.placeholder=ph;
+  },
+  onSettingChange(){
+    const mode=document.getElementById('compressMode').value;
+    const rm=document.getElementById('resizeMode').value;
+    this.settings.compressMode=mode; this.settings.resizeMode=rm;
+    this.settings.outFormat=document.getElementById('outFormat').value;
+    this.settings.quality=+document.getElementById('quality').value;
+    this.settings.targetKB=+document.getElementById('targetKB').value;
+    this.settings.resizeValue=+document.getElementById('resizeValue').value||0;
+    this.settings.nameTemplate=document.getElementById('nameTemplate').value.trim();
+    this.settings.startIndex=+document.getElementById('startIndex').value||1;
+    this.syncModeUI();
+    this.renderFileList();
+  },
+
+  // ---- 导入 ----
+  hasFiles(e){
+    const dt=e.dataTransfer;
+    return !!dt && Array.from(dt.types||[]).includes('Files');
+  },
+  setupDragDrop(){
+    document.addEventListener('dragover',(e)=>{ e.preventDefault(); });
+    document.addEventListener('dragenter',(e)=>{
+      if(!this.hasFiles(e)) return;
+      e.preventDefault();
+      document.getElementById('dropOverlay').classList.add('show');
+    });
+    document.addEventListener('dragleave',(e)=>{
+      if(!this.hasFiles(e)) return;
+      if(e.target===document.documentElement||e.relatedTarget===null) document.getElementById('dropOverlay').classList.remove('show');
+    });
+    document.addEventListener('drop',(e)=>{
+      if(!this.hasFiles(e)) return;
+      e.preventDefault();
+      document.getElementById('dropOverlay').classList.remove('show');
+      // 行内拖拽（text/plain 类型）不触发全页上传
+      const types=Array.from(e.dataTransfer.types||[]);
+      if(types.includes('text/plain')) return;
+      if(e.dataTransfer.files.length) this.handleFiles(e.dataTransfer.files);
+    });
+  },
+
+  async handleFiles(fileList){
+    if(!fileList||!fileList.length) return;
+    const list=Array.from(fileList);
+    if(list.length>100){ alert('单次最多导入 100 张，请分批处理。'); return; }
+    const filtered=list.filter(f=>f.type.startsWith('image/'));
+    const rejected=list.filter(f=>!f.type.startsWith('image/'));
+    if(!filtered.length){ alert('请选择图片文件（JPG / PNG / WebP / GIF 等）。'); return; }
+    if(this.files.length+filtered.length>100){ alert('文件总数不能超过 100 张，请先清空或分批。'); }
+    for(const file of filtered){
+      if(file.size>50*1024*1024){ alert(`「${file.name}」超过 50MB 上限，已跳过。`); continue; }
+      const id='f_'+Math.random().toString(36).substr(2,9);
+      const item={ id, file, name:file.name, size:file.size, width:0, height:0, preview:null, status:'pending', outBlob:null, outSize:0 };
+      try{ const bmp=await createImageBitmap(file); item.width=bmp.width; item.height=bmp.height; bmp.close(); }
+      catch(e){ item.width=0; item.height=0; }
+      item.preview=await this.fileToDataURL(file);
+      this.files.push(item);
+    }
+    if(rejected.length) console.warn('忽略非图片文件', rejected.length);
+    if(!this.selectedId && this.files.length) this.selectedId=this.files[0].id;
+    this.afterListChange();
+  },
+
+  fileToDataURL(file){
+    return new Promise((resolve)=>{ const r=new FileReader(); r.onload=(e)=>resolve(e.target.result); r.readAsDataURL(file); });
+  },
+
+  afterListChange(){
+    this.renderFileList();
+    this.updateButtons();
+    this.updateContentMeta();
+  },
+
+  // ---- 桥接：从压缩/水印互导 ----
+  // 页面加载时自动读取桥（压缩工具 ← 水印工具，由「送进水印工具」跳转触发）
+  autoBridgeIn(){
+    const u=new URLSearchParams(location.search);
+    if(u.get('from')==='watermark') this.importFromBridge();
+  },
+  async importFromBridge(){
+    const d=bridgeRead();
+    if(!d||!d.files.length){ alert('暂存区为空。请先在压缩 / 水印工具里点「送进…」把文件送过来。'); return; }
+    const files=d.files.map(f=>blobToFile(dataUrlToBlob(f.dataUrl), f.name));
+    // 构造类数组以便 handleFiles 用 Array.from 逐个读取
+    const arrLike={ length:files.length };
+    files.forEach((f,i)=>{ arrLike[i]=f; });
+    const before=this.files.length;
+    await this.handleFiles(arrLike);
+    if(this.files.length>before){
+      document.getElementById('contentMeta').textContent = `已从${d.from==='watermark'?'水印工具':'压缩工具'}导入 ${this.files.length-before} 张`;
+    }
+  },
+
+  // 把当前文件送往水印工具（已处理送成品，未处理送原图）
+  async sendToWatermark(){
+    if(!this.files.length){ alert('没有可送出的文件。请先上传图片。'); return; }
+    this.renumber();
+    const files=[];
+    for(const f of this.files){
+      if(f.outBlob && f.outName){
+        files.push({ name:f.outName, mime:f.outBlob.type, size:f.outBlob.size, dataUrl:await blobToDataUrl(f.outBlob) });
+      }else{
+        const mime=(f.file&&f.file.type)||f.mime||'image/png';
+        files.push({ name:f.name, mime, size:f.size, dataUrl:f.preview });
+      }
+    }
+    if(!bridgeWrite('compress', files)) return;
+    const base=(location.origin||'') + '/watermark/';
+    location.href = base + '?from=compress';
+  },
+
+  // ---- 列表 ----
+  renderFileList(){
+    const empty=document.getElementById('emptyState');
+    const table=document.getElementById('fileTable');
+    const tbody=document.getElementById('fileTableBody');
+    if(!this.files.length){ empty.style.display='flex'; table.style.display='none'; return; }
+    empty.style.display='none'; table.style.display='table';
+    tbody.innerHTML=this.files.map((f,i)=>{
+      const seq=this.fmtSeq(i+this.settings.startIndex);
+      const outName=(f.status==='done'&&f.outName)?`<div class="out-name">→ ${f.outName}</div>`:'';
+      const statusIcon={'pending':'⏳','processing':'⚙️','done':'✅','error':'❌'}[f.status]||'⏳';
+      const statusLabel={'pending':'待处理','processing':'处理中','done':'已生成','error':'失败'}[f.status]||f.status;
+      const est=f.estSize?this.formatSize(f.estSize):'-';
+      const dlTitle = f.status==='done' ? '下载成品' : '下载（按当前设置即时压缩一张）';
+      return `<tr data-id="${f.id}" class="${f.id===this.selectedId?'selected':''}" draggable="true" onclick="App.selectFile('${f.id}')" ondragstart="App.onRowDragStart(event,'${f.id}')" ondragover="App.onRowDragOver(event,'${f.id}')" ondragleave="App.onRowDragLeave(event)" ondrop="App.onRowDrop(event,'${f.id}')" ondragend="App.onRowDragEnd(event)">`
+        +`<td class="seq-cell"><span class="drag-grip" title="按住拖动调整顺序">⋮⋮</span>${seq}</td>`
+        +`<td><img src="${f.preview}" class="file-thumb" draggable="false"></td>`
+        +`<td><div class="file-name">${f.name}</div>${outName}</td>`
+        +`<td>${this.formatSize(f.size)}</td>`
+        +`<td>${est}</td>`
+        +`<td class="status-${f.status}">${statusIcon} ${statusLabel}</td>`
+        +`<td><button class="icon-btn" title="上移" onclick="event.stopPropagation();App.moveFile('${f.id}',-1)">↑</button>`
+        +`<button class="icon-btn" title="下移" onclick="event.stopPropagation();App.moveFile('${f.id}',1)">↓</button>`
+        +`<button class="icon-btn dl" title="${dlTitle}" onclick="event.stopPropagation();App.downloadSingle('${f.id}')">⬇️</button>`
+        +`<button class="icon-btn del" title="移除" onclick="event.stopPropagation();App.removeFile('${f.id}')">🗑️</button></td></tr>`;
+    }).join('');
+  },
+
+  onRowDragStart(e,id){ this._dragId=id; e.dataTransfer.effectAllowed='move'; try{e.dataTransfer.setData('text/plain',id);}catch(err){} const tr=e.currentTarget.closest('tr'); if(tr)tr.classList.add('dragging'); },
+  onRowDragOver(e,id){ if(!this._dragId||this._dragId===id)return; e.preventDefault(); e.stopPropagation(); e.dataTransfer.dropEffect='move'; document.querySelectorAll('#fileTableBody tr').forEach(r=>r.classList.remove('drag-over')); const tr=e.currentTarget.closest('tr'); if(tr)tr.classList.add('drag-over'); },
+  onRowDragLeave(e){ const tr=e.currentTarget.closest('tr'); if(tr)tr.classList.remove('drag-over'); },
+  onRowDrop(e,id){ if(!this._dragId||this._dragId===id)return; e.preventDefault(); e.stopPropagation(); const fromId=this._dragId; this._dragId=null; this.reorderFiles(fromId,id); },
+  onRowDragEnd(){ this._dragId=null; document.querySelectorAll('#fileTableBody tr').forEach(r=>r.classList.remove('dragging','drag-over')); },
+  reorderFiles(fromId,toId){
+    const from=this.files.findIndex(f=>f.id===fromId), to=this.files.findIndex(f=>f.id===toId);
+    if(from===-1||to===-1||from===to)return;
+    const [item]=this.files.splice(from,1); this.files.splice(to,0,item);
+    this.afterReorder();
+  },
+  moveFile(id,delta){
+    const i=this.files.findIndex(f=>f.id===id), j=i+delta;
+    if(i===-1||j<0||j>=this.files.length)return;
+    const t=this.files[i]; this.files[i]=this.files[j]; this.files[j]=t;
+    this.afterReorder();
+  },
+  afterReorder(){ this.renumber(); this.renderFileList(); this.updateContentMeta(); },
+  removeFile(id){
+    const idx=this.files.findIndex(f=>f.id===id); if(idx===-1)return;
+    this.files.splice(idx,1);
+    if(this.selectedId===id) this.selectedId=null;
+    this.afterListChange();
+  },
+  selectFile(id){
+    if(this.selectedId===id){ this.selectedId=null; this.clearPreview(); this.renderFileList(); return; }
+    this.selectedId=id;
+    this.renderFileList();
+    this.previewEstimate();
+  },
+  clearFiles(){ this.files=[]; this.selectedId=null; this.clearPreview(); this.afterListChange(); },
+  renumber(){
+    let n=this.settings.startIndex;
+    for(const f of this.files){
+      if(f.outBlob){ f.outName=this.buildName(f,n); n++; }
+    }
+    this.renderFileList();
+  },
+  buildName(file,index){
+    let ext=this.settings.outFormat==='jpeg'?'jpg':this.settings.outFormat;
+    let t=this.settings.nameTemplate.replace(/\{index\}/g,this.fmtSeq(index));
+    if(!t.trim()) t='compressed_'+this.fmtSeq(index);
+    if(!/\.\w+$/.test(t)) t+='.'+ext;
+    return t;
+  },
+
+  updateButtons(){
+    const hasAny=this.files.length>0;
+    document.getElementById('btnProcess').disabled=!hasAny;
+    document.getElementById('btnClear').disabled=!hasAny;
+    document.getElementById('bridgeToWM').disabled=!hasAny;
+    const dl=document.getElementById('btnDownload');
+    if(dl) dl.disabled=!this.files.some(f=>f.status==='done'&&f.outBlob);
+  },
+  updateContentMeta(){
+    const meta=document.getElementById('contentMeta');
+    if(!this.files.length){ meta.textContent='拖入图片开始压缩'; return; }
+    const total=this.files.reduce((s,f)=>s+f.size,0);
+    meta.textContent=`${this.files.length} 个文件 · 共 ${this.formatSize(total)} · 拖动行可调整顺序`;
+  },
+  formatSize(bytes){
+    if(bytes===null||bytes===undefined) return '-';
+    if(bytes<1024)return bytes+' B';
+    if(bytes<1024*1024)return (bytes/1024).toFixed(1)+' KB';
+    return (bytes/(1024*1024)).toFixed(2)+' MB';
+  },
+
+  // ---- 单张图片处理（返回 Blob）----
+  loadImage(src){ return new Promise((res,rej)=>{ const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=src; }); },
+
+  // 计算输出尺寸
+  calcSize(w,h){
+    const rm=this.settings.resizeMode, v=this.settings.resizeValue;
+    if(rm==='none'||!v) return { w, h };
+    let nw=w, nh=h;
+    if(rm==='scale'){ const s=v/100; nw=Math.round(w*s); nh=Math.round(h*s); }
+    else if(rm==='width'){ const s=v/w; nw=v; nh=Math.round(h*s); }
+    else if(rm==='height'){ const s=v/h; nw=Math.round(w*s); nh=v; }
+    else if(rm==='max'){ const max=Math.max(w,h); if(max>v){ const s=v/max; nw=Math.round(w*s); nh=Math.round(h*s); } }
+    nw=Math.max(1,nw); nh=Math.max(1,nh);
+    return { w:nw, h:nh };
+  },
+
+  canvasToBlob(canvas,mime,q){
+    return new Promise((res,rej)=>canvas.toBlob(b=>b?res(b):rej(new Error('toBlob 失败')), mime, q));
+  },
+
+  // 单次压缩：返回 {blob,mime}
+  async processOne(file){
+    const fmt=this.settings.outFormat;
+    const img=await this.loadImage(file.preview);
+    const { w, h }=this.calcSize(img.width, img.height);
+    const canvas=document.createElement('canvas');
+    canvas.width=w; canvas.height=h;
+    const ctx=canvas.getContext('2d');
+    ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+    ctx.drawImage(img,0,0,w,h);
+    const mode=this.settings.compressMode;
+    let mime = fmt==='png'?'image/png':(fmt==='webp'?'image/webp':'image/jpeg');
+    if(mode==='none'){
+      return await this.canvasToBlob(canvas, mime, 1.0);
+    }
+    if(mode==='quality'){
+      return await this.canvasToBlob(canvas, mime, this.settings.quality/100);
+    }
+    // mode==='target'：二分/逐步降低质量到目标体积
+    const target=this.settings.targetKB*1024;
+    // PNG 无质量参数，若目标小于无损输出则只能按 PNG 输出
+    if(mime==='image/png') return await this.canvasToBlob(canvas, mime, 1.0);
+    let low=1, high=100, best=null;
+    // 先试一次最高质量
+    let blob=await this.canvasToBlob(canvas, mime, 1.0);
+    if(blob.size<=target) return blob;
+    // 二分搜索质量
+    for(let i=0;i<8;i++){
+      const q=Math.round((low+high)/2);
+      blob=await this.canvasToBlob(canvas, mime, q/100);
+      if(blob.size>target){ high=q-1; } else { best=blob; low=q+1; }
+    }
+    if(best) return best;
+    // 最小质量仍超目标 → 返回质量 10 的结果（尽力而为）
+    return await this.canvasToBlob(canvas, mime, 0.1);
+  },
+
+  // 生成单个文件并估算体积（供预览 / 预计）
+  async estimateOne(file){
+    try{
+      const blob=await this.processOne(file);
+      return { blob, size:blob.size };
+    }catch(e){ console.error('处理失败', file.name, e); return { blob:null, size:0 }; }
+  },
+
+  // ---- 开始处理（生成所有成品，不自动下载）----
+  async processBatch(){
+    if(this.isProcessing) return;
+    const files=this.files;
+    if(!files.length) return;
+    this.isProcessing=true;
+    const btn=document.getElementById('btnProcess');
+    const bar=document.getElementById('progressBar');
+    const fill=document.getElementById('progressFill');
+    const hint=document.getElementById('processHint');
+    btn.disabled=true; bar.style.display='block';
+    for(let i=0;i<files.length;i++){
+      const f=files[i];
+      f.status='processing'; this.renderFileList();
+      hint.textContent=`正在处理 [${this.fmtSeq(i+this.settings.startIndex)}] ${f.name}...`;
+      try{
+        const { blob }=await this.estimateOne(f);
+        if(!blob) throw new Error('null');
+        f.outBlob=blob; f.outSize=blob.size; f.status='done';
+      }catch(e){ console.error(e); f.status='error'; }
+      fill.style.width=(((i+1)/files.length)*100)+'%';
+      await new Promise(r=>setTimeout(r,20));
+    }
+    this.renumber();
+    this.renderFileList();
+    hint.textContent='';
+    const done=files.filter(f=>f.status==='done').length;
+    const errors=files.length-done;
+    btn.disabled=false; this.isProcessing=false;
+    this.updateButtons();
+    hint.textContent = done
+      ? `✅ 已生成 ${done} 个文件`+(errors?`，${errors} 个失败`:'')+`。可用右上「打包下载」保存。`
+      : '处理失败，请检查文件';
+  },
+
+  // ---- 打包下载：把已生成的成品打包为一个 ZIP ----
+  async downloadZip(){
+    this.renumber();
+    const done=this.files.filter(f=>f.status==='done'&&f.outBlob);
+    if(!done.length){ alert('请先点「开始处理」生成成品，再打包下载。'); return; }
+    const zip=new JSZip();
+    for(const f of done) zip.file(f.outName, f.outBlob);
+    const content=await zip.generateAsync({type:'blob'});
+    const url=URL.createObjectURL(content);
+    const a=document.createElement('a'); a.href=url;
+    a.download='shademark_compress_'+new Date().toISOString().slice(0,10).replace(/-/g,'')+'.zip';
+    a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+    this.updateButtons();
+  },
+
+  // ---- 单张下载：预览中的当前图（已生成则下载成品，未处理则即时按设置压一张）----
+  async downloadSingle(id){
+    const f=this.files.find(x=>x.id===(id||this.selectedId));
+    if(!f) return;
+    let blob, name;
+    this.renumber();
+    if(f.outBlob && f.outName){
+      blob=f.outBlob; name=f.outName;
+    }else{
+      try{
+        const est=await this.estimateOne(f);
+        if(!est.blob) throw new Error('null');
+        blob=est.blob; name=this.buildName(f,this.seqOf(f.id));
+      }catch(e){ console.error('单张处理失败', f.name, e); blob=f.file; name=f.name; }
+    }
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=name;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
+  },
+
+  // ---- 预览 ----
+  clearPreview(){
+    document.getElementById('previewPlaceholder').style.display='flex';
+    document.getElementById('previewCanvas').style.display='none';
+    document.getElementById('previewLabel').style.display='none';
+    document.getElementById('previewActions').style.display='none';
+    document.getElementById('estRow').style.display='none';
+  },
+  async previewEstimate(){
+    const f=this.files.find(x=>x.id===this.selectedId) || this.files[0];
+    if(!f) return;
+    if(this.selectedId!==f.id){ this.selectedId=f.id; this.renderFileList(); }
+    const canvas=document.getElementById('previewCanvas');
+    const ctx=canvas.getContext('2d');
+    const img=await this.loadImage(f.preview);
+    const { w, h }=this.calcSize(img.width,img.height);
+    canvas.width=w; canvas.height=h;
+    ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+    ctx.drawImage(img,0,0,w,h);
+    document.getElementById('previewPlaceholder').style.display='none';
+    canvas.style.display='block';
+    document.getElementById('previewLabel').style.display='block';
+    document.getElementById('previewLabel').textContent=`预览 ${f.name} → ${this.settings.outFormat.toUpperCase()} · 序号 ${this.fmtSeq(this.seqOf(f.id))}`;
+    document.getElementById('previewActions').style.display='flex';
+    // 预计输出体积（即时处理一次）
+    const hint=document.getElementById('processHint');
+    hint.textContent='正在估算输出体积…';
+    const res=await this.estimateOne(f);
+    hint.textContent='';
+    document.getElementById('estRow').style.display='flex';
+    document.getElementById('estOrig').textContent=this.formatSize(f.size);
+    document.getElementById('estOut').textContent=this.formatSize(res.size);
+    const save=f.size-res.size;
+    const pct=save>=0?Math.round(save/f.size*100):0;
+    const el=document.getElementById('estSave');
+    el.textContent=(save>=0?('-'+pct+'% ('+this.formatSize(save)+')'):('+'+(res.size-f.size)));
+    el.className='v '+(save>=0?'green':'red');
+  },
+};
+
+// ---- 侧栏控件初始化与按钮 ----
+document.getElementById('btnProcess').onclick=()=>App.processBatch();
+document.getElementById('bridgeToWM').onclick=()=>App.sendToWatermark();
+document.getElementById('btnClear').onclick=()=>App.clearFiles();
+document.getElementById('btnDownload').onclick=()=>App.downloadZip();
+document.getElementById('btnClear').disabled=true;
+document.getElementById('bridgeToWM').disabled=true;
+document.getElementById('btnDownload').disabled=true;
+App.init();
+</script>
+
+<!-- 登录弹窗：未登录点击「发码 / 短链」时弹出（规格同首页） -->
+<div class="modal" id="authModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <div class="tabs">
+        <button class="tab active" id="tabLogin">登录</button>
+        <button class="tab" id="tabRegister">注册</button>
+      </div>
+      <button class="modal-close" id="authCloseBtn" aria-label="关闭">&times;</button>
+    </div>
+    <form id="authForm">
+      <input type="email" id="authEmail" placeholder="邮箱" autocomplete="off" />
+      <input type="password" id="authPass" placeholder="密码" autocomplete="new-password" />
+      <div class="auth-forgot" id="authForgot"><a href="/forgot">忘记密码？</a></div>
+      <div id="authNameWrap" style="display:none"><input id="authName" placeholder="昵称（可选）" autocomplete="off" /></div>
+      <div id="authContactWrap" style="display:none"><input id="authContact" placeholder="联系方式（可选）：微信号或手机号" autocomplete="off" /></div>
+      <div class="auth-error" id="authError"></div>
+      <button class="auth-submit" id="authSubmitBtn" type="submit">登录</button>
+    </form>
+    <p class="auth-tip" id="authTip"></p>
+  </div>
+</div>
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id)};
+  var S={ok:false,ready:false,offline:false}, pendingTarget=null, mode='login', sending=false;
+
+  function checkAuth(){
+    return fetch('/api/auth/session')
+      .then(function(r){return r.json()})
+      .then(function(d){S.ok=!!(d&&d.authenticated)})
+      .catch(function(){S.offline=true;S.ok=false})
+      .then(function(){S.ready=true});
+  }
+  function openAuth(){
+    $('authModal').classList.add('active');
+    setMode('login');
+  }
+  function closeAuth(){
+    $('authModal').classList.remove('active');
+    pendingTarget=null;
+  }
+  function setMode(m){
+    mode=m;
+    $('tabLogin').classList.toggle('active',m==='login');
+    $('tabRegister').classList.toggle('active',m==='register');
+    $('authNameWrap').style.display=m==='register'?'block':'none';
+    $('authContactWrap').style.display=m==='register'?'block':'none';
+    $('authForgot').style.display=m==='login'?'block':'none';
+    $('authSubmitBtn').textContent=m==='login'?'登录':'注册';
+    $('authError').style.display='none';
+    $('authPass').autocomplete='new-password';
+    $('authEmail').setAttribute('autocomplete','off');
+    $('authName').setAttribute('autocomplete','off');
+    $('authContact').setAttribute('autocomplete','off');
+    $('authTip').textContent=m==='login'
+      ? '还没有账号？点击上方「注册」，或直接返回继续浏览工具。'
+      : '已有账号？点击上方「登录」。注册即可使用短链与发码平台。';
+  }
+  function submitAuth(ev){
+    ev.preventDefault();
+    if(sending)return;
+    var email=$('authEmail').value.trim();
+    var pass=$('authPass').value;
+    var err=$('authError');
+    err.style.display='none';
+    if(!email||!pass){err.textContent='请填写邮箱和密码';err.style.display='block';return}
+    var btn=$('authSubmitBtn');
+    sending=true;
+    btn.disabled=true;
+    var old=btn.textContent;
+    btn.textContent='请稍候…';
+    var url=mode==='login'?'/api/auth/login':'/api/auth/register';
+    var body=mode==='login'
+      ? {email:email,password:pass}
+      : {email:email,password:pass,display_name:$('authName').value.trim(),contact:$('authContact').value.trim()};
+    fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)})
+      .then(function(r){return r.json().catch(function(){return {}})})
+      .then(function(d){
+        if(d.error||!d.success){err.textContent=d.error||'操作失败';err.style.display='block';return}
+        S.ok=true;
+        var target=pendingTarget||'/';
+        pendingTarget=null;
+        closeAuth();
+        location.href=target;
+      })
+      .catch(function(){err.textContent='网络错误';err.style.display='block'})
+      .then(function(){sending=false;btn.disabled=false;btn.textContent=old});
+  }
+  // 需要登录的入口：已登录直接进，未登录弹登录框；离线/本地打开时保持原有直跳行为
+  function guardNav(ev,url){
+    ev.preventDefault();
+    var go=function(){
+      if(S.ok||S.offline){location.href=url;return}
+      pendingTarget=url;
+      openAuth();
+    };
+    if(S.ready){go()}else{checkAuth().then(go)}
+  }
+
+  document.querySelectorAll('.nav-tools a[data-gate]').forEach(function(el){
+    el.addEventListener('click',function(ev){guardNav(ev,el.getAttribute('href'))});
+  });
+  $('tabLogin').addEventListener('click',function(){setMode('login')});
+  $('tabRegister').addEventListener('click',function(){setMode('register')});
+  $('authCloseBtn').addEventListener('click',closeAuth);
+  $('authForm').addEventListener('submit',submitAuth);
+  $('authModal').addEventListener('click',function(e){if(e.target.id==='authModal')closeAuth()});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeAuth()});
+
+  checkAuth();
+})();
+</script>
+</body>
+</html>
