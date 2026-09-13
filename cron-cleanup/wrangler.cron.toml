@@ -18,4 +18,5 @@ enabled = true
 # 与 Pages 侧 CRON_SECRET 同值（通过 secret 注入，不写明文）
 # 生产注入：wrangler secret put CRON_SECRET --name shademark-cleanup
 # Pages 生产域名（固定，不随 preview 每次部署变化）
-PAGES_ORIGIN = "https://shademark.pages.dev"
+# 用户确认不使用 pages.dev 子域，统一指向自定义域名 shademark.cn
+PAGES_ORIGIN = "https://shademark.cn"
