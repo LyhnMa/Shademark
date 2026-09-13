@@ -50,7 +50,7 @@ export async function onRequestPost(context: any): Promise<Response> {
 
   if (!name || !price) return errorResponse('名称和价格必填', 400);
 
-  // 自动回调发码属于 Shademark 平台统一订阅的 Pro 权益
+  // 自动回调发码属于 ShadeMark 平台统一订阅的 Pro 权益
   const tier = effectiveTier(user);
   const autoConfirm = canAutoConfirm(tier) ? (auto_confirm_enabled ? 1 : 0) : 0;
   const cbUrl = autoConfirm ? callback_url : '';

@@ -11,7 +11,7 @@ import {
 
 const DAY = 86400;
 
-// GET /api/platform/users —— 全平台用户 + 订阅等级 + 到期状态（Shademark 平台统一订阅）
+// GET /api/platform/users —— 全平台用户 + 订阅等级 + 到期状态（ShadeMark 平台统一订阅）
 // status: permanent 永久 / active 正常 / expiring 即将到期 / grace 宽限期中 / expired 待降级 / downgraded 已降级 / free
 export async function onRequestGet(context: any): Promise<Response> {
   const { request, env } = context;

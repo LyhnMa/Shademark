@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>管理后台 — Shademark</title>
+<title>管理后台 — ShadeMark</title>
 <link rel="icon" href="/logo.png" type="image/png">
 <style>
 :root{
@@ -273,7 +273,7 @@ input:disabled,select:disabled{opacity:.45;cursor:not-allowed;background:transpa
 <body>
 <!-- 顶部导航（与短链工具一致） -->
 <nav class="nav">
-  <a href="/" class="brand"><img src="/logo.png" alt="Logo"><span>Shademark</span></a>
+  <a href="/" class="brand"><img src="/logo.png" alt="Logo"><span>ShadeMark</span></a>
   <div class="nav-tools">
     <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/admin">发码</a><a href="/links">短链</a>
   </div>
@@ -377,7 +377,7 @@ input:disabled,select:disabled{opacity:.45;cursor:not-allowed;background:transpa
     </table></div>
   </div>
 
-  <!-- 订阅（Shademark 平台统一订阅 · 账号级唯一页） -->
+  <!-- 订阅（ShadeMark 平台统一订阅 · 账号级唯一页） -->
   <div class="section" id="section-subscription">
     <h1>订阅</h1>
 
@@ -1041,7 +1041,7 @@ async function dismissEmailTip(){
   try{await fetch('/api/auth/dismiss-email-prompt',{method:'POST'})}catch(e){}
 }
 
-// Shademark 平台统一订阅：一个账号、一个等级，全矩阵通用
+// ShadeMark 平台统一订阅：一个账号、一个等级，全矩阵通用
 const SUB={tier:'free',stored_tier:'free',expires_at:null,days_left:null,expired:false,in_grace:false,grace_days_left:null,grace_ends_at:null,ever_pro:false,retention:{link:30,order:30,quote:30}};
 let SUB_READY=false;
 // 实际生效的数据保留天数：现在是 Pro 或曾经是 Pro 都按 Pro 档（与清理任务同一口径）

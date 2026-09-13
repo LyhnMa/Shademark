@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>水印工具 — Shademark</title>
+<title>水印工具 — ShadeMark</title>
 <link rel="icon" href="/logo.png" type="image/png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -22,7 +22,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 .brand a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
 .brand img{width:32px;height:32px;border-radius:8px;object-fit:contain}
 .brand-text{font-size:18px;font-weight:700;background:linear-gradient(135deg,#fff 0%,#c4b5fd 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
-/* 顶栏工具导航（主页排布：紧跟 Shademark） */
+/* 顶栏工具导航（主页排布：紧跟 ShadeMark） */
 .nav-tools{display:flex;align-items:center;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none}
 .nav-tools::-webkit-scrollbar{display:none}
 .nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap;flex-shrink:0}
@@ -180,7 +180,7 @@ input[type="checkbox"]{accent-color:var(--accent)}
 
 <div class="app-header">
   <div class="brand">
-    <a href="/"><img src="/logo.png" alt="Shademark"><span class="brand-text">Shademark</span></a>
+    <a href="/"><img src="/logo.png" alt="ShadeMark"><span class="brand-text">ShadeMark</span></a>
   </div>
   <div class="nav-tools">
     <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/admin" data-gate="1">发码</a><a href="/links" data-gate="1">短链</a>
@@ -285,7 +285,7 @@ const App = {
 
   settings: {
     commerce: {
-      watermarkText: '© Shademark', position: 'bottom-right', opacity: 0.7,
+      watermarkText: '© ShadeMark', position: 'bottom-right', opacity: 0.7,
       fontSize: 48, rotation: 0, targetSizeMB: 2, outputFormat: 'jpeg', color: '#ffffff',
       renameTemplate: '{prefix}_{index}_{ratio}', prefix: 'SKU', startIndex: 1,
       autoClassify: true, padding: 24
@@ -449,7 +449,7 @@ const App = {
         <div class="upload-zone large" id="extractZone">
           <div id="extractPlaceholder" style="display:flex;flex-direction:column;align-items:center;gap:8px;">
             <div class="upload-icon">🔍</div>
-            <div class="upload-text" style="text-align:center;"><strong>拖拽疑似泄露的图片到此处</strong><br>或点击上传<br><small style="opacity:0.6">将解析图片中是否嵌入了 Shademark 隐形水印</small></div>
+            <div class="upload-text" style="text-align:center;"><strong>拖拽疑似泄露的图片到此处</strong><br>或点击上传<br><small style="opacity:0.6">将解析图片中是否嵌入了 ShadeMark 隐形水印</small></div>
           </div>
           <div class="extract-preview" id="extractPreview" style="display:none;">
             <img id="extractPreviewImg" alt="待提取图片">
@@ -1083,9 +1083,9 @@ const App = {
       const extracted = this.extractLSB(imageData);
       if (extracted && extracted.includes('SHADEMARK:')) {
         const id = extracted.split('SHADEMARK:')[1].split('\0')[0];
-        resultDiv.innerHTML = `<div class="extract-result success"><div class="extract-title">✅ 追踪成功</div><div style="margin-bottom:8px;font-size:13px;color:var(--muted);">提取到的追踪 ID：</div><div class="extract-data">${id}</div><div style="margin-top:12px;font-size:12px;color:var(--muted);">该图片嵌入了 Shademark 隐形水印。<br>建议核对：此 ID 是否为你分发时使用的标识。</div></div>`;
+        resultDiv.innerHTML = `<div class="extract-result success"><div class="extract-title">✅ 追踪成功</div><div style="margin-bottom:8px;font-size:13px;color:var(--muted);">提取到的追踪 ID：</div><div class="extract-data">${id}</div><div style="margin-top:12px;font-size:12px;color:var(--muted);">该图片嵌入了 ShadeMark 隐形水印。<br>建议核对：此 ID 是否为你分发时使用的标识。</div></div>`;
       } else {
-        resultDiv.innerHTML = `<div class="extract-result fail"><div class="extract-title">❌ 未检测到水印</div><div style="font-size:13px;color:var(--muted);">可能原因：<br>· 该图片未经过 Shademark 嵌入<br>· 图片经过重度压缩或裁剪<br>· 图片格式不支持（JPG 有损压缩可能破坏 LSB）</div></div>`;
+        resultDiv.innerHTML = `<div class="extract-result fail"><div class="extract-title">❌ 未检测到水印</div><div style="font-size:13px;color:var(--muted);">可能原因：<br>· 该图片未经过 ShadeMark 嵌入<br>· 图片经过重度压缩或裁剪<br>· 图片格式不支持（JPG 有损压缩可能破坏 LSB）</div></div>`;
       }
     } catch(e) {
       resultDiv.innerHTML = `<div class="extract-result fail"><div class="extract-title">解析失败</div><div class="hint">${e.message}</div></div>`;

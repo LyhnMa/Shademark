@@ -1,5 +1,5 @@
 /**
- * Shademark 定时任务 Cron Worker（两组件方案）
+ * ShadeMark 定时任务 Cron Worker（两组件方案）
  * ----------------------------------------------
  * Cloudflare **Pages 不支持原生 cron triggers**，故用独立 Worker 承担调度：
  * 该 Worker 不共享 Pages 代码，只发带鉴权的 HTTP 回生产 Pages 的内部端点。

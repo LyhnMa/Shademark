@@ -1,7 +1,7 @@
 import { now } from './db';
 
 /**
- * Shademark 平台统一订阅（Platform-wide Subscription）
+ * ShadeMark 平台统一订阅（Platform-wide Subscription）
  * ------------------------------------------------------------------
  * 一个账号、一个等级、所有工具通用。
  * users.subscription_tier / users.subscription_expires_at 是**平台级状态**，

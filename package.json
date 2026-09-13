@@ -1,7 +1,7 @@
 {
   "name": "shademark",
   "version": "1.0.0",
-  "description": "Shademark — 开发者工具产品矩阵",
+  "description": "ShadeMark — 开发者工具产品矩阵",
   "private": true,
   "scripts": {
     "dev": "wrangler pages dev dist --d1=DB",

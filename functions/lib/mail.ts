@@ -205,10 +205,10 @@ export async function sendMail(env: MailEnv, input: SendMailInput): Promise<Send
 export function renderResetEmail(link: string, ttlMinutes: number, account: string): string {
   return `<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>重置 Shademark 密码</title></head>
+<title>重置 ShadeMark 密码</title></head>
 <body style="margin:0;padding:0;background:#f4f4f7;">
   <div style="max-width:520px;margin:0 auto;padding:32px 20px;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;color:#1c1c22;">
-    <div style="font-size:17px;font-weight:700;letter-spacing:-0.01em;padding-bottom:20px;">Shademark</div>
+    <div style="font-size:17px;font-weight:700;letter-spacing:-0.01em;padding-bottom:20px;">ShadeMark</div>
     <div style="background:#ffffff;border:1px solid #e6e6ec;border-radius:12px;padding:28px 24px;">
       <div style="font-size:16px;font-weight:700;margin-bottom:14px;">重置密码</div>
       <p style="font-size:14px;line-height:1.7;color:#4a4a55;margin:0 0 18px;">
@@ -229,7 +229,7 @@ export function renderResetEmail(link: string, ttlMinutes: number, account: stri
 }
 
 export function renderResetText(link: string, ttlMinutes: number, account: string): string {
-  return `Shademark 重置密码
+  return `ShadeMark 重置密码
 
 你（或有人）为账号 ${account} 申请了重置密码。
 链接 ${ttlMinutes} 分钟内有效，打开后设置新密码：

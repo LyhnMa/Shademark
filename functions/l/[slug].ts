@@ -6,7 +6,7 @@ function notFound(slug: string): Response {
   const html = `<!DOCTYPE html>
 <html lang="zh-CN"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
-<title>链接不存在 — Shademark</title>
+<title>链接不存在 — ShadeMark</title>
 <link rel="icon" href="/logo.png" type="image/png">
 <style>
 :root{--bg:#0d0d0f;--card:#17171b;--border:#2a2a33;--text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0}
@@ -21,10 +21,10 @@ a{display:inline-block;padding:9px 18px;border:1px solid var(--border);border-ra
 a:hover{color:var(--text);border-color:var(--accent)}
 </style></head>
 <body><div class="box">
-<img src="/logo.png" alt="Shademark">
+<img src="/logo.png" alt="ShadeMark">
 <h1>这个链接不可用</h1>
 <p><code>/l/${slug}</code> 不存在、已被停用或已过期。</p>
-<a href="/">返回 Shademark 主页</a>
+<a href="/">返回 ShadeMark 主页</a>
 </div></body></html>`;
   return new Response(html, { status: 404, headers: { 'Content-Type': 'text/html; charset=utf-8' } });
 }

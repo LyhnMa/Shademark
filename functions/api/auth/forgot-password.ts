@@ -54,7 +54,7 @@ export async function onRequestPost(context: any): Promise<Response> {
 
       const result = await sendMail(env, {
         to: email,
-        subject: '重置你的 Shademark 密码',
+        subject: '重置你的 ShadeMark 密码',
         html: renderResetEmail(link, ttl, maskEmail(shown)),
         text: renderResetText(link, ttl, maskEmail(shown)),
       });

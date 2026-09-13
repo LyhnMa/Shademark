@@ -7,7 +7,7 @@
  *
  *   # 2) 校验签名 + 真发一封测试邮件（需要阿里云 AccessKey）
  *   DM_ACCESS_KEY_ID=xxx DM_ACCESS_KEY_SECRET=yyy \
- *   DM_ACCOUNT_NAME=no-reply@shademark.cn DM_FROM_ALIAS=Shademark \
+ *   DM_ACCOUNT_NAME=no-reply@shademark.cn DM_FROM_ALIAS=ShadeMark \
  *   DM_TEST_TO=你的邮箱@example.com node tools/dm-selftest.mjs
  *
  * 依赖：先把 functions/lib/mail.ts 打成 tools/.build-mail.mjs
@@ -68,7 +68,7 @@ if (!DM_ACCESS_KEY_ID || !DM_TEST_TO) {
     },
     {
       to: DM_TEST_TO,
-      subject: 'Shademark 发信自检',
+      subject: 'ShadeMark 发信自检',
       html: '<p>这是一封发信自检邮件。收到即表示 AccessKey / 发信地址 / SPF·DKIM 全部就绪。</p>',
       text: '这是一封发信自检邮件。收到即表示 AccessKey / 发信地址 / SPF·DKIM 全部就绪。',
     }

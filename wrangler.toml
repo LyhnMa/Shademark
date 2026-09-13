@@ -24,7 +24,7 @@ ENVIRONMENT = "production"
 DM_ACCOUNT_NAME = "no-reply@mail.shademark.cn"
 # 阿里云官方建议用二级域名发信（避免影响主域名邮件信誉），若要换成
 # no-reply@mail.shademark.cn，只需改上面这行 + 在邮件推送控制台重新配置域名
-DM_FROM_ALIAS = "Shademark"
+DM_FROM_ALIAS = "ShadeMark"
 DM_REGION = "cn-hangzhou"
 DM_ENDPOINT = "dm.aliyuncs.com"
 # v2 = HMAC-SHA1（默认，已按官方测试向量离线校验）；备选 v3 = ACS3-HMAC-SHA256

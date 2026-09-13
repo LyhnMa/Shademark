@@ -1,4 +1,4 @@
-# Shademark 定时任务 Worker —— 独立部署配置（与 Pages 的根 wrangler.toml 互不影响）
+# ShadeMark 定时任务 Worker —— 独立部署配置（与 Pages 的根 wrangler.toml 互不影响）
 # 部署（在 cron-cleanup 目录下执行）：
 #   node <wrangler.js> deploy -c wrangler.cron.toml
 name = "shademark-cleanup"

@@ -99,7 +99,7 @@ node tools/dm-selftest.mjs
 
 # 真发一封
 DM_ACCESS_KEY_ID=你的ID DM_ACCESS_KEY_SECRET=你的SECRET \
-DM_ACCOUNT_NAME=no-reply@mail.shademark.cn DM_FROM_ALIAS=Shademark \
+DM_ACCOUNT_NAME=no-reply@mail.shademark.cn DM_FROM_ALIAS=ShadeMark \
 DM_TEST_TO=你的邮箱@example.com node tools/dm-selftest.mjs
 ```
 收到邮件即全部就绪，随后在线上走一遍「忘记密码」即可。
