@@ -20,10 +20,11 @@ html,body{background:var(--bg);color:var(--text);font-family:-apple-system,Blink
 ::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
 button{font-family:inherit}
 
-/* 顶栏 */
-.topbar{height:60px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:flex-start;gap:20px;padding:0 20px;position:sticky;top:0;z-index:120;flex-shrink:0}
+/* 顶栏（与短链工具 / 发码平台同一套规格：60px 单行、padding 24px、gap 24px） */
+.topbar{height:60px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:flex-start;gap:24px;padding:0 24px;position:sticky;top:0;z-index:120;flex-shrink:0}
 .brand{display:flex;align-items:center;gap:12px;min-width:0}
-.nav-tools{display:flex;gap:4px;align-items:center;flex-wrap:wrap}
+.nav-tools{display:flex;gap:4px;align-items:center;flex-wrap:nowrap;min-width:0;overflow-x:auto;scrollbar-width:none}
+.nav-tools::-webkit-scrollbar{display:none}
 .nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 11px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap}
 .nav-tools a:hover{color:var(--text);background:#141419}
 .brand a{display:flex;align-items:center;text-decoration:none;color:var(--text);flex-shrink:0}
@@ -140,6 +141,11 @@ table.q-items td{padding:10px 8px;border:1px solid var(--paper-line);font-size:1
 table.q-items td.num,table.q-items th.num{text-align:right;font-variant-numeric:tabular-nums}
 table.q-items td.center,table.q-items th.center{text-align:center}
 table.q-items tr.row-total td{background:#fafafc;font-weight:700;border-top:2px solid #111}
+/* 纸张条目表列宽（桌面）。手机端在下方 @media(max-width:600px) 里重排，避免把「项目」列挤没 */
+table.q-items .c-idx{width:28px}
+table.q-items .c-price{width:110px}
+table.q-items .c-qty{width:52px}
+table.q-items .c-amt{width:124px}
 .q-totals{margin-top:16px;margin-left:auto;width:300px}
 .q-totals .tr{display:flex;justify-content:space-between;align-items:center;padding:5px 2px;font-size:13px;color:var(--paper-ink)}
 .q-totals .tr .k{color:#333}
@@ -223,10 +229,8 @@ table.q-items tr.row-total td{background:#fafafc;font-weight:700;border-top:2px 
   .cols{grid-template-columns:1fr}
   .preview-col{position:static}
   .sheet-stage{max-height:none}
-  .nav-tools{display:none}
 }
 @media(max-width:560px){
-  .topbar{padding:0 12px;gap:8px;flex-wrap:wrap;height:auto;min-height:60px;padding-top:8px;padding-bottom:8px}
   .wrap{padding:12px 10px 48px}
   .card{padding:14px}
   .brand-text{font-size:16px}
@@ -254,6 +258,29 @@ table.q-items tr.row-total td{background:#fafafc;font-weight:700;border-top:2px 
   .items-head,.item-grid{grid-template-columns:1fr 72px 60px 34px}
   .row2{grid-template-columns:1fr}
   .actions .btn{min-width:100%}
+}
+
+/* —— 手机端顶部导航：与短链工具 / 发码平台统一（单行 60px、吸顶、隐藏工具导航） —— */
+@media(max-width:600px){
+  .topbar{padding:0 16px;gap:8px;height:60px;min-height:60px;flex-wrap:nowrap;position:sticky;top:0;z-index:50}
+  .nav-tools{display:none}
+  .brand-text{font-size:16px}
+  .top-actions{gap:6px;flex-wrap:nowrap;margin-left:auto}
+}
+/* —— 手机端纸张条目表：改固定列宽，把宽度让回「项目/服务」列。
+   原来列宽写在内联样式里（28+110+52+124=314px），窄屏下超出可用宽度，
+   项目列被压到 ~42px，中文标题竖排成一字一行。 —— */
+@media(max-width:600px){
+  table.q-items{table-layout:fixed}
+  #quoteSheet{padding:24px 14px}
+  table.q-items th,table.q-items td{padding:7px 4px;font-size:11px}
+  table.q-items th{font-size:9.5px;letter-spacing:0;padding:7px 3px}
+  table.q-items .c-idx{width:16px}
+  table.q-items .c-price{width:68px}
+  table.q-items .c-qty{width:26px}
+  table.q-items .c-amt{width:74px}
+  table.q-items td.num{font-size:10.5px}
+  table.q-items td{word-break:break-word}
 }
 
 /* 打印：仅纸张预览 */
@@ -1099,7 +1126,7 @@ function renderSheet(d){
       </div>
     </div>
     <table class="q-items">
-      <thead><tr><th style="width:28px">${esc(T('thIdx'))}</th><th>${esc(T('thItem'))}</th><th class="num" style="width:110px">${esc(T('thUnitPrice'))}</th><th class="center" style="width:52px">${esc(T('thQty2'))}</th><th class="num" style="width:124px">${esc(T('thAmount'))}</th></tr></thead>
+      <thead><tr><th class="c-idx">${esc(T('thIdx'))}</th><th class="c-item">${esc(T('thItem'))}</th><th class="num c-price">${esc(T('thUnitPrice'))}</th><th class="center c-qty">${esc(T('thQty2'))}</th><th class="num c-amt">${esc(T('thAmount'))}</th></tr></thead>
       <tbody>${tableRows}</tbody>
     </table>
     <div class="q-totals">

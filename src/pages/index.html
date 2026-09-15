@@ -27,13 +27,14 @@
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;overflow-x:hidden;display:flex;flex-direction:column}
 .page{flex:1;display:flex;flex-direction:column;justify-content:center;min-height:0}
 
-/* 导航 */
-.nav{height:60px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 32px;gap:28px;background:var(--bg);flex-shrink:0;position:relative;z-index:60}
+/* 顶部导航（与短链工具 / 发码平台同一套规格：60px 单行、padding 24px、gap 24px） */
+.nav{height:60px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:24px;background:var(--bg);flex-shrink:0;position:relative;z-index:60}
 .nav .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);flex-shrink:0}
 .nav .brand img{width:32px;height:32px;object-fit:contain;border-radius:8px}
 .nav .brand span{font-size:16px;font-weight:700;letter-spacing:-0.02em}
-.nav-tools{display:flex;gap:4px;align-items:center}
-.nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s}
+.nav-tools{display:flex;gap:4px;align-items:center;min-width:0;overflow-x:auto;scrollbar-width:none}
+.nav-tools::-webkit-scrollbar{display:none}
+.nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap;flex-shrink:0}
 .nav-tools a:hover{color:var(--text);background:#141419}
 .nav-right{display:flex;gap:10px;align-items:center;margin-left:auto}
 .nav-right .cta{background:var(--accent);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;min-height:38px;display:inline-flex;align-items:center;transition:filter .2s}
@@ -132,8 +133,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   /* 窄屏卡片竖排，恢复常规文档流，允许滚动 */
   body{display:block}
   .page{display:block}
-  .nav{padding:0 16px;gap:10px;position:sticky;top:0;z-index:50}
-  .nav-tools{display:none}
   .nav-right{gap:8px}
   .nav-right .cta{padding:8px 13px;font-size:13px}
   .nav-right .ghost{padding:7px 11px;font-size:13px}
@@ -145,6 +144,12 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 }
 @media(max-width:480px){
   .hero h1{font-size:clamp(28px,9.5vw,34px)}
+}
+/* —— 手机端顶部导航：与短链工具 / 发码平台统一（单行 60px、吸顶、隐藏工具导航） —— */
+@media(max-width:600px){
+  .nav{padding:0 16px;gap:8px;position:sticky;top:0;z-index:50}
+  .nav-tools{display:none}
+  .nav .brand span{font-size:16px}
 }
 
 /* 页脚（极简隐私入口，桌面保持一屏不滚动） */

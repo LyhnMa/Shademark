@@ -30,7 +30,7 @@ html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-
 /* 口号徽标：顶栏水平居中悬浮（空间不足自动隐藏，防重叠） */
 .brand-slogan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;pointer-events:none;z-index:1}
 .brand-slogan span{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:20px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
-.mode-switch{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;gap:4px;margin-left:auto}.mode-btn{padding:8px 18px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:6px;white-space:nowrap}
+.mode-switch{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;gap:4px;margin-left:auto;flex-shrink:0}.mode-btn{padding:8px 18px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:6px;white-space:nowrap}
 .mode-btn:hover{color:var(--text)}
 .mode-btn.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(124,108,240,0.3)}
 .app-body{display:flex;height:calc(100vh - 60px);overflow:hidden}
@@ -141,9 +141,9 @@ input[type="checkbox"]{accent-color:var(--accent)}
   .brand-slogan{display:none}
 }
 @media(max-width:1020px){
-  html,body{overflow:auto;height:auto;min-height:100%}
-  .app-header{height:auto;min-height:60px;flex-wrap:wrap;padding:10px 14px;gap:10px}
-  .nav-tools{display:none}
+  html,body{overflow:visible;height:auto;min-height:100%}
+  /* 顶栏保持单行 60px 并吸顶：与短链工具 / 发码平台一致（原来是 flex-wrap 换行成两行） */
+  .app-header{height:60px;min-height:60px;flex-wrap:nowrap;padding:0 20px;gap:14px;position:sticky;top:0;z-index:50}
   .app-body{flex-direction:column;height:auto!important;overflow:visible}
   .sidebar{width:100%;min-width:0;border-right:none;border-bottom:1px solid var(--border)}
   .sidebar-scroll{padding:16px}
@@ -152,6 +152,38 @@ input[type="checkbox"]{accent-color:var(--accent)}
   .content-header{padding:12px 16px;flex-wrap:wrap;gap:10px}
   .preview-area{height:200px}
   .mode-btn{padding:8px 12px;font-size:12px}
+}
+/* —— 手机端顶栏：与短链工具 / 发码平台统一（隐藏工具导航、缩品牌字与模式切换） —— */
+@media(max-width:600px){
+  .app-header{height:60px;min-height:60px;padding:0 16px;gap:8px;flex-wrap:nowrap}
+  .nav-tools{display:none}
+  .brand-text{font-size:16px}
+  .mode-switch{padding:3px;gap:3px}
+  .mode-btn{padding:7px 11px;font-size:12px;gap:0}
+  .mode-btn span{display:none}
+}
+/* —— 手机端文件列表：表格转卡片，不再横向滚动（原来 8 列共 ~628px 固定宽，手机上要左右拖） —— */
+@media(max-width:820px){
+  .file-list{overflow:visible}
+  .file-table{display:block;width:100%;min-width:0}
+  .file-table thead{display:none}
+  .file-table tbody{display:block}
+  .file-table tr{display:grid;grid-template-columns:auto auto minmax(0,1fr);align-items:center;gap:6px 10px;
+    background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:10px;cursor:pointer}
+  .file-table td{display:block;padding:0;border-bottom:none;font-size:12px;min-width:0}
+  .file-table td.ft-seq{grid-column:1;display:flex;align-items:center;gap:4px;color:var(--muted)}
+  .file-table td.ft-thumb{grid-column:2;padding:0}
+  .file-table td.ft-name{grid-column:3}
+  .file-table td.ft-meta{grid-column:1/-1;display:flex;justify-content:space-between;align-items:center;gap:12px;
+    padding:6px 0;border-top:1px dashed var(--border)}
+  .file-table td.ft-meta::before{content:attr(data-label);color:var(--muted);font-size:11px;font-weight:600;flex:0 0 auto;
+    text-transform:none;letter-spacing:0}
+  .file-table td.ft-ops{grid-column:1/-1;display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+    padding-top:8px;border-top:1px solid var(--border);margin-top:4px}
+  .file-table td.ft-ops .icon-btn{width:100%;height:36px;font-size:14px}
+  .file-table tr.drag-over{box-shadow:0 0 0 2px var(--accent);border-radius:10px}
+  .file-table tr.drag-over td{border-top:none}
+  .file-thumb{width:40px;height:40px}
 }
 
 /* —— 登录弹窗（未登录点「发码 / 短链」时弹出，规格同首页）—— */
@@ -642,7 +674,7 @@ const App = {
     const table = document.getElementById('fileTable');
     const tbody = document.getElementById('fileTableBody');
     if (!this.files.length) { empty.style.display = 'flex'; table.style.display = 'none'; return; }
-    empty.style.display = 'none'; table.style.display = 'table';
+    empty.style.display = 'none'; table.style.display = '';
     tbody.innerHTML = this.files.map((f, i) => {
       const badgeClass = {'主图':'badge-main','详情':'badge-detail','横幅':'badge-banner','其他':'badge-other'}[f.ratioLabel] || 'badge-other';
       const stale = this.isStale(f);
@@ -653,14 +685,14 @@ const App = {
       const seq = this.fmtSeq(i + this.settings.commerce.startIndex);
       const outName = (f.status === 'done' && f.newName) ? `<div class="out-name">→ ${f.newName}</div>` : '';
       return `<tr class="${f.id === this.selectedId ? 'selected' : ''}" data-id="${f.id}" draggable="true" onclick="App.selectFile('${f.id}')" ondragstart="App.onRowDragStart(event,'${f.id}')" ondragover="App.onRowDragOver(event,'${f.id}')" ondragleave="App.onRowDragLeave(event)" ondrop="App.onRowDrop(event,'${f.id}')" ondragend="App.onRowDragEnd(event)">`
-        + `<td class="seq-cell"><span class="drag-grip" title="按住拖动可调整顺序">⋮⋮</span>${seq}</td>`
-        + `<td><img src="${f.preview}" class="file-thumb" draggable="false"></td>`
-        + `<td><div class="file-name">${f.name}</div><small>${this.formatSize(f.size)}</small>${outName}</td>`
-        + `<td>${f.width}×${f.height}</td>`
-        + `<td><span class="badge ${badgeClass}">${f.ratioLabel}</span></td>`
-        + `<td class="status-${statusKey}">${statusIcon} ${statusLabel}</td>`
-        + `<td>${f.processedSize ? this.formatSize(f.processedSize) : '-'}</td>`
-        + `<td><button class="icon-btn move" title="上移" onclick="event.stopPropagation();App.moveFile('${f.id}',-1)">↑</button>`
+        + `<td class="seq-cell ft-seq"><span class="drag-grip" title="按住拖动可调整顺序">⋮⋮</span>${seq}</td>`
+        + `<td class="ft-thumb"><img src="${f.preview}" class="file-thumb" draggable="false"></td>`
+        + `<td class="ft-name"><div class="file-name">${f.name}</div><small>${this.formatSize(f.size)}</small>${outName}</td>`
+        + `<td class="ft-meta" data-label="尺寸">${f.width}×${f.height}</td>`
+        + `<td class="ft-meta" data-label="分类"><span class="badge ${badgeClass}">${f.ratioLabel}</span></td>`
+        + `<td class="ft-meta status-${statusKey}" data-label="状态">${statusIcon} ${statusLabel}</td>`
+        + `<td class="ft-meta" data-label="输出大小">${f.processedSize ? this.formatSize(f.processedSize) : '-'}</td>`
+        + `<td class="ft-ops"><button class="icon-btn move" title="上移" onclick="event.stopPropagation();App.moveFile('${f.id}',-1)">↑</button>`
         + `<button class="icon-btn move" title="下移" onclick="event.stopPropagation();App.moveFile('${f.id}',1)">↓</button>`
         + `<button class="icon-btn dl" title="${dlTitle}" onclick="event.stopPropagation();App.downloadSingle('${f.id}')">⬇️</button>`
         + `<button class="icon-btn del" title="移除" onclick="event.stopPropagation();App.removeFile('${f.id}')">🗑️</button></td></tr>`;
