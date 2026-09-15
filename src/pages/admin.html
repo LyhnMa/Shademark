@@ -268,6 +268,24 @@ input:disabled,select:disabled{opacity:.45;cursor:not-allowed;background:transpa
   .code-plain{font-size:14px;letter-spacing:.5px}
   tbody td code{font-size:12px}
 }
+/* 订阅权益对比表例外：窄屏不套用上面的通用卡片化，保持四列结构。
+   上面的 @media(max-width:820px) 会隐藏 thead，并给每个 td 加 data-label 前缀；
+   而 .sub-table 的 td 由脚本生成、没有 data-label，套用后 4 个列名整体丢失、
+   数值与列名错位 —— 这里显式还原为表格布局，并缩字号/内边距以塞进屏宽。 */
+@media(max-width:820px){
+  .sub-cols{overflow-x:visible}
+  .sub-table{min-width:0;display:table;width:100%;table-layout:fixed;font-size:12px}
+  .sub-table thead{display:table-header-group}
+  .sub-table tbody{display:table-row-group}
+  .sub-table thead tr,.sub-table tbody tr{display:table-row;background:transparent;border:none;border-radius:0;padding:0;margin-bottom:0}
+  .sub-table tbody tr:hover td{background:transparent}
+  .sub-table th,.sub-table td{display:table-cell;padding:8px 6px;text-align:left;font-size:12px;word-break:break-word;border-bottom:1px solid var(--border)}
+  .sub-table tbody td::before{content:none}
+  .sub-table thead th:first-child,.sub-table tbody td:first-child{width:32%}
+  .sub-table thead th:not(:first-child),.sub-table tbody td:not(:first-child){width:22.66%}
+  .sub-table .grace-note{font-size:10px;line-height:1.35}
+  .sub-table .col-pro{background:rgba(124,77,255,.05)}
+}
 </style>
 </head>
 <body>

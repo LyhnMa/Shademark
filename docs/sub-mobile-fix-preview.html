@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>订阅移动端适配 · 修复对照</title>
+<style>
+:root{
+  --bg:#0d0d0f;--card:#17171b;--border:#2a2a33;
+  --text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;
+  --danger:#f87171;--success:#4ade80;--warn:#ffd166;--info:#60a5fa;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#08080a;color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;padding:20px}
+h1{font-size:18px;font-weight:700;margin-bottom:6px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:24px;line-height:1.6}
+.pair{display:flex;gap:24px;flex-wrap:wrap;align-items:flex-start;margin-bottom:32px}
+.col{flex:1 1 320px;min-width:280px;max-width:420px}
+.col h2{font-size:14px;font-weight:700;margin-bottom:4px}
+.col h2.bad{color:var(--danger)}
+.col h2.good{color:var(--success)}
+.col .note{font-size:12px;color:var(--muted);margin-bottom:10px;line-height:1.5}
+.phone{background:var(--bg);border:1px solid var(--border);border-radius:14px;padding:14px;overflow:hidden}
+/* ===== 修复前：原样套用通用卡片化的结果 ===== */
+.before .sub-cols{margin-bottom:22px;overflow-x:auto}
+.before .sub-table{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+.before .sub-table th,.before .sub-table td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.before .sub-table thead th{font-size:13px;font-weight:700;background:rgba(124,77,255,.06);white-space:nowrap}
+.before .sub-table .yes{color:#4ade80;font-weight:700}
+.before .sub-table .no{color:var(--muted)}
+.before .sub-table .grace-note{font-size:12px;font-weight:400;color:var(--muted);display:block;margin-top:2px}
+/* 通用 820px 卡片化（修复前会被 .sub-table 吃到） */
+@media(max-width:820px){
+  .before table{min-width:0;display:block;width:100%}
+  .before thead{display:none}
+  .before tbody{display:block}
+  .before tbody tr{display:block;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px}
+  .before tbody td{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px;text-align:right}
+  .before tbody td:last-child{border-bottom:none}
+  .before tbody td::before{content:attr(data-label);color:var(--muted);font-size:12px;font-weight:600;flex:0 0 auto;margin-right:12px}
+  /* .sub-table 类选择器特异性更高：min-width 仍是 520px */
+  .before .sub-table{min-width:520px}
+}
+/* ===== 修复后：.sub-table 例外块 ===== */
+.after .sub-cols{margin-bottom:22px;overflow-x:auto}
+.after .sub-table{width:100%;border-collapse:collapse;font-size:13px;min-width:520px}
+.after .sub-table th,.after .sub-table td{padding:10px 14px;text-align:left;border-bottom:1px solid var(--border)}
+.after .sub-table thead th{font-size:13px;font-weight:700;background:rgba(124,77,255,.06);white-space:nowrap}
+.after .sub-table .yes{color:#4ade80;font-weight:700}
+.after .sub-table .no{color:var(--muted)}
+.after .sub-table .grace-note{font-size:12px;font-weight:400;color:var(--muted);display:block;margin-top:2px}
+.after .sub-table .col-pro{background:rgba(124,77,255,.05)}
+@media(max-width:820px){
+  .after table{min-width:0;display:block;width:100%}
+  .after thead{display:none}
+  .after tbody{display:block}
+  .after tbody tr{display:block;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 14px;margin-bottom:12px}
+  .after tbody td{display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px dashed var(--border);font-size:13px}
+  .after tbody td::before{content:attr(data-label);color:var(--muted);font-size:12px;font-weight:600;margin-right:12px}
+  /* —— 例外块：保持表格布局 —— */
+  .after .sub-cols{overflow-x:visible}
+  .after .sub-table{min-width:0;display:table;width:100%;table-layout:fixed;font-size:12px}
+  .after .sub-table thead{display:table-header-group}
+  .after .sub-table tbody{display:table-row-group}
+  .after .sub-table thead tr,.after .sub-table tbody tr{display:table-row;background:transparent;border:none;border-radius:0;padding:0;margin-bottom:0}
+  .after .sub-table th,.after .sub-table td{display:table-cell;padding:8px 6px;text-align:left;font-size:12px;word-break:break-word;border-bottom:1px solid var(--border)}
+  .after .sub-table tbody td::before{content:none}
+  .after .sub-table thead th:first-child,.after .sub-table tbody td:first-child{width:32%}
+  .after .sub-table thead th:not(:first-child),.after .sub-table tbody td:not(:first-child){width:22.66%}
+  .after .sub-table .grace-note{font-size:10px;line-height:1.35}
+}
+</style>
+</head>
+<body>
+<h1>订阅权益对比表 · 移动端修复对照</h1>
+<p class="sub">同一个 <code>renderSubCompare()</code> 输出，在窄屏下的两种结果。把浏览器窗口拖到 375px 左右即可看到差异。</p>
+
+<div class="pair">
+  <div class="col before">
+    <h2 class="bad">修复前</h2>
+    <p class="note">表头消失 · 数值错位 · 横向溢出</p>
+    <div class="phone"><div class="sub-cols" id="beforeBox"></div></div>
+  </div>
+  <div class="col after">
+    <h2 class="good">修复后</h2>
+    <p class="note">四列表头保留 · 宽度自适应 · 不溢出</p>
+    <div class="phone"><div class="sub-cols" id="afterBox"></div></div>
+  </div>
+</div>
+
+<script>
+const rows=[
+  ['批量生成上限','100','10,000'],
+  ['验证 API 速率','60 次/分','600 次/分'],
+  ['订单数据保留','30 天','90 天'],
+  ['自动回调发码','—','✓'],
+  ['订单 / 激活码 CSV 导出','—','✓'],
+  ['短链月点击','10,000','100,000'],
+  ['短链统计保留','30 天','90 天'],
+  ['短链点击 CSV 导出','—','✓'],
+  ['水印工具','全部功能','全部功能'],
+  ['压缩工具','全部功能','全部功能'],
+];
+function build(targetId){
+  const el=document.getElementById(targetId);
+  const body=rows.map(r=>{
+    const yes=c=>c==='✓'?'<span class="yes">✓</span>':c==='—'?'<span class="no">—</span>':c;
+    return `<tr><td>${r[0]}</td><td>${yes(r[1])}</td><td class="col-pro">${yes(r[2])}</td><td class="col-pro">${yes(r[2])}</td></tr>`;
+  }).join('');
+  el.innerHTML=`<table class="sub-table">
+    <thead><tr>
+      <th>权益</th><th>Free</th>
+      <th class="th-grace">宽限期<span class="grace-note">已到期后的 3 天过渡，功能同 Pro</span></th>
+      <th class="th-pro">Pro</th>
+    </tr></thead>
+    <tbody>${body}</tbody>
+  </table>`;
+}
+build('beforeBox');build('afterBox');
+</script>
+</body>
+</html>
