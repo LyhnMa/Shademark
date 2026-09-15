@@ -11,7 +11,7 @@
  *   3. 品牌 <img> 的 alt 是否统一为 "ShadeMark"
  *   4. 页面可见文本里是否残留商标符号（™ / ®）
  *   5. 顶部品牌区 logo 尺寸是否统一 32px
- *   6. 顶部品牌区字号是否按分组统一（导航 16px / 工具页 18px / 登录卡片 20px）
+ *   6. 顶部品牌区字号是否按分组统一（导航 / 工具页 / 独立页 均 16px；登录卡片标题 20px）
  */
 import fs from 'fs';
 import path from 'path';
@@ -20,6 +20,7 @@ import { fileURLToPath } from 'url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 
 // 分组：同组内应完全一致；跨组允许有设计差异。font 为 null 表示该页无品牌名文字，跳过字号检查
+// 2026-09-15 起 logo 旁品牌名全站 16px（工具页保留渐变填充，仅字号统一）
 const GROUPS = {
   nav: {
     font: '16px',
@@ -31,7 +32,7 @@ const GROUPS = {
     ],
   },
   tool: {
-    font: '18px',
+    font: '16px',
     files: ['src/pages/quote.html', 'public/watermark/index.html', 'public/compress/index.html'],
   },
   auth: {
@@ -39,7 +40,7 @@ const GROUPS = {
     files: ['src/pages/login.html', 'src/pages/forgot.html', 'src/pages/reset.html'],
   },
   misc: {
-    font: '18px',
+    font: '16px',
     files: ['public/404.html'],
   },
   dyn: {
