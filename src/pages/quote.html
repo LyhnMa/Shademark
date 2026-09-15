@@ -25,17 +25,22 @@ button{font-family:inherit}
 .brand{display:flex;align-items:center;gap:12px;min-width:0}
 .nav-tools{display:flex;gap:4px;align-items:center;flex-wrap:nowrap;min-width:0;overflow-x:auto;scrollbar-width:none}
 .nav-tools::-webkit-scrollbar{display:none}
-.nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 11px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap}
+.nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap}
 .nav-tools a:hover{color:var(--text);background:#141419}
-.brand a{display:flex;align-items:center;text-decoration:none;color:var(--text);flex-shrink:0}
+.brand a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);flex-shrink:0}
 .brand img{width:32px;height:32px;border-radius:8px;object-fit:contain}
-.brand-text{font-size:18px;font-weight:700;background:linear-gradient(135deg,#fff 0%,#c4b5fd 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
+.brand-text{font-size:18px;font-weight:700;letter-spacing:-0.02em;background:linear-gradient(135deg,#fff 0%,#c4b5fd 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;white-space:nowrap}
 .brand-divider{width:1px;height:16px;background:var(--border);flex-shrink:0;margin:0 4px}
 .brand-sub{font-size:12px;color:var(--muted);white-space:nowrap}
-.top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-left:auto}
-.home-link{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border:1px solid var(--border);border-radius:8px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;white-space:nowrap;transition:all .2s;min-height:38px}
-.home-link:hover{color:var(--text);border-color:var(--accent);background:rgba(124,108,240,.08)}
-button.home-link{background:transparent;cursor:pointer}
+/* —— 右上角（与短链工具 / 发码平台同一套规格：纯文字链接、gap 12px）
+   注意：用子选择器 > 只作用于「登录 / 联系」，不碰嵌套的账号菜单按钮（.acct-btn /
+   .acct-menu），否则 .nav-links button（0,1,1）会盖掉 .acct-btn（0,1,0）。 —— */
+.nav-links{display:flex;gap:12px;align-items:center;margin-left:auto;flex-wrap:nowrap;line-height:20px}
+.nav-links>a,.nav-links>button{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;line-height:20px;transition:color .2s;white-space:nowrap}
+.nav-links>a:hover,.nav-links>button:hover{color:var(--text)}
+.nav-links>button{background:none;border:none;padding:0;margin:0;font-family:inherit;cursor:pointer}
+.nav-user{font-size:13px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#navUser .badge{line-height:16px}
 .lang-switch{display:inline-flex;background:var(--elevated);border:1px solid var(--border);border-radius:8px;overflow:hidden;min-height:34px}
 .lang-row{display:flex;justify-content:center;margin-bottom:12px}
 .lang-switch button{border:none;background:transparent;color:var(--muted);font-size:12px;font-weight:700;padding:0 12px;cursor:pointer;transition:all .15s}
@@ -47,7 +52,7 @@ button.home-link{background:transparent;cursor:pointer}
 .badge-pro{background:#2a2440;color:var(--accent)}
 /* 右上角账号菜单（与短链 / 发码一致） */
 .acct{position:relative;display:inline-flex;align-items:center}
-.acct-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;font-family:inherit;padding:4px 2px;max-width:200px}
+.acct-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--muted);font-size:13px;font-weight:500;font-family:inherit;padding:4px 2px;max-width:200px;line-height:20px;white-space:nowrap}
 .acct-btn:hover{color:var(--text)}
 .acct-btn .caret{width:8px;height:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin-top:-3px;flex-shrink:0}
 .acct-menu{display:none;position:absolute;right:0;top:calc(100% + 12px);min-width:168px;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:6px;box-shadow:0 16px 40px rgba(0,0,0,.5);z-index:120}
@@ -200,9 +205,7 @@ table.q-items .c-amt{width:124px}
 .auth-submit:disabled{opacity:.5;cursor:not-allowed}
 .auth-error{color:var(--danger);font-size:13px;margin:-4px 0 12px;display:none}
 .auth-tip{color:var(--muted);font-size:12px;margin-top:12px;text-align:center;line-height:1.6}
-/* 顶栏登录按钮：与首页 .nav-right .cta 同款 */
-.nav-cta{display:inline-flex;align-items:center;justify-content:center;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:8px 18px;font-size:13px;font-weight:600;min-height:38px;white-space:nowrap;cursor:pointer;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;transition:filter .2s}
-.nav-cta:hover{filter:brightness(.9)}
+/* 顶栏登录按钮：与短链工具 / 发码平台一致（纯文字链接形态，见 .nav-links） */
 
 /* 抽屉（历史 / 模板） */
 .drawer-mask{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:300}
@@ -265,7 +268,9 @@ table.q-items .c-amt{width:124px}
   .topbar{padding:0 16px;gap:8px;height:60px;min-height:60px;flex-wrap:nowrap;position:sticky;top:0;z-index:50}
   .nav-tools{display:none}
   .brand-text{font-size:16px}
-  .top-actions{gap:6px;flex-wrap:nowrap;margin-left:auto}
+  .nav-links{gap:14px;overflow-x:auto;scrollbar-width:none}
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-links>a,.nav-links>button{white-space:nowrap;font-size:13px}
 }
 /* —— 手机端纸张条目表：改固定列宽，把宽度让回「项目/服务」列。
    原来列宽写在内联样式里（28+110+52+124=314px），窄屏下超出可用宽度，
@@ -308,10 +313,11 @@ table.q-items .c-amt{width:124px}
   <div class="nav-tools">
     <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/admin" data-gate="1">发码</a><a href="/links" data-gate="1">短链</a>
   </div>
-  <div class="top-actions">
+  <div class="nav-links">
+    <button id="loginBtn" style="display:none" onclick="openAuth('login',null)" data-i18n="login">登录</button>
     <span class="acct" id="navAcct" style="display:none">
       <button class="acct-btn" id="acctBtn" onclick="toggleAcct(event)" aria-haspopup="true" aria-expanded="false" title="账号菜单">
-        <span id="navUser"></span><i class="caret"></i>
+        <span class="nav-user" id="navUser"></span><i class="caret"></i>
       </button>
       <div class="acct-menu" id="acctMenu">
         <a href="/admin?sub=1">订阅</a>
@@ -320,8 +326,7 @@ table.q-items .c-amt{width:124px}
         <button class="danger" onclick="logout()">退出登录</button>
       </div>
     </span>
-    <a href="javascript:void(0)" id="navContact" class="home-link" onclick="openContact('other')" style="display:none">联系</a>
-    <button class="nav-cta" id="loginBtn" style="display:none" onclick="openAuth('login',null)" data-i18n="login">登录</button>
+    <a href="javascript:void(0)" id="navContact" onclick="openContact('other')" style="display:none">联系</a>
   </div>
 </div>
 

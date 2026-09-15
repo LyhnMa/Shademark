@@ -36,21 +36,23 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .nav-tools::-webkit-scrollbar{display:none}
 .nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap;flex-shrink:0}
 .nav-tools a:hover{color:var(--text);background:#141419}
-.nav-right{display:flex;gap:10px;align-items:center;margin-left:auto}
-.nav-right .cta{background:var(--accent);color:#fff;border:none;padding:8px 18px;border-radius:6px;font-size:13px;font-weight:600;text-decoration:none;min-height:38px;display:inline-flex;align-items:center;transition:filter .2s}
-.nav-right .cta:hover{filter:brightness(.9)}
-.nav-right .ghost{display:inline-flex;align-items:center;min-height:38px;padding:7px 16px;border:1px solid var(--border);border-radius:6px;background:transparent;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;transition:border-color .2s,color .2s}
-.nav-right .ghost:hover{color:var(--text);border-color:var(--accent)}
-.nav-right button.ghost{cursor:pointer;font-family:inherit}
+/* —— 右上角（与短链工具 / 发码平台同一套规格：纯文字链接、gap 12px）
+   注意：用子选择器 > 只作用于「登录 / 联系」，不碰嵌套的账号菜单按钮（.acct-btn /
+   .acct-menu），否则 .nav-links button（0,1,1）会盖掉 .acct-btn（0,1,0）。 —— */
+.nav-links{display:flex;gap:12px;align-items:center;margin-left:auto;flex-wrap:nowrap;line-height:20px}
+.nav-links>a,.nav-links>button{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;line-height:20px;transition:color .2s;white-space:nowrap}
+.nav-links>a:hover,.nav-links>button:hover{color:var(--text)}
+.nav-links>button{background:none;border:none;padding:0;margin:0;font-family:inherit;cursor:pointer}
 #navAuth{display:none}
-.nav-user{font-size:13px;color:var(--muted)}
+.nav-user{font-size:13px;color:var(--muted);max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#navUser .badge{line-height:16px}
 /* —— 右上角账号菜单（用户名 → 订阅 / 发码后台 / 退出登录） —— */
 .acct{position:relative;display:inline-flex;align-items:center}
 .acct-btn{display:inline-flex;align-items:center;gap:6px;background:none;border:none;cursor:pointer;color:var(--muted);
-  font-size:13px;font-weight:500;font-family:inherit;padding:4px 2px}
+  font-size:13px;font-weight:500;font-family:inherit;padding:4px 2px;max-width:200px;line-height:20px;white-space:nowrap}
 .acct-btn:hover{color:var(--text)}
 .acct-btn .caret{width:8px;height:8px;border-right:1.5px solid currentColor;border-bottom:1.5px solid currentColor;transform:rotate(45deg);margin-top:-3px;flex-shrink:0}
-.acct-menu{display:none;position:absolute;right:0;top:calc(100% + 12px);min-width:168px;background:#17171b;border:1px solid var(--border);
+.acct-menu{display:none;position:absolute;right:0;top:calc(100% + 12px);min-width:168px;background:var(--card);border:1px solid var(--border);
   border-radius:10px;padding:6px;box-shadow:0 16px 40px rgba(0,0,0,.5);z-index:120}
 .acct-menu.show{display:block}
 .acct-menu a,.acct-menu button{display:block;width:100%;text-align:left;padding:9px 12px;border-radius:6px;color:var(--text);
@@ -133,9 +135,6 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   /* 窄屏卡片竖排，恢复常规文档流，允许滚动 */
   body{display:block}
   .page{display:block}
-  .nav-right{gap:8px}
-  .nav-right .cta{padding:8px 13px;font-size:13px}
-  .nav-right .ghost{padding:7px 11px;font-size:13px}
   .hero{padding:46px 20px 30px;gap:16px}
   .hero h1{font-size:clamp(32px,8.6vw,40px);letter-spacing:-0.02em}
   .hero p{font-size:15px;line-height:1.6}
@@ -150,6 +149,9 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
   .nav{padding:0 16px;gap:8px;position:sticky;top:0;z-index:50}
   .nav-tools{display:none}
   .nav .brand span{font-size:16px}
+  .nav-links{gap:14px;overflow-x:auto;scrollbar-width:none}
+  .nav-links::-webkit-scrollbar{display:none}
+  .nav-links>a,.nav-links>button{white-space:nowrap;font-size:13px}
 }
 
 /* 页脚（极简隐私入口，桌面保持一屏不滚动） */
@@ -177,7 +179,8 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     <a href="/admin" data-gate="1" data-page-node-id="vsvnOTJs8A4jzwWD1RyFgl">发码</a>
     <a href="/links" data-gate="1" data-page-node-id="Ev6fHtuAVV1zOABdngTwre">短链</a>
   </div>
-  <div class="nav-right" data-page-node-id="gjct29coAwfq9BPHRrOGaq">
+  <div class="nav-links" data-page-node-id="gjct29coAwfq9BPHRrOGaq">
+    <button id="navAuth" onclick="openAuth()" data-page-node-id="fTbn7OjkWniC24R9DdXTeI">登录</button>
     <span class="acct" id="navAcct" style="display:none" data-page-node-id="acctWrap">
       <button class="acct-btn" id="acctBtn" onclick="toggleAcct(event)" aria-haspopup="true" aria-expanded="false" title="账号菜单" data-page-node-id="acctBtn">
         <span class="nav-user" id="navUser" data-page-node-id="qmFb61qN9IsdU3308TvRDR"></span><i class="caret"></i>
@@ -189,8 +192,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
         <button class="danger" onclick="logout()">退出登录</button>
       </div>
     </span>
-    <a href="javascript:void(0)" id="navContact" class="ghost" onclick="openContact('other')" style="display:none" data-page-node-id="VnqlY46PpCOazxH7ABNAjq">联系</a>
-    <button class="cta" id="navAuth" onclick="openAuth()" data-page-node-id="fTbn7OjkWniC24R9DdXTeI">登录</button>
+    <a href="javascript:void(0)" id="navContact" onclick="openContact('other')" style="display:none" data-page-node-id="VnqlY46PpCOazxH7ABNAjq">联系</a>
   </div>
 </nav>
 

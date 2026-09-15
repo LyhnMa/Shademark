@@ -32,7 +32,7 @@ await send('Page.navigate', { url: SITE + '/quote' });
 for (let i = 0; i < 160; i++) { try { if (await ev('document.readyState') === 'complete') break; } catch {} await sleep(150); }
 await sleep(2000);
 result.quote = await ev(`(()=>{
-  const ta=document.querySelector('.top-actions');
+  const ta=document.querySelector('.nav-links');
   if(!ta)return {topActionsExists:false};
   const kids=[...ta.children].map(x=>x.id||x.className||x.tagName);
   const nc=document.getElementById('navContact');
