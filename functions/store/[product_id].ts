@@ -4,7 +4,7 @@ const PAGE = `<!DOCTYPE html>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>商品购买 — ShadeMark</title>
-<link rel="icon" href="/logo.png" type="image/png">
+<link rel="icon" href="/favicon.png" type="image/png">
 <style>
 :root{--bg:#0d0d0f;--card:#17171b;--border:#2a2a33;--text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;--danger:#f87171;--success:#4ade80;--warn:#ffd166}
 *{margin:0;padding:0;box-sizing:border-box}
@@ -12,7 +12,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 .nav{height:60px;border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 24px;gap:24px;background:var(--bg)}
 .nav .brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text);flex-shrink:0}
 .nav .brand img{width:32px;height:32px;object-fit:contain;border-radius:8px}
-.nav .brand span{font-size:15px;font-weight:700;letter-spacing:-0.02em}
+.nav .brand span{font-size:16px;font-weight:700;letter-spacing:-0.02em}
 .nav-tools{display:flex;gap:4px;align-items:center}
 .nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap}
 .nav-tools a:hover{color:var(--text);background:#141419}
@@ -57,7 +57,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 </head>
 <body>
 <nav class="nav">
-  <a href="/" class="brand"><img src="/logo.png" alt="Logo"><span>ShadeMark</span></a>
+  <a href="/" class="brand"><img src="/logo.png" alt="ShadeMark"><span>ShadeMark</span></a>
   <div class="nav-tools">
     <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/admin">发码</a><a href="/links">短链</a>
   </div>

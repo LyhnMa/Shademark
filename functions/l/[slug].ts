@@ -7,7 +7,7 @@ function notFound(slug: string): Response {
 <html lang="zh-CN"><head><meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>链接不存在 — ShadeMark</title>
-<link rel="icon" href="/logo.png" type="image/png">
+<link rel="icon" href="/favicon.png" type="image/png">
 <style>
 :root{--bg:#0d0d0f;--card:#17171b;--border:#2a2a33;--text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0}
 *{margin:0;padding:0;box-sizing:border-box}
