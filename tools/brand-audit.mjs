@@ -12,6 +12,7 @@
  *   4. 页面可见文本里是否残留商标符号（™ / ®）
  *   5. 顶部品牌区 logo 尺寸是否统一 32px
  *   6. 顶部品牌区字号是否按分组统一（导航 / 工具页 / 独立页 均 16px；登录卡片标题 20px）
+ *   7. 顶部品牌区文字颜色是否为实色（不得使用 background-clip:text 渐变填充）
  */
 import fs from 'fs';
 import path from 'path';
@@ -101,6 +102,13 @@ for (const [group, cfg] of Object.entries(GROUPS)) {
     const primary = fonts[0] || '';
     if (cfg.font && primary && primary !== cfg.font) {
       problems.push(`${rel}: 品牌字号 = ${primary}（组 ${group} 期望 ${cfg.font}）`);
+    }
+
+    // 7) 品牌名必须是实色（禁止 background-clip:text 渐变填充）
+    const brandRule = (html.match(/\.(?:nav\s+\.?brand|sidebar\s+\.logo|brand-text|logo)\s*(?:span|h1)?\{[^}]*\}/gi) || []).join(' ');
+    const hasGradientFill = /-webkit-background-clip:\s*text|background-clip:\s*text|-webkit-text-fill-color:\s*transparent/i.test(brandRule);
+    if (hasGradientFill) {
+      problems.push(`${rel}: 品牌名使用了渐变填充（background-clip:text），应为实色`);
     }
 
     rows.push({
