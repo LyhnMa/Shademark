@@ -59,7 +59,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <nav class="nav">
   <a href="/" class="brand"><img src="/logo.png" alt="ShadeMark"><span>ShadeMark</span></a>
   <div class="nav-tools">
-    <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/admin">发码</a><a href="/links">短链</a>
+    <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/excel">Excel</a><a href="/admin">发码</a><a href="/links">短链</a>
   </div>
 </nav>
 <div class="wrap">

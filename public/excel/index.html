@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Excel 处理 — ShadeMark</title>
+<link rel="icon" href="/favicon.png" type="image/png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<script src="/excel/excel-clean.js"></script>
+<style>
+:root{
+  --bg:#0d0d0f;--surface:#101014;--panel:#17171b;--elevated:#1e1e28;--border:#2a2a33;
+  --text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;--accent2:#5a4fd0;
+  --success:#4ade80;--warn:#ffd166;--error:#f87171;--radius:12px;--radius-sm:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;line-height:1.5;overflow:hidden}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+.app-header{height:60px;background:var(--bg);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:24px;padding:0 24px;position:relative;z-index:100;flex-shrink:0}
+.brand{display:flex;align-items:center;flex-shrink:0}
+.brand a{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--text)}
+.brand img{width:32px;height:32px;border-radius:8px;object-fit:contain}
+.brand-text{font-size:16px;font-weight:700;letter-spacing:-0.02em;color:var(--text);white-space:nowrap}
+.nav-tools{display:flex;align-items:center;gap:4px;min-width:0;overflow-x:auto;scrollbar-width:none}
+.nav-tools::-webkit-scrollbar{display:none}
+.nav-tools a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;padding:7px 12px;border-radius:6px;transition:color .2s,background .2s;white-space:nowrap;flex-shrink:0}
+.nav-tools a:hover{color:var(--text);background:#141419}
+.nav-tools a.active{color:var(--text);background:#141419}
+.brand-slogan{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);display:flex;align-items:center;gap:6px;pointer-events:none;z-index:1}
+.brand-slogan span{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:20px;font-size:11px;font-weight:600;color:var(--muted);white-space:nowrap}
+.mode-switch{display:flex;background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:4px;gap:4px;margin-left:auto;flex-shrink:0}
+.mode-btn{padding:8px 18px;border-radius:8px;border:none;background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;gap:6px;white-space:nowrap;font-family:inherit}
+.mode-btn:hover{color:var(--text)}
+.mode-btn.active{background:var(--accent);color:#fff;box-shadow:0 4px 12px rgba(124,108,240,0.3)}
+.app-body{display:flex;height:calc(100vh - 60px);overflow:hidden}
+.sidebar{width:372px;min-width:372px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden}
+.sidebar-scroll{flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px}
+.main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
+.panel{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+.panel-title{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.form-group{margin-bottom:16px}.form-group:last-child{margin-bottom:0}
+.form-label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.5px}
+select,input[type="text"]{width:100%;padding:10px 12px;background:var(--elevated);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-size:14px;outline:none;transition:border-color 0.2s;font-family:inherit}
+select:focus,input:focus{border-color:var(--accent)}
+input[type="checkbox"]{accent-color:var(--accent)}
+.hint{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:16px;display:flex;align-items:center;gap:14px;text-align:left;transition:all .2s;cursor:pointer;background:var(--surface)}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--accent);background:rgba(124,108,240,0.06)}
+.upload-icon{font-size:24px;opacity:.6;flex-shrink:0}
+.upload-text{color:var(--muted);font-size:13px;line-height:1.45}
+.upload-text strong{color:var(--text)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px;border:none;border-radius:var(--radius-sm);font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;font-family:inherit}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(124,108,240,0.3)}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(124,108,240,0.4)}
+.btn-primary:disabled{opacity:0.45;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-secondary{background:var(--elevated);color:var(--text);border:1px solid var(--border)}
+.btn-secondary:hover{background:#25252f}
+.btn-secondary:disabled{opacity:0.45;cursor:not-allowed}
+.btn-block{width:100%}
+.content-header{padding:16px 24px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:var(--surface);flex-shrink:0;gap:12px;flex-wrap:wrap}
+.content-title{font-size:16px;font-weight:700}.content-meta{color:var(--muted);font-size:13px}
+.work-area{flex:1;overflow-y:auto;padding:22px 24px 40px}
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--muted);gap:14px;padding:80px 40px;text-align:center}
+.empty-state .icon{font-size:44px;opacity:0.3}
+.stack{display:flex;flex-direction:column;gap:16px;max-width:920px}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.card-head{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+.card-sub{font-size:12px;color:var(--muted)}
+.card-body{padding:6px 0}
+.grp-head{display:flex;align-items:center;gap:10px;padding:12px 18px;background:rgba(255,255,255,0.02);border-bottom:1px solid var(--border)}
+.grp-name{font-size:13px;font-weight:700}
+.grp-desc{font-size:12px;color:var(--muted)}
+.item{display:flex;align-items:center;gap:12px;padding:11px 18px;border-bottom:1px solid rgba(42,42,51,.55)}
+.item:last-child{border-bottom:none}
+.item label{display:flex;align-items:center;gap:10px;cursor:pointer;flex:1;min-width:0}
+.item-name{font-size:13px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.item-count{font-size:13px;font-weight:700;font-variant-numeric:tabular-nums;min-width:74px;text-align:right;color:var(--muted)}
+.item-count.hot{color:var(--accent)}
+.item-count.zero{opacity:.4}
+.linkish{background:none;border:none;color:var(--muted);font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(138,138,148,.4);font-family:inherit;padding:2px 0;white-space:nowrap}
+.linkish:hover{color:var(--accent);text-decoration-color:var(--accent)}
+.item-ctl select{width:auto;min-width:132px;padding:6px 9px;font-size:12px;background:var(--bg)}
+.item-ctl{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.flag{display:inline-flex;align-items:center;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase}
+.flag-warn{background:rgba(255,209,102,.14);color:#fde68a}
+.flag-err{background:rgba(248,113,113,.14);color:#fca5a5}
+.flag-ok{background:rgba(74,222,128,.14);color:#86efac}
+.flag-off{background:var(--elevated);color:var(--muted)}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:14px;padding:14px 18px;border-top:1px solid var(--border);background:rgba(255,255,255,0.015);flex-wrap:wrap}
+.progress-bar{height:3px;background:var(--elevated);border-radius:2px;overflow:hidden;margin-top:10px}
+.progress-fill{height:100%;background:var(--accent);transition:width .3s ease;border-radius:2px}
+.frow{display:flex;align-items:center;gap:10px;padding:10px 18px;border-bottom:1px solid rgba(42,42,51,.55);flex-wrap:wrap}
+.frow:last-child{border-bottom:none}
+.fname{flex:1;min-width:0;font-size:13px;font-weight:500;word-break:break-all}
+.fmeta{font-size:12px;color:var(--muted);font-variant-numeric:tabular-nums}
+.sheet{display:flex;align-items:center;gap:8px;padding:5px 0 5px 2px;font-size:12px;color:var(--muted)}
+.sheet label{display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0}
+.sheet b{color:var(--text);font-weight:500;word-break:break-all}
+.sum-line{display:flex;align-items:flex-start;gap:10px;padding:9px 18px;border-bottom:1px solid rgba(42,42,51,.55);font-size:13px;color:var(--muted)}
+.sum-line:last-child{border-bottom:none}
+.sum-num{font-weight:700;color:var(--text);font-variant-numeric:tabular-nums;min-width:74px;text-align:right}
+.sum-ok{color:var(--success)}
+.modal{display:none;position:fixed;inset:0;background:rgba(6,6,9,.72);backdrop-filter:blur(4px);z-index:300;align-items:center;justify-content:center;padding:20px}
+.modal.active{display:flex}
+.modal-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:760px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);gap:12px}
+.modal-head h3{font-size:15px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:0 4px;font-family:inherit}
+.modal-close:hover{color:var(--text)}
+.modal-body{overflow-y:auto;padding:4px 0}
+.smp{display:grid;grid-template-columns:minmax(120px,240px) minmax(0,1fr);gap:8px 14px;padding:9px 20px;border-bottom:1px solid rgba(42,42,51,.5);font-size:12px}
+.smp-loc{color:var(--accent);font-family:"SF Mono",Monaco,monospace;word-break:break-all}
+.smp-val{color:var(--muted);word-break:break-all}
+.smp-val i{color:var(--text);font-style:normal;font-family:"SF Mono",Monaco,monospace}
+.smp-val em{color:var(--success);font-style:normal;font-family:"SF Mono",Monaco,monospace}
+.smp-more{padding:10px 20px;font-size:12px;color:var(--muted)}
+.drop-overlay{position:fixed;inset:0;background:rgba(13,13,15,0.85);backdrop-filter:blur(4px);z-index:9998;display:none;align-items:center;justify-content:center;pointer-events:none}
+.drop-overlay.show{display:flex}
+.drop-overlay-box{border:2px dashed var(--accent);border-radius:16px;padding:48px 64px;text-align:center;background:rgba(124,108,240,0.08)}
+.drop-overlay-box .icon{font-size:48px;margin-bottom:12px}
+.drop-overlay-box .text{font-size:18px;font-weight:700}
+.toast{position:fixed;left:50%;bottom:28px;transform:translate(-50%,20px);background:var(--elevated);border:1px solid var(--border);border-radius:10px;padding:11px 18px;font-size:13px;color:var(--text);box-shadow:0 10px 30px rgba(0,0,0,.5);opacity:0;pointer-events:none;transition:all .25s;z-index:9999;max-width:80vw}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.animate-in{animation:fadeIn .3s ease}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite}
+@media(max-width:1350px){.brand-slogan{display:none}}
+@media(max-width:1020px){
+  html,body{overflow:visible;height:auto;min-height:100%}
+  .app-header{height:60px;min-height:60px;flex-wrap:nowrap;padding:0 20px;gap:14px;position:sticky;top:0;z-index:50}
+  .app-body{flex-direction:column;height:auto!important;overflow:visible}
+  .sidebar{width:100%;min-width:0;border-right:none;border-bottom:1px solid var(--border)}
+  .sidebar-scroll{padding:16px}
+  .main-content{overflow:visible}
+  .work-area{overflow:visible;padding:16px}
+  .content-header{padding:12px 16px}
+  .mode-btn{padding:8px 12px;font-size:12px}
+}
+@media(max-width:600px){
+  .app-header{height:60px;min-height:60px;padding:0 16px;gap:8px;flex-wrap:nowrap}
+  .nav-tools{display:none}
+  .brand-text{font-size:16px}
+  .mode-switch{padding:3px;gap:3px}
+  .mode-btn{padding:7px 11px;font-size:12px;gap:0}
+  .mode-btn span{display:none}
+  .item{flex-wrap:wrap;align-items:flex-start}
+  .item-count{min-width:0;text-align:left}
+  .smp{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="app-header">
+  <div class="brand">
+    <a href="/"><img src="/logo.png" alt="ShadeMark"><span class="brand-text">ShadeMark</span></a>
+  </div>
+  <div class="nav-tools">
+    <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/excel" class="active">Excel</a><a href="/admin">发码</a><a href="/links">短链</a>
+  </div>
+  <div class="brand-slogan"><span>🔒 文件不离本地</span><span>🧾 清洗 / 瘦身 / 格式统一</span></div>
+  <div class="mode-switch">
+    <button class="mode-btn active" data-mode="clean" onclick="App.switchMode('clean')"><span>🧽</span>清洗</button>
+    <button class="mode-btn" data-mode="merge" onclick="App.switchMode('merge')"><span>🧩</span>合并拆分</button>
+    <button class="mode-btn" data-mode="match" onclick="App.switchMode('match')"><span>🔍</span>匹配对比</button>
+  </div>
+</div>
+
+<div class="app-body">
+  <aside class="sidebar">
+    <div class="sidebar-scroll">
+
+      <div class="panel">
+        <div class="panel-title">① 上传</div>
+        <div class="upload-zone" id="dropZone">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text"><strong>选择 Excel / CSV</strong><br>支持 .xlsx · .xlsm · .csv，可多选</div>
+        </div>
+        <input type="file" id="fileInput" multiple accept=".xlsx,.xlsm,.csv" style="display:none">
+        <div class="hint">文件只在你的浏览器里处理，不上传服务器。三组功能共用同一批文件。</div>
+      </div>
+
+      <div class="panel" id="filePanel" style="display:none">
+        <div class="panel-title">文件 <span id="fileCount" style="color:var(--accent)"></span></div>
+        <div id="fileList"></div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-title">输出</div>
+        <div class="form-group">
+          <label class="form-label">格式</label>
+          <select id="outFormat">
+            <option value="xlsx">Excel 工作簿（.xlsx）</option>
+            <option value="csv">CSV（每张表一个文件）</option>
+          </select>
+        </div>
+        <div class="hint" id="outHint">原表不动：清洗结果写进新的「_清洗」sheet，和原表放在同一个文件里。</div>
+      </div>
+
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <div class="content-header">
+      <div>
+        <div class="content-title" id="contentTitle">Excel 清洗</div>
+        <div class="content-meta" id="contentMeta">拖拽文件到页面任意位置，或点击左侧上传</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:13px" id="btnRescan" onclick="App.rescan()" disabled>重新体检</button>
+        <button class="btn btn-secondary" style="width:auto;padding:8px 14px;font-size:13px" id="btnClear" onclick="App.clearAll()" disabled>清空</button>
+        <button class="btn btn-primary" style="width:auto;padding:8px 16px;font-size:13px" id="btnDownload" onclick="App.download()" disabled>⬇️ 下载</button>
+      </div>
+    </div>
+    <div class="work-area" id="workArea">
+      <div class="empty-state" id="emptyState">
+        <div class="icon">🧾</div>
+        <div>把 Excel 拖进来，先体检，再决定清什么</div>
+        <div style="font-size:12px;opacity:.7">上传 → 体检报告 → 勾选 → 处理 → 变更摘要 → 下载</div>
+      </div>
+      <div id="reportArea" style="display:none"></div>
+      <div id="summaryArea" style="display:none"></div>
+    </div>
+  </main>
+</div>
+
+<div class="drop-overlay" id="dropOverlay"><div class="drop-overlay-box"><div class="icon">📄</div><div class="text">释放鼠标，添加文件</div></div></div>
+
+<div class="modal" id="sampleModal">
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="sampleTitle">样本</h3>
+      <button class="modal-close" onclick="App.closeSamples()">×</button>
+    </div>
+    <div class="modal-body" id="sampleBody"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ===================== 常量 =====================
+var WARN_MB = 25;      // 超过提示，不拦
+var HARD_MB = 80;      // 超过不读，只显示
+var WARN_ROWS = 200000;
+
+var CLEAN = window.ShadeMarkExcelClean;
+
+// 扫描时把所有项目都打开（体检报告要显示每一项的真实条数）
+var SCAN_CFG = {
+  items: { invisible:true, spaces:true, hyperlink:true, dupes:true, fullwidth:true, textnum:true,
+           date:true, names:true, hidden:'show', notes:'hide' }
+};
+
+// ===================== 状态 =====================
+function defaultPick() {
+  var p = {};
+  CLEAN.ITEMS.forEach(function (it) { p[it.key] = !!it.def; });
+  p.hidden = 'show';
+  p.notes = 'hide';
+  p.dupesKeep = 'first';
+  p.dupesBy = 'row';
+  p.dateOrder = 'ymd';
+  p.dateNumFmt = 'yyyy-mm-dd';
+  return p;
+}
+
+var App = {
+  mode: 'clean',
+  files: [],
+  pick: defaultPick(),
+  seq: 0,
+  busy: false,
+  results: null,        // { outputs:[{name, blob|blob}], lines:[], samples:{} }
+  sampleSource: null,
+
+  /* ---------------- 生命周期 ---------------- */
+  init: function () {
+    var dz = document.getElementById('dropZone');
+    var fi = document.getElementById('fileInput');
+    dz.addEventListener('click', function () { fi.click(); });
+    fi.addEventListener('change', function (e) { App.addFiles(e.target.files); fi.value = ''; });
+
+    var ov = document.getElementById('dropOverlay');
+    var depth = 0;
+    window.addEventListener('dragenter', function (e) {
+      if (!App.hasFiles(e)) return;
+      e.preventDefault(); depth++; if (depth === 1) ov.classList.add('show');
+    });
+    window.addEventListener('dragover', function (e) { if (App.hasFiles(e)) e.preventDefault(); });
+    window.addEventListener('dragleave', function (e) {
+      if (!App.hasFiles(e)) return;
+      depth = Math.max(0, depth - 1); if (!depth) ov.classList.remove('show');
+    });
+    window.addEventListener('drop', function (e) {
+      if (!App.hasFiles(e)) return;
+      e.preventDefault(); depth = 0; ov.classList.remove('show');
+      App.addFiles(e.dataTransfer.files);
+    });
+
+    document.getElementById('outFormat').addEventListener('change', function () { App.renderSidebar(); });
+    App.render();
+  },
+
+  hasFiles: function (e) {
+    if (!e.dataTransfer || !e.dataTransfer.types) return false;
+    return Array.prototype.indexOf.call(e.dataTransfer.types, 'Files') >= 0;
+  },
+
+  switchMode: function (m) {
+    App.mode = m;
+    document.querySelectorAll('.mode-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.mode === m); });
+    if (m === 'clean') { App.render(); return; }
+    document.getElementById('contentTitle').textContent = (m === 'merge' ? '合并拆分' : '匹配对比');
+    document.getElementById('contentMeta').textContent = '本轮先做清洗';
+    document.getElementById('emptyState').style.display = 'flex';
+    document.getElementById('emptyState').innerHTML =
+      '<div class="icon">' + (m === 'merge' ? '🧩' : '🔍') + '</div>' +
+      '<div>' + (m === 'merge' ? '合并拆分' : '匹配对比') + ' 还没开放</div>' +
+      '<div style="font-size:12px;opacity:.7">这一轮先把「清洗」跑通，切换回清洗即可使用</div>';
+    document.getElementById('reportArea').style.display = 'none';
+    document.getElementById('summaryArea').style.display = 'none';
+  },
+
+  /* ---------------- 上传 / 解析 ---------------- */
+  addFiles: function (list) {
+    var arr = Array.prototype.slice.call(list || []);
+    if (!arr.length) return;
+    arr.forEach(function (f) { App.loadOne(f); });
+  },
+
+  loadOne: function (file) {
+    var name = file.name || 'file';
+    var lower = name.toLowerCase();
+    var kind = /\.csv$/i.test(lower) ? 'csv' : (/\.xlsm$/i.test(lower) ? 'xlsm' : (/\.xlsx$/i.test(lower) ? 'xlsx' : null));
+    var rec = {
+      id: ++App.seq, name: name, size: file.size, kind: kind, buf: null,
+      state: 'reading', error: null, warn: null, sheets: [], names: 0
+    };
+    App.files.push(rec);
+    App.render();
+
+    if (!kind) { rec.state = 'error'; rec.error = '只认 .xlsx / .xlsm / .csv'; App.render(); return; }
+    if (file.size > HARD_MB * 1024 * 1024) {
+      rec.state = 'error';
+      rec.error = '体积 ' + App.mb(file.size) + '，超过 ' + HARD_MB + ' MB，浏览器里读不动';
+      App.render(); return;
+    }
+    if (file.size > WARN_MB * 1024 * 1024) rec.warn = '体积 ' + App.mb(file.size) + '，处理可能较慢';
+
+    file.arrayBuffer().then(function (buf) {
+      rec.buf = buf;
+      return rec.kind === 'csv' ? App.readCSV(rec, buf) : App.readXlsx(rec, buf);
+    }).then(function () {
+      rec.state = 'ready';
+      App.render();
+    }).catch(function (e) {
+      rec.state = 'error';
+      rec.error = (e && e.message) ? e.message : '读取失败';
+      App.render();
+    });
+  },
+
+  readXlsx: function (rec, buf) {
+    var wb = new ExcelJS.Workbook();
+    return wb.xlsx.load(buf).then(function () {
+      var list = [];
+      wb.worksheets.forEach(function (ws) { list.push(ws); });
+      if (!list.length) throw new Error('文件里没有工作表');
+      rec._wb = wb;
+      rec.sheets = list.map(function (ws) {
+        return { name: ws.name, selected: true, rows: ws.actualRowCount || ws.rowCount || 0,
+                 cols: ws.actualColumnCount || ws.columnCount || 0, counts: null, extras: null, samples: null };
+      });
+      rec.names = (wb.definedNames && wb.definedNames.model ? wb.definedNames.model.length : 0);
+    });
+  },
+
+  readCSV: function (rec, buf) {
+    var text = new TextDecoder('utf-8').decode(new Uint8Array(buf));
+    var matrix = CLEAN.parseCSV(text);
+    var wb = new ExcelJS.Workbook();
+    var nm = (rec.name.replace(/\.csv$/i, '') || 'Sheet1').slice(0, 31);
+    var ws = wb.addWorksheet(nm);
+    matrix.forEach(function (row) {
+      var r = ws.addRow(row.map(function (v) { return v === '' ? null : v; }));
+      void r;
+    });
+    rec._wb = wb;
+    rec.isCSV = true;
+    var rows = Math.max(matrix.length - 1, 0);
+    var cols = matrix.reduce(function (a, r) { return Math.max(a, r.length); }, 0);
+    rec.sheets = [{ name: nm, selected: true, rows: rows, cols: cols, counts: null, extras: null, samples: null }];
+    rec.names = 0;
+  },
+
+  rescan: function () {
+    App.files.forEach(function (f) { f.sheets.forEach(function (s) { s.counts = null; s.extras = null; s.samples = null; }); });
+    if (App._wb) { App._wb = null; }
+    App.results = null;
+    App.render();
+  },
+
+  clearAll: function () {
+    App.files = []; App.results = null; App.pick = defaultPick();
+    App.render();
+  },
+
+  /* ---------------- 体检 ---------------- */
+  ensureScanned: function () {
+    App.files.forEach(function (f) {
+      if (f.state !== 'ready' || !f._wb) return;
+      f.sheets.forEach(function (s) {
+        if (s.counts) return;
+        var ws = f._wb.getWorksheet(s.name);
+        if (!ws) { s.counts = {}; s.extras = { hiddenRows:0, hiddenCols:0, notes:0 }; s.samples = {}; return; }
+        var r = CLEAN.scan(ws, SCAN_CFG);
+        s.counts = r.counts;
+        s.samples = r.samples;
+        s.bounds = r.bounds;
+        s.extras = CLEAN.scanSheetExtras(ws);
+        if ((ws.actualRowCount || ws.rowCount || 0) > WARN_ROWS) s.huge = true;
+      });
+    });
+  },
+
+  selectedSheets: function () {
+    var out = [];
+    App.files.forEach(function (f) {
+      if (f.state !== 'ready') return;
+      f.sheets.forEach(function (s) { if (s.selected) out.push({ file: f, sheet: s }); });
+    });
+    return out;
+  },
+
+  // 某一项在所有已选表里的总条数。隐藏行列/批注不属于逐单元格处理，条数来自 extras。
+  totalOf: function (key) {
+    var n = 0;
+    App.selectedSheets().forEach(function (e) {
+      if (key === 'names') { n += e.file.names || 0; return; }
+      var x = e.sheet.extras;
+      if (key === 'hidden') { n += x ? (x.hiddenRows + x.hiddenCols) : 0; return; }
+      if (key === 'notes') { n += x ? x.notes : 0; return; }
+      var c = e.sheet.counts && e.sheet.counts[key];
+      n += c || 0;
+    });
+    return n;
+  },
+
+  // 只有逐单元格处理的项才有「样本」可看
+  SAMPLEABLE: ['invisible', 'spaces', 'hyperlink', 'dupes', 'fullwidth', 'textnum', 'date'],
+
+  samplesOf: function (key) {
+    var out = [];
+    var multi = App.selectedSheets().length > 1;
+    App.selectedSheets().forEach(function (e) {
+      var arr = (e.sheet.samples && e.sheet.samples[key]) || [];
+      arr.forEach(function (r) {
+        out.push({
+          loc: (multi ? e.file.name + ' › ' : '') + (r.sheet || '') + '!' + (r.cell || ''),
+          before: r.before, after: r.after
+        });
+      });
+    });
+    return out;
+  },
+
+  /* ---------------- 渲染 ---------------- */
+  render: function () {
+    if (App.mode !== 'clean') return;
+    App.ensureScanned();
+    var ready = App.files.filter(function (f) { return f.state === 'ready'; });
+    var busy = App.files.some(function (f) { return f.state === 'reading'; });
+
+    App.renderSidebar();
+
+    document.getElementById('btnClear').disabled = !App.files.length;
+    document.getElementById('btnRescan').disabled = !ready.length;
+    document.getElementById('btnDownload').disabled = !App.results;
+
+    if (!App.files.length) {
+      document.getElementById('emptyState').style.display = 'flex';
+      document.getElementById('reportArea').style.display = 'none';
+      document.getElementById('summaryArea').style.display = 'none';
+      document.getElementById('contentTitle').textContent = 'Excel 清洗';
+      document.getElementById('contentMeta').textContent = '拖拽文件到页面任意位置，或点击左侧上传';
+      return;
+    }
+    document.getElementById('emptyState').style.display = 'none';
+    document.getElementById('contentTitle').textContent = 'Excel 清洗';
+    var nc = App.selectedSheets().length;
+    document.getElementById('contentMeta').textContent =
+      App.files.length + ' 个文件 · ' + nc + ' 张表已选' + (busy ? ' · 读取中…' : '');
+
+    if (App.results) {
+      document.getElementById('reportArea').style.display = 'none';
+      App.renderSummary();
+    } else {
+      document.getElementById('summaryArea').style.display = 'none';
+      App.renderReport();
+    }
+  },
+
+  renderSidebar: function () {
+    var fp = document.getElementById('filePanel');
+    var box = document.getElementById('fileList');
+    var cnt = document.getElementById('fileCount');
+    if (!App.files.length) { fp.style.display = 'none'; return; }
+    fp.style.display = '';
+    cnt.textContent = '（' + App.files.length + '）';
+
+    var html = App.files.map(function (f) {
+      var flag = f.state === 'reading'
+        ? '<span class="spin"></span>'
+        : f.state === 'error'
+          ? '<span class="flag flag-err">错误</span>'
+          : '<span class="flag flag-ok">就绪</span>';
+      var body = '';
+      if (f.state === 'error') {
+        body = '<div class="hint" style="color:var(--error)">' + App.esc(f.error) + '</div>';
+      } else if (f.state === 'ready') {
+        body = f.sheets.map(function (s, i) {
+          return '<div class="sheet"><label><input type="checkbox" ' + (s.selected ? 'checked' : '') +
+            ' onchange="App.toggleSheet(' + f.id + ',' + i + ',this.checked)"> <b>' + App.esc(s.name) + '</b>' +
+            '<span>' + s.rows + ' 行</span></label>' +
+            (s.huge ? ' <span class="flag flag-warn">行数很大</span>' : '') + '</div>';
+        }).join('');
+      } else {
+        body = '<div class="hint">读取中…</div>';
+      }
+      return '<div class="frow" style="padding:12px 0">' +
+        '<div class="fname">' + App.esc(f.name) + flag +
+          (f.warn ? '<div class="hint" style="color:var(--warn)">' + App.esc(f.warn) + '</div>' : '') +
+          body +
+        '</div>' +
+        '<div style="width:100%;display:flex;gap:10px;align-items:center;justify-content:space-between">' +
+          '<span class="fmeta">' + App.mb(f.size) + '</span>' +
+          '<button class="linkish" onclick="App.removeFile(' + f.id + ')">移除</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    box.innerHTML = html;
+
+    var of = document.getElementById('outFormat').value;
+    document.getElementById('outHint').textContent = of === 'csv'
+      ? '每张清洗结果单独出一个 .csv（多个则打包成 zip）。CSV 只有一张表，格式信息会丢。'
+      : '原表不动：清洗结果写进新的「_清洗」sheet，和原表放在同一个文件里。';
+  },
+
+  toggleSheet: function (fid, idx, on) {
+    var f = App.files.filter(function (x) { return x.id === fid; })[0];
+    if (!f || !f.sheets[idx]) return;
+    f.sheets[idx].selected = !!on;
+    App.results = null;
+    App.render();
+  },
+
+  removeFile: function (fid) {
+    App.files = App.files.filter(function (x) { return x.id !== fid; });
+    App.results = null;
+    App.render();
+  },
+
+  renderReport: function () {
+    var ra = document.getElementById('reportArea');
+    ra.style.display = '';
+    var groups = ['clean', 'unify', 'slim'];
+    var anySheet = App.selectedSheets().length > 0;
+
+    var body = groups.map(function (g) {
+      var items = CLEAN.ITEMS.filter(function (it) { return it.group === g; });
+      var head = CLEAN.GROUPS[g];
+      return '<div class="card" style="margin-bottom:16px">' +
+        '<div class="grp-head">' +
+          '<input type="checkbox" ' + (items.every(function (it) { return App.pick[it.key]; }) ? 'checked' : '') +
+            ' onchange="App.toggleGroup(\'' + g + '\',this.checked)" title="全选本组">' +
+          '<span class="grp-name">' + App.esc(head[0]) + '</span>' +
+          '<span class="grp-desc">' + App.esc(head[1]) + '</span>' +
+        '</div>' +
+        '<div class="card-body">' + items.map(App.itemHtml).join('') + '</div>' +
+      '</div>';
+    }).join('');
+
+    var totalIssue = CLEAN.ITEMS.reduce(function (a, it) { return a + App.totalOf(it.key); }, 0);
+
+    ra.innerHTML =
+      '<div class="stack">' +
+        '<div class="card">' +
+          '<div class="card-head"><div class="card-title">体检报告</div>' +
+            '<div class="card-sub">' + App.selectedSheets().length + ' 张表 · 共发现 ' + totalIssue + ' 处可处理' +
+            (anySheet ? '' : ' · 没有勾选任何工作表') + '</div></div>' +
+          '<div class="bar">' +
+            '<span class="card-sub">点数字看样本，确认后再处理。排在最前的是先做的。</span>' +
+            '<button class="btn btn-primary" style="width:auto;padding:10px 22px;font-size:13px" ' +
+              (anySheet ? '' : 'disabled ') + 'id="btnRun" onclick="App.run()">开始处理</button>' +
+          '</div>' +
+        '</div>' +
+        body +
+        '<div class="hint">处理后只会生成新内容，原表数据不会被改写。</div>' +
+      '</div>';
+  },
+
+  itemHtml: function (it) {
+    var n = App.totalOf(it.key);
+    var on = !!App.pick[it.key];
+    var hot = n > 0 ? ' hot' : ' zero';
+    var canSample = n > 0 && App.SAMPLEABLE.indexOf(it.key) >= 0;
+    var ctl = '';
+
+    if (it.key === 'hidden') {
+      ctl = '<select onchange="App.setPick(\'hidden\',this.value)">' +
+        App.opt('show', '显示出来', App.pick.hidden) +
+        App.opt('delete', '直接删掉', App.pick.hidden) +
+        App.opt('keep', '保持隐藏', App.pick.hidden) + '</select>';
+    } else if (it.key === 'notes') {
+      ctl = '<select onchange="App.setPick(\'notes\',this.value)">' +
+        App.opt('hide', '保持隐藏', App.pick.notes) +
+        App.opt('show', '设为常显', App.pick.notes) +
+        App.opt('delete', '直接删掉', App.pick.notes) + '</select>';
+    } else if (it.key === 'dupes') {
+      if (on) ctl = '<select onchange="App.setPick(\'dupesKeep\',this.value)">' +
+        App.opt('first', '保留第一条', App.pick.dupesKeep) +
+        App.opt('last', '保留最后一条', App.pick.dupesKeep) + '</select>';
+    } else if (it.key === 'date') {
+      if (on) ctl = '<select onchange="App.setPick(\'dateOrder\',this.value)">' +
+          App.opt('ymd', '按「年-月-日」理解', App.pick.dateOrder) +
+          App.opt('mdy', '按「月-日-年」理解', App.pick.dateOrder) + '</select>' +
+        '<select onchange="App.setPick(\'dateNumFmt\',this.value)">' +
+          CLEAN.DATE_FORMATS.map(function (d) { return App.opt(d.numFmt, d.label, App.pick.dateNumFmt); }).join('') + '</select>';
+    }
+
+    var confirm = it.confirm ? '<span class="flag flag-warn">需确认</span>' : '';
+    var unit = it.unit ? ' ' + it.unit : '';
+
+    return '<div class="item">' +
+      '<input type="checkbox" ' + (on ? 'checked' : '') + ' id="it_' + it.key + '" onchange="App.toggleItem(\'' + it.key + '\',this.checked)">' +
+      '<label for="it_' + it.key + '"><span class="item-name">' + App.esc(it.label) + '</span>' + confirm + '</label>' +
+      '<span class="item-count' + hot + '" ' + (canSample ? 'onclick="App.showSamples(\'' + it.key + '\')" style="cursor:pointer" title="点开看样本"' : '') + '>' +
+        (n > 0 ? n + unit + (canSample ? ' ›' : '') : '—') + '</span>' +
+      '<span class="item-ctl">' + ctl + '</span>' +
+    '</div>';
+  },
+
+  opt: function (v, label, cur) {
+    return '<option value="' + v + '"' + (String(cur) === String(v) ? ' selected' : '') + '>' + App.esc(label) + '</option>';
+  },
+
+  toggleItem: function (key, on) { App.pick[key] = !!on; App.results = null; App.render(); },
+  setPick: function (k, v) { App.pick[k] = v; App.results = null; App.render(); },
+  toggleGroup: function (g, on) {
+    CLEAN.ITEMS.filter(function (it) { return it.group === g; }).forEach(function (it) { App.pick[it.key] = !!on; });
+    App.results = null; App.render();
+  },
+
+  showSamples: function (key) {
+    var it = CLEAN.ITEMS.filter(function (x) { return x.key === key; })[0] || { label: key };
+    var from = App.sampleSource || App.samplesOf(key);
+    App.sampleSource = null;
+    App.openSamples(it.label, from);
+  },
+
+  openSamples: function (title, rows) {
+    document.getElementById('sampleTitle').textContent = title + '（' + rows.length + ' 条样本）';
+    var body = rows.length
+      ? rows.map(function (r) {
+          return '<div class="smp"><div class="smp-loc">' + App.esc(r.loc) + '</div>' +
+            '<div class="smp-val"><i>' + App.esc(r.before) + '</i> → <em>' + App.esc(r.after) + '</em></div></div>';
+        }).join('') + '<div class="smp-more">每项最多列 200 条；这里只影响显示，不影响实际处理数量。</div>'
+      : '<div class="smp-more">没有样本</div>';
+    document.getElementById('sampleBody').innerHTML = body;
+    document.getElementById('sampleModal').classList.add('active');
+  },
+  closeSamples: function () { document.getElementById('sampleModal').classList.remove('active'); },
+
+  /* ---------------- 执行 ---------------- */
+  buildCfg: function () {
+    var p = App.pick;
+    return {
+      items: {
+        invisible: p.invisible, spaces: p.spaces, hyperlink: p.hyperlink, dupes: p.dupes,
+        fullwidth: p.fullwidth, textnum: p.textnum, date: p.date, names: p.names,
+        hidden: p.hidden === 'keep' ? 'keep' : p.hidden, notes: p.notes
+      },
+      dupes: { by: 'row', keep: p.dupesKeep },
+      date: { order: p.dateOrder, numFmt: p.dateNumFmt }
+    };
+  },
+
+  run: function () {
+    if (App.busy) return;
+    var entries = App.selectedSheets();
+    if (!entries.length) { App.toast('没有勾选工作表'); return; }
+    var cfg = App.buildCfg();
+    App.busy = true;
+
+    var byFile = [];
+    App.files.forEach(function (f) {
+      if (f.state !== 'ready') return;
+      if (!f.sheets.some(function (s) { return s.selected; })) return;
+      byFile.push(f);
+    });
+
+    var lines = [];
+    var samples = {};
+    CLEAN.ITEMS.forEach(function (it) { samples[it.key] = []; });
+    var outputs = [];
+    var idx = 0;
+
+    var step = function () {
+      if (idx >= byFile.length) { App.finishRun(lines, samples, outputs); return; }
+      var f = byFile[idx++];
+      App.setProgress(lines, idx, byFile.length, f.name, outputs, samples);
+      App.resolveWorkbook(f).then(function (wb) {
+        var list = f.sheets.filter(function (s) { return s.selected; }).map(function (s) {
+          return { ws: wb.getWorksheet(s.name), name: s.name, selected: true };
+        }).filter(function (e) { return !!e.ws; });
+
+        var res = CLEAN.run(wb, list, cfg);
+        res.samples && Object.keys(res.samples).forEach(function (k) {
+          (res.samples[k] || []).forEach(function (r) {
+            samples[k].push({ loc: (byFile.length > 1 ? f.name + ' › ' : '') + (r.sheet || '') + '!' + (r.cell || ''), before: r.before, after: r.after });
+          });
+        });
+
+        var before = f.size;
+        var write = wb.xlsx.writeBuffer();
+        return write.then(function (buf) {
+          if (cfg.items.notes === 'show') {
+            return CLEAN.makeNotesVisible(buf, window.JSZip).then(function (patched) {
+              return { buf: patched || buf, res: res, before: before };
+            });
+          }
+          return { buf: buf, res: res, before: before };
+        }).then(function (o) {
+          var outName = f.name.replace(/\.(xlsx|xlsm|csv)$/i, '') + '_清洗';
+          if (document.getElementById('outFormat').value === 'csv') {
+            (o.res.created || []).forEach(function (ws) {
+              var csv = CLEAN.serializeCSV(CLEAN.sheetToMatrix(ws));
+              var nm = (o.res.created.length > 1 ? outName + '_' + ws.name : outName) + '.csv';
+              outputs.push({ name: App.safe(nm), data: csv, text: true, size: csv.length });
+            });
+          } else {
+            outputs.push({ name: App.safe(outName + '.xlsx'), data: o.buf, ext: 'xlsx', size: (o.buf.byteLength || o.buf.length || 0) });
+          }
+          App.pushLines(lines, f.name, o.res, before);
+          return step();
+        });
+      }).catch(function (e) {
+        lines.push({ text: App.esc(f.name) + ' 处理失败：' + App.esc((e && e.message) || '未知错误'), n: null });
+        return step();
+      });
+    };
+
+    App.renderRunning();
+    step();
+  },
+
+  // 每次处理都从原始字节重新载入，保证「原表不动」
+  resolveWorkbook: function (f) {
+    var wb = new ExcelJS.Workbook();
+    return wb.xlsx.load(f.buf);
+  },
+
+  pushLines: function (lines, fname, res, before) {
+    lines.push({ head: App.esc(fname) + ' → ' + (res.created || []).map(function (w) { return App.esc(w.name); }).join('、'), n: null });
+    CLEAN.ITEMS.forEach(function (it) {
+      if (it.key === 'hidden' || it.key === 'notes' || it.key === 'names') return;
+      var n = res.counts[it.key] || 0;
+      if (n) lines.push({ text: it.label, n: n, unit: it.unit, key: it.key });
+    });
+    (res.extras || []).forEach(function (t) {
+      // 命名范围的样本是「整个文件」级的，挂在 extras 行上也能点开
+      lines.push({ text: App.esc(t), n: null, key: /^命名范围/.test(t) ? 'names' : null });
+    });
+  },
+
+  finishRun: function (lines, samples, outputs) {
+    App.busy = false;
+    App.results = { outputs: outputs, lines: lines, samples: samples };
+    App.render();
+    App.toast('处理完成，共 ' + outputs.length + ' 个输出文件');
+  },
+
+  renderRunning: function () {
+    document.getElementById('summaryArea').style.display = 'none';
+    document.getElementById('reportArea').style.display = 'none';
+    document.getElementById('reportArea').innerHTML = '';
+    var ra = document.getElementById('reportArea');
+    ra.style.display = '';
+    ra.innerHTML = '<div class="stack"><div class="card"><div class="card-head"><div class="card-title">' +
+      '正在处理…</div></div><div style="padding:16px 18px"><div id="runLabel" class="card-sub">准备中</div>' +
+      '<div class="progress-bar"><div class="progress-fill" id="runFill" style="width:2%"></div></div></div></div></div>';
+  },
+
+  setProgress: function (lines, i, n, name, outputs, samples) {
+    App.renderRunning();
+    document.getElementById('runLabel').textContent = name;
+    document.getElementById('runFill').style.width = Math.round(i / n * 100) + '%';
+  },
+
+  renderSummary: function () {
+    var sa = document.getElementById('summaryArea');
+    var r = App.results;
+    sa.style.display = '';
+    document.getElementById('reportArea').style.display = 'none';
+
+    var body = r.lines.map(function (l) {
+      if (l.head) return '<div class="sum-line" style="display:block;color:var(--text);font-weight:600">' + l.head + '</div>';
+      var clickable = l.key && r.samples[l.key] && r.samples[l.key].length;
+      return '<div class="sum-line">' +
+        '<span class="sum-num' + (l.n ? ' sum-ok' : '') + '">' + (l.n === null ? '' : l.n + (l.unit || '')) + '</span>' +
+        '<span style="flex:1">' + l.text + '</span>' +
+        (clickable ? '<button class="linkish" onclick="App.showRunSamples(\'' + l.key + '\')">看样本</button>' : '') +
+      '</div>';
+    }).join('');
+
+    var totalSize = r.outputs.reduce(function (a, o) { return a + (o.size || 0); }, 0);
+
+    sa.innerHTML = '<div class="stack">' +
+      '<div class="card">' +
+        '<div class="card-head"><div class="card-title">变更摘要</div>' +
+          '<div class="card-sub">确认没问题就下载</div></div>' +
+        '<div class="card-body">' + (body || '<div class="sum-line">没有需要改动的内容</div>') + '</div>' +
+        '<div class="bar">' +
+          '<span class="card-sub">' + r.outputs.length + ' 个输出文件 · ' + App.mb(totalSize) + '</span>' +
+          '<div style="display:flex;gap:8px">' +
+            '<button class="btn btn-secondary" style="width:auto;padding:10px 16px;font-size:13px" onclick="App.backToReport()">回到体检报告</button>' +
+            '<button class="btn btn-primary" style="width:auto;padding:10px 22px;font-size:13px" onclick="App.download()">⬇️ 下载</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="hint">原表数据没被改写；清洗结果是新加的「_清洗」sheet。下载后再送回来源树，可以继续往下处理。</div>' +
+    '</div>';
+  },
+
+  showRunSamples: function (key) {
+    var rows = (App.results && App.results.samples[key]) || [];
+    var it = CLEAN.ITEMS.filter(function (x) { return x.key === key; })[0] || { label: key };
+    App.openSamples(it.label, rows);
+  },
+
+  backToReport: function () { App.results = null; App.render(); },
+
+  download: function () {
+    if (!App.results || !App.results.outputs.length) { App.toast('还没有可下载的结果'); return; }
+    var outs = App.results.outputs;
+    if (outs.length === 1) {
+      var o = outs[0];
+      App.saveBlob(App.blobOf(o), o.name);
+      App.toast('已保存 ' + o.name);
+      return;
+    }
+    var zip = new JSZip();
+    outs.forEach(function (o) { zip.file(o.name, o.text ? o.data : new Uint8Array(o.data)); });
+    var base = (App.files[0] && App.files[0].name.replace(/\.(xlsx|xlsm|csv)$/i, '')) || 'excel';
+    zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }).then(function (b) {
+      App.saveBlob(b, App.safe(base + '_清洗_' + outs.length + '个文件.zip'));
+      App.toast('已打包 ' + outs.length + ' 个文件');
+    });
+  },
+
+  blobOf: function (o) {
+    if (o.text) return new Blob(['\ufeff' + o.data], { type: 'text/csv;charset=utf-8' });
+    return new Blob([o.ext === 'xlsx' ? new Uint8Array(o.data) : o.data], {
+      type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    });
+  },
+
+  saveBlob: function (blob, name) {
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = name; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1500);
+  },
+
+  /* ---------------- 小工具 ---------------- */
+  mb: function (n) {
+    if (!n && n !== 0) return '—';
+    if (n < 1024) return n + ' B';
+    if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+    return (n / 1024 / 1024).toFixed(2) + ' MB';
+  },
+  esc: function (s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  },
+  safe: function (n) { return String(n).replace(/[\\/:*?"<>|]/g, '_'); },
+  toast: function (t) {
+    var el = document.getElementById('toast');
+    el.textContent = t; el.classList.add('show');
+    clearTimeout(App._tt); App._tt = setTimeout(function () { el.classList.remove('show'); }, 2600);
+  }
+};
+
+document.addEventListener('DOMContentLoaded', function () { App.init(); });
+</script>
+</body>
+</html>

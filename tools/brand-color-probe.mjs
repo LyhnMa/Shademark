@@ -64,6 +64,7 @@ const PAGES = [
   ['order-query', '/order-query.html'], ['links', '/links.html'], ['admin', '/admin.html'],
   ['platform', '/platform.html'], ['quote', '/quote.html'],
   ['watermark', '/watermark/index.html'], ['compress', '/compress/index.html'],
+  ['excel', '/excel/index.html'],
   ['404', '/404.html'], ['login', '/login.html'],
 ];
 

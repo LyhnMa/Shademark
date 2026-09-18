@@ -93,7 +93,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 /* 动画 */
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 .animate{animation:fadeUp .6s ease-out both}
-.animate-1{animation-delay:.05s}.animate-2{animation-delay:.12s}.animate-3{animation-delay:.19s}.animate-4{animation-delay:.26s}.animate-5{animation-delay:.33s}
+.animate-1{animation-delay:.05s}.animate-2{animation-delay:.12s}.animate-3{animation-delay:.19s}.animate-4{animation-delay:.26s}.animate-5{animation-delay:.33s}.animate-6{animation-delay:.4s}
 
 /* 登录 / 注册弹窗 */
 .modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(6,6,9,.72);backdrop-filter:blur(4px);z-index:200;align-items:center;justify-content:center;padding:20px}
@@ -176,6 +176,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     <a href="/quote" data-page-node-id="4OIGuDQdg6n7mR1wuOGqit">报价单</a>
     <a href="/watermark" data-page-node-id="scFy18KBId7G839ABHOCjO">水印</a>
     <a href="/compress" data-page-node-id="PA9PKuGR40ChIDX8mAyQzZ">压缩</a>
+    <a href="/excel">Excel</a>
     <a href="/admin" data-gate="1" data-page-node-id="vsvnOTJs8A4jzwWD1RyFgl">发码</a>
     <a href="/links" data-gate="1" data-page-node-id="Ev6fHtuAVV1zOABdngTwre">短链</a>
   </div>
@@ -200,7 +201,7 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
 <section class="hero" data-page-node-id="NGuTukOtYYOIbwmA4c4iTA">
   <h1 class="animate animate-1" data-page-node-id="WLATj5FVk262ot9DXwgA8m">要用的工具，都在这里。</h1>
   <div class="divider animate animate-2" data-page-node-id="K1e6nlogOnOuvRpbJsUxh5"></div>
-  <p class="animate animate-3" data-page-node-id="QvXlMHmuDwV1SRf1aPHKCc">报价、发码、水印、短链——打开就能用。</p>
+  <p class="animate animate-3" data-page-node-id="QvXlMHmuDwV1SRf1aPHKCc">报价、发码、水印、短链、Excel——打开就能用。</p>
 </section>
 
 <!-- 产品卡片 -->
@@ -217,19 +218,25 @@ body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSy
     <p data-page-node-id="WnTqdfDzh9rvZCSxxHq6Bo">批量压缩图片体积，转格式、改尺寸、按序导出。成品可一键送进水印工具。</p>
     <span class="tag" data-page-node-id="xrkoZV4rDQKLNQgDNPESwx">Free</span>
   </a>
-  <a href="/quote" class="product-card animate animate-3" data-page-node-id="iBiC58eBZQlehkdnWQwLpE">
+  <a href="/excel" class="product-card animate animate-3">
+    <div class="icon">E</div>
+    <h3>Excel 处理</h3>
+    <p>脏表一键清洗：不可见字符、空格换行、文本型数字、日期格式、重复行，顺手瘦身。完全免费。</p>
+    <span class="tag">Free</span>
+  </a>
+  <a href="/quote" class="product-card animate animate-4" data-page-node-id="iBiC58eBZQlehkdnWQwLpE">
     <div class="icon" data-page-node-id="fWEwLdh1uR3YD40M215tD2">Q</div>
     <h3 data-page-node-id="Z2RgXyMAVRQoxdwsZsf4w6">报价单工具</h3>
     <p data-page-node-id="n8r1BieAATlDUXPUqoTugl">实时预览、一键导出可打印的专业报价单，自动编号。登录后可存历史与模板。</p>
     <span class="tag" data-page-node-id="58SHpHVElw0p3AVa4uvPDC">Quote</span>
   </a>
-  <a href="/links" class="product-card animate animate-4" data-gate="1" data-page-node-id="IvMIeCEYzA62p0dPWFjdOb">
+  <a href="/links" class="product-card animate animate-5" data-gate="1" data-page-node-id="IvMIeCEYzA62p0dPWFjdOb">
     <div class="icon" data-page-node-id="3WW9cVoeRfiaA61Qw3CMEG">L</div>
     <h3 data-page-node-id="J101DpkC0sMekoRYLppcTM">短链工具</h3>
     <p data-page-node-id="MUL7XglFarFPDX9X71dD6t">生成带统计的短链，看清谁点了、从哪来、点了几次。</p>
     <span class="tag" data-page-node-id="f8hUEef6A9slXEEZWhVV1W">Track</span>
   </a>
-  <a href="/admin" class="product-card animate animate-5" data-gate="1" data-page-node-id="6mt0TaraTwO7193DoULnhH">
+  <a href="/admin" class="product-card animate animate-6" data-gate="1" data-page-node-id="6mt0TaraTwO7193DoULnhH">
     <div class="icon" data-page-node-id="vZA7ICYRoQ9cmiiMSvcuP3">K</div>
     <h3 data-page-node-id="SRQrQhztx7NrFJAksqSsT0">发码平台</h3>
     <p data-page-node-id="WBGlbDWiJSOONChlPAhp1T">激活码生成、商品与订单管理、开放 API。登录后即可创建与分发。</p>

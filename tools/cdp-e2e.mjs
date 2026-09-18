@@ -16,10 +16,10 @@ import { spawn } from 'node:child_process';
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const PORT = 9333;
 const BASE = 'https://shademark.cn';
-const PW = 'testpass123';
+const PW = process.env.T_PW || '';
 const U = process.env.T_U || '';
 const P = process.env.T_P || '';
-if (!U || !P) { console.log('缺少 T_U / T_P'); process.exit(2); }
+if (!U || !P || !PW) { console.log('缺少 T_U / T_P / T_PW'); process.exit(2); }
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const results = [];

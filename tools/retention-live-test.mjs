@@ -3,7 +3,9 @@
  * 是否被保留（走 90 天档），纯 Free 账号的同样订单是否被删（走 30 天档）。
  */
 import { execFileSync } from 'node:child_process';
-const SECRET = '5d81dfb1fe0df802b01e161f5c1905e0685c16cc16aca551';
+// 禁止硬编码：仓库是公开的。跑之前先 export CRON_SECRET=...
+const SECRET = process.env.CRON_SECRET || '';
+if (!SECRET) { console.error('缺少环境变量 CRON_SECRET'); process.exit(2); }
 const ORIGIN = 'https://shademark.cn';
 const WRANGLER = 'C:/Users/87882/AppData/Local/npm-cache/_npx/32026684e21afda6/node_modules/wrangler/bin/wrangler.js';
 

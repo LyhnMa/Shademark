@@ -299,7 +299,7 @@ input:disabled,select:disabled{opacity:.45;cursor:not-allowed;background:transpa
 <nav class="nav">
   <a href="/" class="brand"><img src="/logo.png" alt="ShadeMark"><span>ShadeMark</span></a>
   <div class="nav-tools">
-    <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/admin">发码</a><a href="/links">短链</a>
+    <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/excel">Excel</a><a href="/admin">发码</a><a href="/links">短链</a>
   </div>
   <div class="nav-links">
     <a href="/login" id="navLogin" style="display:none">登录</a>
@@ -1180,6 +1180,7 @@ function renderSubCompare(){
     ['短链点击 CSV 导出','—','✓'],
     ['水印工具','全部功能','全部功能'],
     ['压缩工具','全部功能','全部功能'],
+    ['Excel 处理','全部功能','全部功能'],
   ];
   const body=rows.map(r=>{
     const yes=cls=>cls==='✓'?'<span class="yes">✓</span>':cls==='—'?'<span class="no">—</span>':cls;

@@ -38,6 +38,7 @@ seed-result.txt
 verify-result.txt
 tmp-*.sql
 tmp-*.txt
+tmp_*.txt
 tmp-retention-*.sql
 *-seed.txt
 *-sql.txt

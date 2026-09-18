@@ -34,7 +34,7 @@ const GROUPS = {
   },
   tool: {
     font: '16px',
-    files: ['src/pages/quote.html', 'public/watermark/index.html', 'public/compress/index.html'],
+    files: ['src/pages/quote.html', 'public/watermark/index.html', 'public/compress/index.html', 'public/excel/index.html'],
   },
   auth: {
     font: '20px',
