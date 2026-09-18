@@ -1165,6 +1165,19 @@
     makeNotesVisible: makeNotesVisible,
     sheetBounds: sheetBounds,
     addr: addr,
+    // 给 excel-merge.js 复用（同一套取值/样式/命名口径，别各写一份）
+    _helpers: {
+      sheetBounds: sheetBounds,
+      readCell: readCell,
+      applyHeaderStyle: applyHeaderStyle,
+      dispWidth: dispWidth,
+      numToCol: numToCol,
+      colToNum: colToNum,
+      cleanSheetName: cleanSheetName,
+      toHalfwidth: toHalfwidth,
+      display: display,
+      fmtDate: fmtDate
+    },
     // 供单测直接调用
     _internal: {
       toHalfwidth: toHalfwidth,

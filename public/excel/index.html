@@ -8,6 +8,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="/excel/excel-clean.js"></script>
+<script src="/excel/excel-merge.js"></script>
 <style>
 :root{
   --bg:#0d0d0f;--surface:#101014;--panel:#17171b;--elevated:#1e1e28;--border:#2a2a33;
@@ -152,6 +153,44 @@ input[type="checkbox"]{accent-color:var(--accent)}
   .item-count{min-width:0;text-align:left}
   .smp{grid-template-columns:1fr}
 }
+/* ---- 第二组 · 合并拆分 ---- */
+.mg-grid{display:grid;grid-template-columns:340px minmax(0,1fr);gap:16px;align-items:start}
+.mg-col{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+.mg-head{padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:10px;background:rgba(255,255,255,0.02)}
+.mg-title{font-size:13px;font-weight:700}
+.mg-body{padding:14px 16px;display:flex;flex-direction:column;gap:10px}
+.mg-body .btn-block{width:100%}
+.seg{display:flex;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:3px;gap:3px;margin-bottom:12px}
+.seg-btn{flex:1;padding:8px 10px;border:none;border-radius:6px;background:transparent;color:var(--muted);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit}
+.seg-btn.active{background:var(--accent);color:#fff}
+.mg-hint{font-size:12px;color:var(--muted);line-height:1.65}
+.mg-hint.gap{margin-top:-2px}
+.mg-err{font-size:12px;color:var(--error);line-height:1.6}
+.mg-empty{font-size:12px;color:var(--muted);line-height:1.7}
+.tag{display:inline-flex;align-items:center;padding:1px 6px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(124,108,240,.16);color:#c9c0ff;white-space:nowrap}
+.tag-off{background:var(--elevated);color:var(--muted)}
+.tag-ref{background:rgba(255,255,255,.06);color:#cfcfd6}
+.sheet-tags{display:inline-flex;gap:5px;margin-left:6px;vertical-align:middle}
+.res{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;background:rgba(255,255,255,.015);display:flex;flex-direction:column;gap:7px}
+.res:last-child{margin-bottom:0}
+.res-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.res-name{flex:1;width:auto;min-width:120px;padding:6px 9px;background:var(--elevated);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:13px;font-weight:600;font-family:inherit;outline:none}
+.res-name:focus{border-color:var(--accent)}
+.res-meta{font-size:12px;color:var(--muted);word-break:break-word}
+.res-acts{display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+.res-acts .linkish:disabled{opacity:.35;cursor:not-allowed;text-decoration:none}
+.mg-out{margin-top:16px}
+.radio-row{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--text);cursor:pointer;padding:3px 0}
+.tree-tools{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--muted);margin-bottom:9px;padding-bottom:9px;border-bottom:1px solid rgba(42,42,51,.6)}
+.ftitle{display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:2px}
+.ftitle span{font-weight:600}
+.ftitle input{flex-shrink:0}
+.tree-node{padding:5px 0 5px 2px}
+.tree-node label{display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0}
+.tree-node b{font-weight:500;font-size:12px;color:var(--text);word-break:break-all;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mg-preview{font-size:12px;color:var(--muted);line-height:1.7;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);word-break:break-word}
+.mg-preview b{color:var(--text);font-weight:600}
+@media(max-width:1020px){.mg-grid{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -186,11 +225,22 @@ input[type="checkbox"]{accent-color:var(--accent)}
       </div>
 
       <div class="panel" id="filePanel" style="display:none">
-        <div class="panel-title">文件 <span id="fileCount" style="color:var(--accent)"></span></div>
+        <div class="panel-title"><span id="filePanelTitle">文件</span> <span id="fileCount" style="color:var(--accent)"></span></div>
+        <div class="tree-tools" id="treeTools" style="display:none">
+          <label style="display:flex;align-items:center;gap:7px;cursor:pointer">
+            <input type="checkbox" id="treeAll" onchange="App.mgToggleAll(this.checked)">全选
+          </label>
+          <span id="treeSelHint" style="margin-left:auto"></span>
+        </div>
         <div id="fileList"></div>
       </div>
 
-      <div class="panel">
+      <div class="panel" id="resTreePanel" style="display:none">
+        <div class="panel-title">↻ 结果（可再用）</div>
+        <div id="resTree"></div>
+      </div>
+
+      <div class="panel" id="sideOut">
         <div class="panel-title">输出</div>
         <div class="form-group">
           <label class="form-label">格式</label>
@@ -225,6 +275,29 @@ input[type="checkbox"]{accent-color:var(--accent)}
       </div>
       <div id="reportArea" style="display:none"></div>
       <div id="summaryArea" style="display:none"></div>
+
+      <div id="mergeArea" style="display:none">
+        <div class="mg-grid">
+          <section class="mg-col">
+            <div class="mg-head"><span class="mg-title">③ 操作</span><span class="card-sub" id="mgOpSub"></span></div>
+            <div class="mg-body">
+              <div class="seg" id="mgSeg">
+                <button class="seg-btn active" data-tab="merge" onclick="App.mgTab('merge')">合并</button>
+                <button class="seg-btn" data-tab="split" onclick="App.mgTab('split')">拆分</button>
+              </div>
+              <div id="mgOps"></div>
+            </div>
+          </section>
+          <section class="mg-col">
+            <div class="mg-head"><span class="mg-title">④ 结果</span><span class="card-sub" id="mgResSub"></span></div>
+            <div class="mg-body" id="mgResList"></div>
+          </section>
+        </div>
+        <section class="mg-col mg-out">
+          <div class="mg-head"><span class="mg-title">⑤ 输出</span><span class="card-sub" id="mgOutSub"></span></div>
+          <div class="mg-body" id="mgOut"></div>
+        </section>
+      </div>
     </div>
   </main>
 </div>
@@ -250,6 +323,7 @@ var HARD_MB = 80;      // 超过不读，只显示
 var WARN_ROWS = 200000;
 
 var CLEAN = window.ShadeMarkExcelClean;
+var MERGE = window.ShadeMarkExcelMerge;
 
 // 扫描时把所有项目都打开（体检报告要显示每一项的真实条数）
 var SCAN_CFG = {
@@ -278,6 +352,22 @@ var App = {
   busy: false,
   results: null,        // { outputs:[{name, blob|blob}], lines:[], samples:{} }
   sampleSource: null,
+
+  // ---- 第二组 · 合并拆分 ----
+  mg: {
+    tab: 'merge',        // merge | split
+    sel: [],             // [{key,type,label,...}] 顺序 = 合并时的列顺序
+    results: [],         // [{id,name,op,opLabel,table,nRows,nCols,from,origin,info,referenced}]
+    referenced: {},      // sheet key -> true（被合并/拆分引用过）
+    added: {},           // resultId -> true（已送回来源树）
+    out: 'one',          // one | each
+    splitCol: 0,
+    splitRows: 1000,
+    seq: 0,
+    caret: null,         // {key, table|error}：当前选中项的表（拆分预览用）
+    loadingKey: null,
+    busy: ''
+  },
 
   /* ---------------- 生命周期 ---------------- */
   init: function () {
@@ -315,14 +405,15 @@ var App = {
   switchMode: function (m) {
     App.mode = m;
     document.querySelectorAll('.mode-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.mode === m); });
-    if (m === 'clean') { App.render(); return; }
-    document.getElementById('contentTitle').textContent = (m === 'merge' ? '合并拆分' : '匹配对比');
-    document.getElementById('contentMeta').textContent = '本轮先做清洗';
+    if (m === 'clean' || m === 'merge') { App.render(); return; }
+    document.getElementById('contentTitle').textContent = '匹配对比';
+    document.getElementById('contentMeta').textContent = '本轮先做清洗 + 合并拆分';
+    document.getElementById('mergeArea').style.display = 'none';
     document.getElementById('emptyState').style.display = 'flex';
     document.getElementById('emptyState').innerHTML =
-      '<div class="icon">' + (m === 'merge' ? '🧩' : '🔍') + '</div>' +
-      '<div>' + (m === 'merge' ? '合并拆分' : '匹配对比') + ' 还没开放</div>' +
-      '<div style="font-size:12px;opacity:.7">这一轮先把「清洗」跑通，切换回清洗即可使用</div>';
+      '<div class="icon">🔍</div>' +
+      '<div>匹配对比 还没开放</div>' +
+      '<div style="font-size:12px;opacity:.7">切换回清洗 / 合并拆分即可使用</div>';
     document.getElementById('reportArea').style.display = 'none';
     document.getElementById('summaryArea').style.display = 'none';
   },
@@ -408,6 +499,8 @@ var App = {
 
   clearAll: function () {
     App.files = []; App.results = null; App.pick = defaultPick();
+    App.mg.sel = []; App.mg.results = []; App.mg.added = {}; App.mg.referenced = {};
+    App.mg.caret = null; App.mg.loadingKey = null; App.mg.busy = ''; App.mg.seq = 0;
     App.render();
   },
 
@@ -472,12 +565,15 @@ var App = {
 
   /* ---------------- 渲染 ---------------- */
   render: function () {
+    if (App.mode === 'merge') { App.renderMerge(); return; }
     if (App.mode !== 'clean') return;
     App.ensureScanned();
     var ready = App.files.filter(function (f) { return f.state === 'ready'; });
     var busy = App.files.some(function (f) { return f.state === 'reading'; });
 
     App.renderSidebar();
+    document.getElementById('mergeArea').style.display = 'none';
+    document.getElementById('btnRescan').style.display = '';
 
     document.getElementById('btnClear').disabled = !App.files.length;
     document.getElementById('btnRescan').disabled = !ready.length;
@@ -507,49 +603,92 @@ var App = {
   },
 
   renderSidebar: function () {
+    var merge = App.mode === 'merge';
+    document.getElementById('filePanelTitle').textContent = merge ? '② 来源树' : '文件';
+    document.getElementById('treeTools').style.display = merge ? '' : 'none';
+    document.getElementById('sideOut').style.display = merge ? 'none' : '';
+
     var fp = document.getElementById('filePanel');
     var box = document.getElementById('fileList');
     var cnt = document.getElementById('fileCount');
-    if (!App.files.length) { fp.style.display = 'none'; return; }
-    fp.style.display = '';
-    cnt.textContent = '（' + App.files.length + '）';
+    if (!App.files.length) {
+      fp.style.display = 'none';
+    } else {
+      fp.style.display = '';
+      cnt.textContent = '（' + App.files.length + '）';
+      box.innerHTML = App.files.map(function (f) { return App.fileRowHtml(f, merge); }).join('');
+      if (merge) App.mgSyncTree();
+    }
 
-    var html = App.files.map(function (f) {
-      var flag = f.state === 'reading'
-        ? '<span class="spin"></span>'
-        : f.state === 'error'
-          ? '<span class="flag flag-err">错误</span>'
-          : '<span class="flag flag-ok">就绪</span>';
-      var body = '';
-      if (f.state === 'error') {
-        body = '<div class="hint" style="color:var(--error)">' + App.esc(f.error) + '</div>';
-      } else if (f.state === 'ready') {
-        body = f.sheets.map(function (s, i) {
-          return '<div class="sheet"><label><input type="checkbox" ' + (s.selected ? 'checked' : '') +
-            ' onchange="App.toggleSheet(' + f.id + ',' + i + ',this.checked)"> <b>' + App.esc(s.name) + '</b>' +
-            '<span>' + s.rows + ' 行</span></label>' +
-            (s.huge ? ' <span class="flag flag-warn">行数很大</span>' : '') + '</div>';
-        }).join('');
-      } else {
-        body = '<div class="hint">读取中…</div>';
-      }
-      return '<div class="frow" style="padding:12px 0">' +
-        '<div class="fname">' + App.esc(f.name) + flag +
-          (f.warn ? '<div class="hint" style="color:var(--warn)">' + App.esc(f.warn) + '</div>' : '') +
-          body +
-        '</div>' +
-        '<div style="width:100%;display:flex;gap:10px;align-items:center;justify-content:space-between">' +
-          '<span class="fmeta">' + App.mb(f.size) + '</span>' +
-          '<button class="linkish" onclick="App.removeFile(' + f.id + ')">移除</button>' +
-        '</div>' +
-      '</div>';
+    if (!merge) {
+      var of = document.getElementById('outFormat').value;
+      document.getElementById('outHint').textContent = of === 'csv'
+        ? '每张清洗结果单独出一个 .csv（多个则打包成 zip）。CSV 只有一张表，格式信息会丢。'
+        : '原表不动：清洗结果写进新的「_清洗」sheet，和原表放在同一个文件里。';
+    }
+    App.renderResTree();
+  },
+
+  fileRowHtml: function (f, merge) {
+    var flag = f.state === 'reading'
+      ? '<span class="spin"></span>'
+      : f.state === 'error'
+        ? '<span class="flag flag-err">错误</span>'
+        : '<span class="flag flag-ok">就绪</span>';
+    var body = '';
+    if (f.state === 'error') {
+      body = '<div class="hint" style="color:var(--error)">' + App.esc(f.error) + '</div>';
+    } else if (f.state === 'ready') {
+      body = f.sheets.map(function (s, i) { return App.sheetRowHtml(f, s, i, merge); }).join('');
+    } else {
+      body = '<div class="hint">读取中…</div>';
+    }
+    var title = merge
+      ? '<label class="ftitle"><input type="checkbox" id="fchk_' + f.id + '" onchange="App.mgToggleFile(' + f.id + ',this.checked)">' +
+        '<span>' + App.esc(f.name) + '</span>' + flag + '</label>'
+      : '<span>' + App.esc(f.name) + '</span>' + flag;
+    return '<div class="frow" style="padding:12px 0">' +
+      '<div class="fname">' + title +
+        (f.warn ? '<div class="hint" style="color:var(--warn)">' + App.esc(f.warn) + '</div>' : '') +
+        body +
+      '</div>' +
+      '<div style="width:100%;display:flex;gap:10px;align-items:center;justify-content:space-between">' +
+        '<span class="fmeta">' + App.mb(f.size) + '</span>' +
+        '<button class="linkish" onclick="App.removeFile(' + f.id + ')">移除</button>' +
+      '</div>' +
+    '</div>';
+  },
+
+  sheetRowHtml: function (f, s, i, merge) {
+    if (!merge) {
+      return '<div class="sheet"><label><input type="checkbox" ' + (s.selected ? 'checked' : '') +
+        ' onchange="App.toggleSheet(' + f.id + ',' + i + ',this.checked)"> <b>' + App.esc(s.name) + '</b>' +
+        '<span>' + s.rows + ' 行</span></label>' +
+        (s.huge ? ' <span class="flag flag-warn">行数很大</span>' : '') + '</div>';
+    }
+    var key = App.mgKeyOfSheet(f.id, s.name);
+    var tags = ['<span class="tag' + (/_清洗/.test(s.name) ? '' : ' tag-off') + '">' + (/_清洗/.test(s.name) ? '已清洗' : '原始') + '</span>'];
+    if (App.mg.referenced[key]) tags.push('<span class="tag tag-ref">↻ 已引用</span>');
+    return '<div class="sheet"><label><input type="checkbox" ' + (App.mgIsSel(key) ? 'checked' : '') +
+      ' onchange="App.mgToggleSheet(' + f.id + ',' + i + ',this.checked)"> <b>' + App.esc(s.name) + '</b>' +
+      '<span>' + s.rows + ' 行</span></label>' +
+      '<span class="sheet-tags">' + tags.join('') + '</span>' +
+      (s.huge ? ' <span class="flag flag-warn">行数很大</span>' : '') + '</div>';
+  },
+
+  renderResTree: function () {
+    var panel = document.getElementById('resTreePanel');
+    var list = App.mgTreeResults();
+    if (App.mode !== 'merge' || !list.length) { panel.style.display = 'none'; return; }
+    panel.style.display = '';
+    document.getElementById('resTree').innerHTML = list.map(function (r) {
+      var key = App.mgKeyOfResult(r.id);
+      return '<div class="tree-node"><label>' +
+        '<input type="checkbox" ' + (App.mgIsSel(key) ? 'checked' : '') + ' onchange="App.mgSet(\'' + key + '\',this.checked)">' +
+        '<b>' + App.esc(r.name) + '</b>' +
+        '<span class="sheet-tags"><span class="tag tag-ref">↻ ' + App.esc(r.name) + ' · 来自 ' + App.esc(r.from[0] || '—') + '</span></span>' +
+        '</label></div>';
     }).join('');
-    box.innerHTML = html;
-
-    var of = document.getElementById('outFormat').value;
-    document.getElementById('outHint').textContent = of === 'csv'
-      ? '每张清洗结果单独出一个 .csv（多个则打包成 zip）。CSV 只有一张表，格式信息会丢。'
-      : '原表不动：清洗结果写进新的「_清洗」sheet，和原表放在同一个文件里。';
   },
 
   toggleSheet: function (fid, idx, on) {
@@ -563,6 +702,8 @@ var App = {
   removeFile: function (fid) {
     App.files = App.files.filter(function (x) { return x.id !== fid; });
     App.results = null;
+    App.mg.sel = App.mg.sel.filter(function (x) { return x.type !== 'sheet' || x.fileId !== fid; });
+    App.mg.caret = null;
     App.render();
   },
 
@@ -847,6 +988,7 @@ var App = {
   backToReport: function () { App.results = null; App.render(); },
 
   download: function () {
+    if (App.mode === 'merge') { App.mgDownload(); return; }
     if (!App.results || !App.results.outputs.length) { App.toast('还没有可下载的结果'); return; }
     var outs = App.results.outputs;
     if (outs.length === 1) {
@@ -876,6 +1018,594 @@ var App = {
     var a = document.createElement('a');
     a.href = url; a.download = name; document.body.appendChild(a); a.click();
     setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1500);
+  },
+
+  /* ============================================================
+     第二组 · 合并拆分
+     左边来源树（勾选）→ 中间操作 → 右边结果 → 底下输出
+     ============================================================ */
+
+  /* ---- 选择 ---- */
+  mgKeyOfSheet: function (fid, name) { return 'f' + fid + '|' + name; },
+  mgKeyOfResult: function (rid) { return 'r' + rid; },
+  mgFile: function (fid) {
+    var out = null;
+    App.files.forEach(function (f) { if (f.id === fid) out = f; });
+    return out;
+  },
+  mgResult: function (rid) {
+    var out = null;
+    App.mg.results.forEach(function (r) { if (r.id === rid) out = r; });
+    return out;
+  },
+  mgTreeResults: function () {
+    return App.mg.results.filter(function (r) { return !!App.mg.added[r.id]; });
+  },
+  mgRefOf: function (key) {
+    if (key.charAt(0) === 'r') {
+      var rid = +key.slice(1);
+      var r = App.mgResult(rid);
+      return { key: key, type: 'result', resultId: rid, label: r ? r.name : '结果' };
+    }
+    var i = key.indexOf('|');
+    var nm = key.slice(i + 1);
+    return { key: key, type: 'sheet', fileId: +key.slice(1, i), name: nm, label: nm };
+  },
+  mgIsSel: function (key) {
+    var yes = false;
+    App.mg.sel.forEach(function (x) { if (x.key === key) yes = true; });
+    return yes;
+  },
+  mgSetRaw: function (key, on) {
+    var found = false, keep = [];
+    App.mg.sel.forEach(function (x) {
+      if (x.key === key) { found = true; if (on) keep.push(x); }
+      else keep.push(x);
+    });
+    if (on && !found) keep.push(App.mgRefOf(key));
+    App.mg.sel = keep;
+  },
+  mgSet: function (key, on) { App.mgSetRaw(key, on); App.mg.caret = null; App.render(); },
+  mgToggleSheet: function (fid, idx, on) {
+    var f = App.mgFile(fid);
+    if (!f || !f.sheets[idx]) return;
+    App.mgSet(App.mgKeyOfSheet(fid, f.sheets[idx].name), on);
+  },
+  mgToggleFile: function (fid, on) {
+    var f = App.mgFile(fid);
+    if (!f) return;
+    f.sheets.forEach(function (s) { App.mgSetRaw(App.mgKeyOfSheet(fid, s.name), on); });
+    App.mg.caret = null;
+    App.render();
+  },
+  mgSheetKeys: function () {
+    var keys = [];
+    App.files.forEach(function (f) {
+      if (f.state !== 'ready') return;
+      f.sheets.forEach(function (s) { keys.push(App.mgKeyOfSheet(f.id, s.name)); });
+    });
+    return keys;
+  },
+  mgAllKeys: function () {
+    var keys = App.mgSheetKeys();
+    App.mgTreeResults().forEach(function (r) { keys.push(App.mgKeyOfResult(r.id)); });
+    return keys;
+  },
+  mgToggleAll: function (on) {
+    var all = App.mgAllKeys();
+    if (on) all.forEach(function (k) { App.mgSetRaw(k, true); });
+    else App.mg.sel = App.mg.sel.filter(function (x) { return all.indexOf(x.key) < 0; });
+    App.mg.caret = null;
+    App.render();
+  },
+  mgSyncTree: function () {
+    var sheetKeys = App.mgSheetKeys();
+    var picked = App.mg.sel.filter(function (x) { return x.type === 'sheet'; }).length;
+    var all = document.getElementById('treeAll');
+    if (all) {
+      all.checked = sheetKeys.length > 0 && picked === sheetKeys.length;
+      all.indeterminate = picked > 0 && picked < sheetKeys.length;
+    }
+    var hint = document.getElementById('treeSelHint');
+    if (hint) hint.textContent = picked ? '已选 ' + picked + ' / ' + sheetKeys.length + ' 张' : '';
+    App.files.forEach(function (f) {
+      var el = document.getElementById('fchk_' + f.id);
+      if (!el || f.state !== 'ready') return;
+      var n = f.sheets.filter(function (s) { return App.mgIsSel(App.mgKeyOfSheet(f.id, s.name)); }).length;
+      el.checked = f.sheets.length > 0 && n === f.sheets.length;
+      el.indeterminate = n > 0 && n < f.sheets.length;
+    });
+  },
+  mgMarkUsed: function (refs) {
+    refs.forEach(function (x) {
+      if (x.type === 'sheet') { App.mg.referenced[x.key] = true; return; }
+      var r = App.mgResult(x.resultId);
+      if (r) r.referenced = true;
+    });
+  },
+  mgUniqName: function (base) {
+    var b = String(base == null ? '' : base).replace(/[\[\]\*\?\/\\:]/g, '_').slice(0, 31) || '结果';
+    var used = {};
+    App.mg.results.forEach(function (r) { used[r.name] = 1; });
+    if (!used[b]) return b;
+    for (var i = 2; i < 999; i++) {
+      var tail = '_' + i;
+      var cand = b.slice(0, 31 - tail.length) + tail;
+      if (!used[cand]) return cand;
+    }
+    return b;
+  },
+  /* 文件名去重：两个结果重名时不能互相覆盖 */
+  mgUniqFile: function (used, base) {
+    var b = String(base == null ? '' : base).replace(/[\[\]\*\?\/\\:]/g, '_').slice(0, 60) || '结果';
+    var n = b, i = 1;
+    while (used[n]) { i++; n = b.slice(0, 60 - String(i).length - 1) + '_' + i; }
+    used[n] = 1;
+    return n;
+  },
+
+  /* ---- 取表 ---- */
+  mgTable: function (ref) {
+    if (ref.type === 'result') {
+      var r = App.mgResult(ref.resultId);
+      return r ? Promise.resolve(r.table) : Promise.reject(new Error('结果已被删除'));
+    }
+    var f = App.mgFile(ref.fileId);
+    if (!f) return Promise.reject(new Error('文件已被移除'));
+    return App.resolveWorkbook(f).then(function (wb) {
+      var ws = wb.getWorksheet(ref.name);
+      if (!ws) throw new Error('找不到工作表 ' + ref.name);
+      return MERGE.readTable(ws);
+    });
+  },
+  mgEnsureTable: function () {
+    var sel = App.mg.sel;
+    var key = (App.mg.tab === 'split' && sel.length === 1) ? sel[0].key : null;
+    if (!key) { App.mg.caret = null; return; }
+    if ((App.mg.caret && App.mg.caret.key === key) || App.mg.loadingKey === key) return;
+    App.mg.loadingKey = key;
+    App.mgTable(App.mgRefOf(key)).then(function (t) {
+      App.mg.loadingKey = null;
+      App.mg.caret = { key: key, table: t };
+      if (App.mode === 'merge') App.renderMg();
+    }).catch(function (e) {
+      App.mg.loadingKey = null;
+      App.mg.caret = { key: key, error: (e && e.message) || '读取失败' };
+      if (App.mode === 'merge') App.renderMg();
+    });
+  },
+  mgCaretTable: function () {
+    var c = App.mg.caret;
+    if (!c || c.error || !c.table) return null;
+    if (!App.mg.sel.length || c.key !== App.mg.sel[0].key) return null;
+    return c.table;
+  },
+  mgCommonOrigin: function (refs) {
+    var fid = null, ok = refs.length > 0;
+    refs.forEach(function (x) {
+      if (x.type !== 'sheet') { ok = false; return; }
+      if (fid === null) fid = x.fileId;
+      else if (fid !== x.fileId) ok = false;
+    });
+    if (!ok || fid === null) return null;
+    var f = App.mgFile(fid);
+    return f ? { fileId: fid, fileName: f.name, sheets: f.sheets.length } : null;
+  },
+
+  /* ---- 渲染 ---- */
+  mgTab: function (t) { App.mg.tab = t; App.mg.caret = null; App.renderMg(); },
+
+  renderMerge: function () {
+    var ready = App.files.filter(function (f) { return f.state === 'ready'; });
+    void ready;
+    App.renderSidebar();
+    document.getElementById('btnClear').disabled = !App.files.length;
+    document.getElementById('btnRescan').style.display = 'none';
+    document.getElementById('btnDownload').disabled = !App.mg.results.length;
+
+    var ma = document.getElementById('mergeArea');
+    var es = document.getElementById('emptyState');
+    document.getElementById('reportArea').style.display = 'none';
+    document.getElementById('summaryArea').style.display = 'none';
+    document.getElementById('contentTitle').textContent = 'Excel 合并拆分';
+
+    if (!App.files.length) {
+      ma.style.display = 'none';
+      es.style.display = 'flex';
+      es.innerHTML = '<div class="icon">🧩</div><div>把多张表拼成一张，或把一张表拆成多份</div>' +
+        '<div style="font-size:12px;opacity:.7">拖 Excel 进来 → 左边来源树勾选 → 中间合并 / 拆分 → 右边出结果 → 底下选输出</div>';
+      document.getElementById('contentMeta').textContent = '拖拽文件到页面任意位置，或点击左侧上传';
+      return;
+    }
+    es.style.display = 'none';
+    ma.style.display = '';
+    App.renderMg();
+  },
+
+  renderMg: function () {
+    App.mgEnsureTable();
+    var seg = document.getElementById('mgSeg');
+    if (seg) {
+      seg.querySelectorAll('.seg-btn').forEach(function (b) {
+        b.classList.toggle('active', b.dataset.tab === App.mg.tab);
+      });
+    }
+    document.getElementById('contentMeta').textContent =
+      App.files.length + ' 个文件 · ' + App.mgSheetKeys().length + ' 张表 · 已勾选 ' + App.mg.sel.length + ' 项' +
+      (App.mg.results.length ? ' · 结果 ' + App.mg.results.length + ' 个' : '');
+    document.getElementById('mgOpSub').textContent = App.mg.sel.length ? '已选 ' + App.mg.sel.length + ' 项' : '';
+    document.getElementById('mgResSub').textContent = App.mg.results.length ? App.mg.results.length + ' 个结果' : '';
+    document.getElementById('mgOutSub').textContent = App.mg.results.length
+      ? (App.mg.out === 'each' ? App.mg.results.length + ' 个文件' : '1 个文件') : '';
+    document.getElementById('mgOps').innerHTML = App.mgOpsHtml();
+    document.getElementById('mgResList').innerHTML = App.mgResHtml();
+    document.getElementById('mgOut').innerHTML = App.mgOutHtml();
+    App.mgSyncTree();
+    App.renderResTree();
+  },
+
+  mgOpsHtml: function () {
+    var sel = App.mg.sel, n = sel.length;
+    var h = [];
+    if (App.mg.busy) h.push('<div class="mg-hint">' + App.esc(App.mg.busy) + '</div>');
+
+    if (App.mg.tab === 'merge') {
+      h.push('<div class="mg-hint">勾选顺序 = 列顺序。列名一致就横向对齐，行向下接。</div>');
+      if (n >= 2) {
+        h.push('<button class="btn btn-primary btn-block" ' + (App.mg.busy ? 'disabled ' : '') + 'onclick="App.mgDoMerge()">合成一个表</button>');
+        h.push('<button class="btn btn-secondary btn-block" ' + (App.mg.busy ? 'disabled ' : '') + 'onclick="App.mgDoKeep()">各自保留</button>');
+      } else if (n === 1) {
+        h.push('<button class="btn btn-primary btn-block" ' + (App.mg.busy ? 'disabled ' : '') + 'onclick="App.mgDoKeep()">保留这一个</button>');
+      } else {
+        h.push('<button class="btn btn-primary btn-block" disabled>保留这一个</button>');
+        h.push('<div class="mg-hint">先勾选 sheet（左边来源树）。</div>');
+      }
+      var un = App.mgSheetKeys().length - App.mg.sel.filter(function (x) { return x.type === 'sheet'; }).length;
+      if (un > 0) h.push('<div class="mg-hint">还有 ' + un + ' 个 sheet 未选中，输出文件不含它们。</div>');
+    } else if (n !== 1) {
+      h.push('<div class="mg-hint">拆分一次只处理 1 张表 —— 当前勾了 ' + n + ' 项，先只勾 1 项。</div>');
+    } else {
+      var t = App.mgCaretTable();
+      if (!t) {
+        h.push('<div class="mg-hint">' + (App.mg.caret && App.mg.caret.error
+          ? '读取失败：' + App.esc(App.mg.caret.error)
+          : '正在读取「' + App.esc(sel[0].label) + '」…') + '</div>');
+      } else {
+        h.push(App.mgSplitColHtml(t, sel[0]));
+        h.push('<div style="height:2px"></div>');
+        h.push(App.mgSplitRowHtml(t, sel[0]));
+        h.push('<div class="mg-hint">按 sheet 拆：在「合并」里对多张表点「各自保留」，输出选「每个结果一个文件」。</div>');
+      }
+    }
+    return h.join('');
+  },
+
+  mgSplitColHtml: function (t) {
+    var labs = MERGE.columnLabels(t);
+    var idx = labs.length ? Math.min(Math.max(parseInt(App.mg.splitCol, 10) || 0, 0), labs.length - 1) : 0;
+    var sp = labs.length ? MERGE.splitByColumn({ table: t }, idx) : { groups: [], total: 0, colLabel: '' };
+    var h = ['<div class="form-group" style="margin:0"><label class="form-label">按列拆 · 依据列</label>' +
+      '<select ' + (labs.length ? '' : 'disabled ') + 'onchange="App.mgSetSplitCol(this.value)">' +
+      labs.map(function (l) { return App.opt(l.index, l.label, idx); }).join('') + '</select></div>'];
+    if (!sp.groups.length) {
+      h.push('<div class="mg-hint">这张表还没有数据行。</div>');
+    } else {
+      var shown = sp.groups.slice(0, 20).map(function (g) { return '<b>' + App.esc(g.label) + '</b>（' + g.nRows + ' 行）'; }).join(' / ');
+      h.push('<div class="mg-preview">按「' + App.esc(sp.colLabel) + '」拆，会拆成 <b>' + sp.groups.length + '</b> 份：' +
+        shown + (sp.groups.length > 20 ? ' …（还有 ' + (sp.groups.length - 20) + ' 份）' : '') + '</div>');
+      h.push('<button class="btn btn-primary btn-block" ' + (App.mg.busy ? 'disabled ' : '') +
+        'onclick="App.mgDoSplitCol()">按列拆 · 拆成 ' + sp.groups.length + ' 份</button>');
+    }
+    return h.join('');
+  },
+
+  mgSplitRowHtml: function (t) {
+    var per = Math.max(1, parseInt(App.mg.splitRows, 10) || 1000);
+    var total = t.nRows || 0;
+    var n = total ? Math.ceil(total / per) : 0;
+    var last = n ? total - (n - 1) * per : 0;
+    return '<div class="form-group" style="margin:0"><label class="form-label">按行数拆 · 每几行一份</label>' +
+      '<input type="text" inputmode="numeric" value="' + per + '" onchange="App.mgSetSplitRows(this.value)"></div>' +
+      '<div class="mg-preview">每 <b>' + per + '</b> 行一份，共 <b>' + total + '</b> 行，拆成 <b>' + n + '</b> 份' +
+      (n > 1 ? '（最后一份 ' + last + ' 行）' : '') + '</div>' +
+      '<button class="btn btn-primary btn-block" ' + (n && !App.mg.busy ? '' : 'disabled ') +
+      'onclick="App.mgDoSplitRows()">按行数拆 · 拆成 ' + n + ' 份</button>';
+  },
+
+  mgResHtml: function () {
+    if (!App.mg.results.length) {
+      return '<div class="mg-empty">还没有结果。<br>左边勾选来源 → 中间点按钮，每做一次这里多一个。<br>' +
+        '结果可以改名、上下排序、删除，也可以「↻ 拿去再用」送回来源树继续处理（级联拆）。</div>';
+    }
+    var n = App.mg.results.length;
+    return App.mg.results.map(function (r, i) {
+      return '<div class="res">' +
+        '<div class="res-top">' +
+          '<input class="res-name" value="' + App.esc(r.name) + '" onchange="App.mgRename(' + r.id + ',this.value)">' +
+          '<span class="tag">' + App.esc(r.opLabel) + '</span>' +
+          (r.referenced ? '<span class="tag tag-ref">↻ 已引用</span>' : '') +
+        '</div>' +
+        '<div class="res-meta">' + r.nRows + ' 行 × ' + r.nCols + ' 列 · 来自 ' + App.esc(r.from.join(' + ')) + '</div>' +
+        '<div class="res-acts">' +
+          '<button class="linkish" onclick="App.mgPeek(' + r.id + ')">看内容</button>' +
+          '<button class="linkish" ' + (i === 0 ? 'disabled ' : '') + 'onclick="App.mgMove(' + r.id + ',-1)">↑</button>' +
+          '<button class="linkish" ' + (i === n - 1 ? 'disabled ' : '') + 'onclick="App.mgMove(' + r.id + ',1)">↓</button>' +
+          '<button class="linkish" onclick="App.mgUse(' + r.id + ')">' + (App.mg.added[r.id] ? '↻ 已在来源树' : '↻ 拿去再用') + '</button>' +
+          '<button class="linkish" onclick="App.mgDel(' + r.id + ')">删除</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  },
+
+  mgOutHtml: function () {
+    var n = App.mg.results.length;
+    return '<label class="radio-row"><input type="radio" name="mgout" ' + (App.mg.out === 'one' ? 'checked ' : '') +
+        'onchange="App.mgSetOut(\'one\')">所有结果装进一个文件（各占一个 sheet）</label>' +
+      '<label class="radio-row"><input type="radio" name="mgout" ' + (App.mg.out === 'each' ? 'checked ' : '') +
+        'onchange="App.mgSetOut(\'each\')">每个结果一个文件</label>' +
+      '<div class="mg-hint" id="mgOutHint">' + App.mgOutHint() + '</div>' +
+      '<button class="btn btn-primary btn-block" ' + (n && !App.mg.busy ? '' : 'disabled ') +
+      'onclick="App.download()">⬇️ 下载</button>';
+  },
+  mgSetOut: function (v) { App.mg.out = v; App.renderMg(); },
+  mgSetSplitCol: function (v) { App.mg.splitCol = parseInt(v, 10) || 0; App.renderMg(); },
+  mgSetSplitRows: function (v) { App.mg.splitRows = Math.max(1, parseInt(v, 10) || 1); App.renderMg(); },
+  mgOutputOrigin: function () {
+    var rs = App.mg.results;
+    if (!rs.length || !rs[0].origin) return null;
+    var fid = rs[0].origin.fileId;
+    var same = rs.every(function (r) { return r.origin && r.origin.fileId === fid; });
+    if (!same) return null;
+    var f = App.mgFile(fid);
+    return f ? rs[0].origin : null;
+  },
+  mgOutHint: function () {
+    var rs = App.mg.results;
+    if (!rs.length) return '还没有结果。';
+    if (App.mg.out === 'each') {
+      return '将输出 ' + rs.length + ' 个文件' + (rs.length > 1 ? '（下载时打成一个 zip）' : '') + '：每个结果一个 .xlsx。';
+    }
+    var o = App.mgOutputOrigin();
+    if (o) return '将输出 1 个文件：' + o.sheets + ' 张原表 + ' + rs.length + ' 张结果，原表在前（原文件不动，这是另存的一份）。';
+    return '将输出 1 个文件：' + rs.length + ' 张结果各占一个 sheet。';
+  },
+
+  /* ---- 结果操作 ---- */
+  mgRename: function (id, v) {
+    var r = App.mgResult(id);
+    if (!r) return;
+    var nm = String(v == null ? '' : v).trim().slice(0, 31);
+    if (!nm) { App.toast('名字不能为空'); App.renderMg(); return; }
+    r.name = nm;
+    App.render();
+  },
+  mgMove: function (id, d) {
+    var i = -1;
+    App.mg.results.forEach(function (r, k) { if (r.id === id) i = k; });
+    var j = i + d;
+    if (i < 0 || j < 0 || j >= App.mg.results.length) return;
+    var tmp = App.mg.results[i];
+    App.mg.results[i] = App.mg.results[j];
+    App.mg.results[j] = tmp;
+    App.render();
+  },
+  mgDel: function (id) {
+    App.mg.results = App.mg.results.filter(function (r) { return r.id !== id; });
+    delete App.mg.added[id];
+    var key = App.mgKeyOfResult(id);
+    App.mg.sel = App.mg.sel.filter(function (x) { return x.key !== key; });
+    App.mg.caret = null;
+    App.render();
+    App.toast('已删除该结果');
+  },
+  mgUse: function (id) {
+    var r = App.mgResult(id);
+    if (!r) return;
+    App.mg.added[id] = true;
+    r.referenced = true;
+    App.render();
+    App.toast('「' + r.name + '」已送回来源树，可以在左边勾选继续处理');
+  },
+  mgPeek: function (id) {
+    var r = App.mgResult(id);
+    if (!r) return;
+    var t = r.table;
+    var txt = function (v) { return MERGE.cellText(v); };
+    var html = '<div class="smp"><div class="smp-loc">表头</div><div class="smp-val"><i>' +
+      App.esc(t.header.map(txt).join(' │ ')) + '</i></div></div>';
+    t.rows.slice(0, 12).forEach(function (line, i) {
+      html += '<div class="smp"><div class="smp-loc">第 ' + (i + 1) + ' 行</div><div class="smp-val">' +
+        App.esc(line.map(txt).join(' │ ')) + '</div></div>';
+    });
+    html += '<div class="smp-more">前 ' + Math.min(12, t.rows.length) + ' 行 / 共 ' + t.rows.length + ' 行 · ' +
+      t.header.length + ' 列。这里只影响显示，不影响输出。</div>';
+    App.openHtml(r.name, html);
+  },
+  openHtml: function (title, html) {
+    document.getElementById('sampleTitle').textContent = title;
+    document.getElementById('sampleBody').innerHTML = html;
+    document.getElementById('sampleModal').classList.add('active');
+  },
+
+  /* ---- 执行 ---- */
+  mgFail: function (e) {
+    App.mg.busy = '';
+    App.mg.loadingKey = null;
+    App.renderMg();
+    App.toast('失败：' + ((e && e.message) || '未知错误'));
+  },
+  mgLoadSeq: function (refs, onTable, done, fail) {
+    var i = 0;
+    var step = function () {
+      if (i >= refs.length) { done(); return; }
+      var ref = refs[i++];
+      App.mgTable(ref).then(function (t) {
+        onTable(ref, t);
+        App.renderMg();
+        step();
+      }).catch(fail);
+    };
+    step();
+  },
+  mgDoMerge: function () {
+    var sel = App.mg.sel.slice();
+    if (sel.length < 2) { App.toast('至少勾 2 项才能合并'); return; }
+    if (App.mg.busy) return;
+    var items = [];
+    App.mg.busy = '正在合并… 0/' + sel.length;
+    App.renderMg();
+    App.mgLoadSeq(sel, function (ref, t) {
+      items.push({ label: ref.label, table: t });
+      App.mg.busy = '正在合并… ' + items.length + '/' + sel.length;
+    }, function () {
+      var m = MERGE.mergeTables(items);
+      App.mg.seq++;
+      var r = {
+        id: App.mg.seq, name: App.mgUniqName('合并结果' + App.mg.seq), op: 'merge', opLabel: '合并',
+        table: m, nRows: m.nRows, nCols: m.nCols,
+        from: sel.map(function (x) { return x.label; }),
+        origin: null,                      // 多表操作 → 结果单独成文件
+        info: MERGE.describeMerge(m),
+        referenced: false
+      };
+      App.mg.results.push(r);
+      App.mgMarkUsed(sel);
+      App.mg.sel = []; App.mg.caret = null; App.mg.busy = '';
+      App.render();
+      App.toast('已加入结果区：' + r.name + '（' + m.nRows + ' 行 × ' + m.nCols + ' 列）');
+    }, function (e) { App.mgFail(e); });
+  },
+  mgDoKeep: function () {
+    var sel = App.mg.sel.slice();
+    if (!sel.length) { App.toast('先勾选 sheet'); return; }
+    if (App.mg.busy) return;
+    var names = [], done2 = 0;
+    App.mg.busy = '正在取表… 0/' + sel.length;
+    App.renderMg();
+    App.mgLoadSeq(sel, function (ref, t) {
+      App.mg.seq++;
+      var r = {
+        id: App.mg.seq, name: App.mgUniqName(ref.label), op: 'keep', opLabel: '保留',
+        table: t, nRows: t.nRows, nCols: t.nCols,
+        from: [ref.label], origin: App.mgCommonOrigin([ref]), info: [], referenced: false
+      };
+      App.mg.results.push(r);
+      names.push(r.name);
+      done2++;
+      App.mg.busy = '正在取表… ' + done2 + '/' + sel.length;
+    }, function () {
+      App.mgMarkUsed(sel);
+      App.mg.sel = []; App.mg.caret = null; App.mg.busy = '';
+      App.render();
+      App.toast('已加入结果区：' + names.join('、'));
+    }, function (e) { App.mgFail(e); });
+  },
+  mgDoSplitCol: function () {
+    var t = App.mgCaretTable();
+    if (!t || App.mg.sel.length !== 1) { App.toast('先只勾 1 张表'); return; }
+    var ref = App.mg.sel[0];
+    var labs = MERGE.columnLabels(t);
+    var idx = labs.length ? Math.min(Math.max(parseInt(App.mg.splitCol, 10) || 0, 0), labs.length - 1) : 0;
+    var sp = MERGE.splitByColumn({ table: t }, idx);
+    if (!sp.groups.length) { App.toast('这张表没有数据行'); return; }
+    sp.groups.forEach(function (g) {
+      App.mg.seq++;
+      App.mg.results.push({
+        id: App.mg.seq, name: App.mgUniqName(ref.label + '_' + g.label), op: 'split', opLabel: '拆列',
+        table: g.table, nRows: g.nRows, nCols: g.table.nCols,
+        from: [ref.label], origin: App.mgCommonOrigin([ref]), info: [], referenced: false
+      });
+    });
+    App.mgMarkUsed([ref]);
+    App.mg.sel = []; App.mg.caret = null;
+    App.render();
+    App.toast('已按「' + sp.colLabel + '」拆成 ' + sp.groups.length + ' 份');
+  },
+  mgDoSplitRows: function () {
+    var t = App.mgCaretTable();
+    if (!t || App.mg.sel.length !== 1) { App.toast('先只勾 1 张表'); return; }
+    var ref = App.mg.sel[0];
+    var per = Math.max(1, parseInt(App.mg.splitRows, 10) || 1000);
+    var sr = MERGE.splitByRowCount({ table: t }, per);
+    if (!sr.groups.length) { App.toast('这张表没有数据行'); return; }
+    sr.groups.forEach(function (g) {
+      App.mg.seq++;
+      App.mg.results.push({
+        id: App.mg.seq, name: App.mgUniqName(ref.label + '_' + g.index), op: 'split', opLabel: '拆行',
+        table: g.table, nRows: g.nRows, nCols: g.table.nCols,
+        from: [ref.label], origin: App.mgCommonOrigin([ref]), info: [], referenced: false
+      });
+    });
+    App.mgMarkUsed([ref]);
+    App.mg.sel = []; App.mg.caret = null;
+    App.render();
+    App.toast('已按每 ' + per + ' 行拆成 ' + sr.groups.length + ' 份');
+  },
+
+  /* ---- 输出 ---- */
+  mgOutputs: function () {
+    var rs = App.mg.results;
+    if (!rs.length) return Promise.resolve([]);
+    var bundle = function (tables) {
+      var wb = new ExcelJS.Workbook();
+      MERGE.writeAll(wb, tables);
+      return wb.xlsx.writeBuffer().then(function (buf) {
+        return { data: buf, ext: 'xlsx', size: (buf.byteLength || buf.length || 0) };
+      });
+    };
+    if (App.mg.out === 'each') {
+      var out = [], i = 0, used = {};
+      var step = function () {
+        if (i >= rs.length) return Promise.resolve(out);
+        var r = rs[i++];
+        return bundle([{ name: r.name, table: r.table }]).then(function (o) {
+          o.name = App.mgUniqFile(used, App.safe(r.name)) + '.xlsx';
+          out.push(o);
+          return step();
+        });
+      };
+      return step();
+    }
+    var tables = rs.map(function (r) { return { name: r.name, table: r.table }; });
+    var origin = App.mgOutputOrigin();
+    if (!origin) {
+      return bundle(tables).then(function (o) {
+        o.name = App.safe('合并拆分结果.xlsx');
+        return [o];
+      });
+    }
+    var f = App.mgFile(origin.fileId);
+    return App.resolveWorkbook(f).then(function (wb) {
+      MERGE.writeAll(wb, tables);
+      return wb.xlsx.writeBuffer();
+    }).then(function (buf) {
+      var base = String(origin.fileName).replace(/\.(xlsx|xlsm|csv)$/i, '');
+      return [{ name: App.safe(base + '_合并拆分.xlsx'), data: buf, ext: 'xlsx', size: (buf.byteLength || buf.length || 0) }];
+    });
+  },
+  mgDownload: function () {
+    if (!App.mg.results.length) { App.toast('还没有结果'); return; }
+    if (App._mgBusy) return;
+    App._mgBusy = true;
+    App.toast('正在生成文件…');
+    App.mgOutputs().then(function (outs) {
+      App._mgBusy = false;
+      if (!outs.length) return;
+      if (outs.length === 1) {
+        App.saveBlob(App.blobOf(outs[0]), outs[0].name);
+        App.toast('已保存 ' + outs[0].name);
+        return;
+      }
+      var zip = new JSZip();
+      outs.forEach(function (o) { zip.file(o.name, new Uint8Array(o.data)); });
+      return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }).then(function (b) {
+        App.saveBlob(b, App.safe('合并拆分_' + outs.length + '个文件.zip'));
+        App.toast('已打包 ' + outs.length + ' 个文件');
+      });
+    }).catch(function (e) {
+      App._mgBusy = false;
+      App.toast('生成失败：' + ((e && e.message) || '未知错误'));
+    });
   },
 
   /* ---------------- 小工具 ---------------- */
