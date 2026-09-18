@@ -395,7 +395,7 @@ try {
     (await ev('!!document.getElementById("mgOut")')) === true);
   check('操作区两个标签：合并 / 拆分',
     (await ev('App.mg.tab')) === 'merge' &&
-    (await ev('[].slice.call(document.querySelectorAll(".seg-btn")).map(function(b){return b.textContent.trim();}).join(",")')) === '合并,拆分');
+    (await ev('[].slice.call(document.querySelectorAll("#mgSeg .seg-btn")).map(function(b){return b.textContent.trim();}).join(",")')) === '合并,拆分');
 
   await upFile(await makeMergeSrc(), '合并源.xlsx');
   const okSrc = await waitFor('App.files.length===2 && App.files[1].state!=="reading"', 40000);
@@ -606,6 +606,268 @@ try {
     (await ev('getComputedStyle(document.getElementById("mergeArea")).display')) === 'none' &&
     ((await ev('getComputedStyle(document.getElementById("reportArea")).display')) !== 'none' ||
       (await ev('getComputedStyle(document.getElementById("summaryArea")).display')) !== 'none'));
+
+  /* ============================================================
+     第三组 · 匹配对比
+     ============================================================ */
+  console.log('\n--- 匹配对比 ---');
+  async function makeMatchSrc() {
+    const wb = new E.Workbook();
+    const a = wb.addWorksheet('人员A');
+    a.addRow(['工号', '姓名', '金额']);
+    a.addRow(['A001', '张三', 100]);
+    a.addRow([' A002 ', '李四', 200]);      // 首尾空格 → 键要能对上
+    a.addRow(['Ａ００３', '王五', 300]);     // 全角 → 键要能对上
+    a.addRow(['a004', '赵六', 400]);        // 小写 → 只在 A 有
+
+    const b = wb.addWorksheet('人员B');
+    b.addRow(['工号', '部门', '金额']);
+    b.addRow(['A001', '销售部', 100]);       // 与 A 的 A001 金额相同 → 不该进「找差异」
+    b.addRow(['A002', '技术部', 222]);
+    b.addRow(['A003', '财务部', 333]);
+    b.addRow(['A005', '人事部', 555]);       // 只在 B 有
+
+    const d = wb.addWorksheet('明细');
+    d.addRow(['产品', '月份', '数量']);
+    [['甲', '1月', 10], ['甲', '2月', 20], ['甲', '1月', 5], ['乙', '1月', 7], ['乙', '2月', 3], ['丙', '2月', 1]]
+      .forEach((r) => d.addRow(r));
+    return Buffer.from(await wb.xlsx.writeBuffer());
+  }
+  const mtT = async (i) => JSON.parse(await ev(
+    `JSON.stringify({h:App.mt.results[${i}].table.header,r:App.mt.results[${i}].table.rows,m:App.mt.results[${i}].name,info:App.mt.results[${i}].info})`));
+  // 读预览文本：缺元素时给空串，免得级联失败变成一个看不懂的 TypeError
+  const txt = async (sel) => await ev(`(document.querySelector(${JSON.stringify(sel)})||{innerText:""}).innerText.replace(/\\s+/g," ")`);
+  const resetMt = "App.mt.results=[];App.mt.seq=0;App.mt.added={};App.mt.sel=[];App.mtSync();App.render();";
+
+  await ev('App.switchMode("match")');
+  await sleep(350);
+  check('切到匹配对比：三块 + 输出区都在',
+    (await ev('!!document.getElementById("matchArea")')) === true &&
+    (await ev('getComputedStyle(document.getElementById("mtSeg")).display')) !== 'none' &&
+    (await ev('!!document.getElementById("mtOut")')) === true);
+  check('操作区四个入口：横拼 / 找差异 / 汇总 / 交叉汇总',
+    (await ev('App.mt.tab')) === 'join' &&
+    (await ev('[].slice.call(document.querySelectorAll("#mtSeg .seg-btn")).map(function(b){return b.textContent.trim();}).join(",")')) === '横拼,找差异,汇总,交叉汇总',
+    await ev('[].slice.call(document.querySelectorAll("#mtSeg .seg-btn")).map(function(b){return b.textContent.trim();}).join(",")'));
+
+  await upFile(await makeMatchSrc(), '匹配源.xlsx');
+  const okM = await waitFor('App.files.length===3 && App.files[2].state!=="reading"', 40000);
+  check('第三份文件读入（三组共用同一批文件）', okM,
+    await ev('App.files.map(function(f){return f.name+":"+f.sheets.length;}).join(" | ")'));
+  check('来源树列出 9 张 sheet', (await ev('document.querySelectorAll("#fileList .sheet").length')) === 9,
+    await ev('document.querySelectorAll("#fileList .sheet").length'));
+
+  /* ---- 按列横拼 ---- */
+  check('勾选「人员A」', (await clickSheet('人员A')) === 'ok');
+  check('勾选「人员B」', (await clickSheet('人员B')) === 'ok');
+  check('两张表都读出表头了', await waitFor('Object.keys(App.mt.tables).length===2', 40000, 300),
+    await ev('Object.keys(App.mt.tables).join(",")'));
+  const KEYSEL = `App.mt.sel.map(function(r){var c=App.mt.cfg[r.key];return c?c.keys.map(function(i){return window.ShadeMarkExcelMatch.labelOf(App.mt.tables[r.key],i);}).join("+"):"?";}).join("|")`;
+  check('键列自动猜出来（工号）', (await ev(KEYSEL)) === '工号|工号', await ev(KEYSEL));
+  const pvJoin = await txt('#mtOps .mg-preview');
+  console.log('   横拼预览 =', pvJoin);
+  check('横拼预览：几个表 / 按键 / 共几列', /2 个表按 工号 对齐/.test(pvJoin) && /共 5 列/.test(pvJoin), pvJoin);
+  check('键列 chip 高亮', (await ev('document.querySelectorAll("#mtOps .chip.on.key").length')) === 2,
+    await ev('document.querySelectorAll("#mtOps .chip.on.key").length'));
+  check('贴的列默认全贴（除键列）', (await ev('document.querySelectorAll("#mtOps .chip.on").length')) === 6,
+    await ev('document.querySelectorAll("#mtOps .chip.on").length'));
+
+  await clickBtn('#mtOps', '按列横拼');
+  check('横拼出 1 个结果', await waitFor('App.mt.results.length===1', 60000, 300),
+    await ev('App.mt.results.length'));
+  const J1 = await mtT(0);
+  console.log('   横拼表头 =', J1.h.join(' │ '));
+  J1.r.forEach((r, i) => console.log('   ' + (i + 1) + ' | ' + r.map((v) => v === null ? '' : v).join(' │ ')));
+  check('横拼：键列合并成一列（工号）', J1.h[0] === '工号', J1.h.join(','));
+  check('横拼：重名列自动加表名前缀', J1.h.indexOf('人员A·金额') >= 0 && J1.h.indexOf('人员B·金额') >= 0, J1.h.join(','));
+  check('横拼：空格 / 全角 / 大小写都算同一个键（5 行全留）', J1.r.length === 5, J1.r.length);
+  check('横拼：A001 两侧都贴上', J1.r[0][0] === 'A001' && J1.r[0][1] === '张三' && J1.r[0][3] === '销售部', JSON.stringify(J1.r[0]));
+  check('横拼：只在一边有的留空（A005 独有）',
+    !!J1.r.find((r) => String(r[0]).indexOf('A005') >= 0 && r[1] === null && r[3] === '人事部'),
+    JSON.stringify(J1.r));
+  check('横拼：结果区带变更摘要（键 / 对齐数）', J1.info.length >= 1 && /工号/.test(J1.info[0]), JSON.stringify(J1.info));
+  check('横拼后勾选自动清空', (await ev('App.mt.sel.length')) === 0);
+
+  /* ---- 输出：多表操作 → 单独一个新文件 ---- */
+  const om = JSON.parse(await ev(`App.mgOutputs().then(function(o){ return JSON.stringify(o.map(function(x){ return {n:x.name,size:x.size}; })); })`, true));
+  console.log('   输出 =', om.map((o) => o.n + '(' + o.size + 'B)').join(', '));
+  check('匹配对比结果单独一个文件', om.length === 1 && om[0].n === '匹配对比结果.xlsx', om.map((o) => o.n).join(','));
+  const omB64 = await ev(`App.mgOutputs().then(function(o){
+    const u8 = new Uint8Array(o[0].data); let s=''; const CH=0x8000;
+    for (let i=0;i<u8.length;i+=CH) s += String.fromCharCode.apply(null, u8.subarray(i,i+CH));
+    return btoa(s);
+  })`, true);
+  const wbM = new E.Workbook();
+  await wbM.xlsx.load(Buffer.from(omB64, 'base64'));
+  check('新文件里只有结果、原表不掺进来', wbM.worksheets.length === 1, wbM.worksheets.map((w) => w.name).join(','));
+  const wsM = wbM.worksheets[0];
+  check('结果表头套上默认样式',
+    wsM.getCell('A1').font?.bold === true && wsM.getCell('A1').fill?.fgColor?.argb === 'FFF2F2F2' &&
+    wsM.getCell('A1').font?.color?.argb === 'FF2B2926' && wsM.getCell('A1').border?.bottom?.style === 'thin' &&
+    wsM.views?.[0]?.state === 'frozen');
+  check('结果列宽 ≤ 40', wsM.columns.every((c) => !c.width || c.width <= 40), wsM.columns.map((c) => c.width).join(','));
+  check('正文未加粗', wsM.getCell('A2').font?.bold !== true);
+
+  /* ---- 结果送回来源树 ---- */
+  await ev('App.mgUse(' + (await ev('App.mt.results[0].id')) + ')');
+  await sleep(300);
+  const treeTxtM = await ev('document.getElementById("resTree").innerText.replace(/\\s+/g," ")');
+  check('匹配结果也能送回来源树', /横拼_2表/.test(treeTxtM) && /来自 人员A/.test(treeTxtM), treeTxtM.slice(0, 90));
+  check('结果区标 ↻ 已引用', /已引用/.test(await ev('document.getElementById("mtResList").innerText')));
+
+  /* ---- 结果再处理（级联）：对横拼结果做汇总 ---- */
+  await ev('document.querySelector("#resTree .tree-node input[type=checkbox]").click()');
+  await sleep(400);
+  await ev('App.mtTab("sum")');
+  await sleep(200);
+  check('切到汇总：读到结果表', await waitFor('Object.keys(App.mt.tables).length===1', 40000, 300),
+    await ev('Object.keys(App.mt.tables).join(",")'));
+  await ev('App.mtSetSum("group",0); App.mtSetSum("value",2); App.mtSetSumAgg("sum");');
+  await sleep(250);
+  const pvSum = await txt('#mtOps .mg-preview');
+  console.log('   汇总预览 =', pvSum);
+  check('汇总预览：分组 / 聚合 / 出几行', /按 工号 分组/.test(pvSum) && /人员A·金额/.test(pvSum) && /出 5 行/.test(pvSum), pvSum);
+  await clickBtn('#mtOps', '汇总');
+  check('级联汇总出第 2 个结果', await waitFor('App.mt.results.length===2', 60000, 300),
+    await ev('App.mt.results.map(function(r){return r.opLabel+"|"+r.name;}).join(",")'));
+  const S1 = await mtT(1);
+  console.log('   级联汇总 =', S1.h.join(' │ '), JSON.stringify(S1.r));
+  check('级联结果来源是上一个结果', /横拼_2表/.test(S1.info[0] || '') || (await ev('App.mt.results[1].from[0]')).indexOf('横拼') >= 0,
+    await ev('JSON.stringify(App.mt.results[1].from)'));
+  check('级联汇总：5 组各 1 个数', S1.r.length === 5 && S1.h.length === 2, S1.r.length + ' 行');
+
+  /* ---- 找差异 ---- */
+  await ev(resetMt);
+  await sleep(250);
+  check('清干净后重新勾选', (await clickSheet('人员A')) === 'ok' && (await clickSheet('人员B')) === 'ok');
+  await ev('App.mtTab("diff")');
+  await sleep(300);
+  await waitFor('Object.keys(App.mt.tables).length===2', 40000, 300);
+  const pvDiff = await txt('#mtOps .mg-preview');
+  console.log('   找差异预览 =', pvDiff);
+  check('找差异预览：三类条数（A 独有 1 / B 独有 1 / 值不同 2）',
+    /只在 A 有 1 行/.test(pvDiff) && /只在 B 有 1 行/.test(pvDiff) && /都有但值不同 2 行/.test(pvDiff), pvDiff);
+  await clickBtn('#mtOps', '找差异');
+  check('找差异出 1 个结果', await waitFor('App.mt.results.length===1', 60000, 300), await ev('App.mt.results.length'));
+  const D1 = await mtT(0);
+  console.log('   差异表头 =', D1.h.join(' │ '));
+  D1.r.forEach((r, i) => console.log('   ' + (i + 1) + ' | ' + r.map((v) => v === null ? '' : v).join(' │ ')));
+  check('找差异：一张带标记的表，不是三张', D1.h[D1.h.length - 1] === '差异类型' && D1.h.indexOf('人员A·金额') >= 0 && D1.h.indexOf('人员B·金额') >= 0, D1.h.join(','));
+  check('找差异：三类都在', D1.r.filter((r) => r[r.length - 1] === '只在A有').length === 1 &&
+    D1.r.filter((r) => r[r.length - 1] === '只在B有').length === 1 &&
+    D1.r.filter((r) => r[r.length - 1] === '都有但值不同').length === 2,
+    JSON.stringify(D1.r.map((r) => r[r.length - 1])));
+  check('找差异：完全一致的行不进结果（A001 不在）', !D1.r.some((r) => String(r[0]) === 'A001'),
+    JSON.stringify(D1.r.map((r) => r[0])));
+  check('找差异：只在A有那条是 a004 且 B 侧留空',
+    !!D1.r.find((r) => r[r.length - 1] === '只在A有' && String(r[0]) === 'a004' && r[4] === null),
+    JSON.stringify(D1.r.find((r) => r[r.length - 1] === '只在A有')));
+
+  /* ---- 简单汇总：三种算法 ---- */
+  await ev(resetMt);
+  await sleep(250);
+  check('勾选「明细」', (await clickSheet('明细')) === 'ok');
+  await ev('App.mtTab("sum")');
+  await sleep(200);
+  check('读到明细表', await waitFor('Object.keys(App.mt.tables).length===1', 40000, 300));
+  await ev('App.mtSetSum("group",0); App.mtSetSum("value",2);');
+  await sleep(200);
+  const SUMCHK = { sum: [35, 10, 1], count: [3, 2, 1], avg: [11.666667, 5, 1] };
+  for (const agg of ['sum', 'count', 'avg']) {
+    await ev(`App.mtSetSumAgg("${agg}"); App.mtDoSum();`);
+    await waitFor('App.mt.results.length===1', 60000, 300);
+    const S = await mtT(0);
+    const vals = S.r.map((r) => r[1]);
+    console.log('   汇总 ' + agg + ' =', S.h.join(' │ '), JSON.stringify(S.r));
+    check('汇总 ' + agg + '：甲/乙/丙 = ' + JSON.stringify(SUMCHK[agg]),
+      JSON.stringify(vals) === JSON.stringify(SUMCHK[agg]), JSON.stringify(vals));
+    check('汇总 ' + agg + '：表头写明算法', new RegExp(agg === 'sum' ? '求和' : agg === 'count' ? '计数' : '平均').test(S.h[1]), S.h[1]);
+    await ev(resetMt);
+    await sleep(150);
+    await clickSheet('明细');
+    await waitFor('App.mt.sel.length===1 && Object.keys(App.mt.tables).length===1', 40000, 300);
+  }
+
+  /* ---- 交叉汇总 ---- */
+  await ev(resetMt);
+  await sleep(250);
+  await clickSheet('明细');
+  await waitFor('App.mt.sel.length===1 && Object.keys(App.mt.tables).length===1', 40000, 300);
+  await ev('App.mtTab("cross")');
+  await sleep(250);
+  check('交叉汇总：三个下拉读出来', await waitFor('document.querySelectorAll("#mtOps select").length===4', 40000, 300),
+    await ev('document.querySelectorAll("#mtOps select").length'));
+  await ev('App.mtSetCross("row",0); App.mtSetCross("col",1); App.mtSetCross("value",2); App.mtSetCrossAgg("sum"); App.mtSetCrossFlag("sub",true); App.mtSetCrossFlag("total",true);');
+  await sleep(300);
+  const pvX = await txt('#mtOps .mg-preview');
+  console.log('   交叉预览 =', pvX);
+  check('交叉预览：行 / 列 / 值 / 矩阵形状', /行 = 产品（3）/.test(pvX) && /列 = 月份（2）/.test(pvX) && /3×2/.test(pvX) && /带小计/.test(pvX) && /带总计/.test(pvX), pvX);
+  await clickBtn('#mtOps', '生成矩阵');
+  check('交叉汇总出 1 个结果', await waitFor('App.mt.results.length===1', 60000, 300), await ev('App.mt.results.length'));
+  const X1 = await mtT(0);
+  console.log('   交叉表头 =', X1.h.join(' │ '));
+  X1.r.forEach((r, i) => console.log('   ' + (i + 1) + ' | ' + r.map((v) => v === null ? '' : v).join(' │ ')));
+  check('交叉：表头 = 行＼列 + 两个列值 + 小计', X1.h[0].indexOf('产品') >= 0 && X1.h[0].indexOf('月份') >= 0 && X1.h[1] === '1月' && X1.h[2] === '2月' && X1.h[3] === '小计', X1.h.join('|'));
+  check('交叉：甲 = 15 / 20 / 35', JSON.stringify(X1.r[0]) === JSON.stringify(['甲', 15, 20, 35]), JSON.stringify(X1.r[0]));
+  check('交叉：丙只出现在 2月（1月留空）', X1.r[2][1] === null && X1.r[2][2] === 1, JSON.stringify(X1.r[2]));
+  check('交叉：小计行 22 / 24 / 46', JSON.stringify(X1.r[3]) === JSON.stringify(['小计', 22, 24, 46]), JSON.stringify(X1.r[3]));
+  check('交叉：总计行只补右下角 46', X1.r[4][0] === '总计' && X1.r[4][3] === 46 && X1.r[4][1] === null, JSON.stringify(X1.r[4]));
+
+  /* ---- 交叉汇总的结果写到 Excel：行标题列也当表头 ---- */
+  const xB64 = await ev(`App.mgOutputs().then(function(o){
+    const u8 = new Uint8Array(o[0].data); let s=''; const CH=0x8000;
+    for (let i=0;i<u8.length;i+=CH) s += String.fromCharCode.apply(null, u8.subarray(i,i+CH));
+    return btoa(s);
+  })`, true);
+  const wbX = new E.Workbook();
+  await wbX.xlsx.load(Buffer.from(xB64, 'base64'));
+  const wsX = wbX.worksheets[0];
+  check('交叉汇总：表头 + 行标题列都套了默认样式（加粗 + F2F2F2）',
+    wsX.getCell('A1').fill?.fgColor?.argb === 'FFF2F2F2' && wsX.getCell('A1').font?.bold === true &&
+    wsX.getCell('A2').fill?.fgColor?.argb === 'FFF2F2F2' && wsX.getCell('A2').font?.bold === true &&
+    wsX.getCell('A2').font?.color?.argb === 'FF2B2926',
+    JSON.stringify([wsX.getCell('A2').fill?.fgColor?.argb, wsX.getCell('A2').font?.bold]));
+  check('交叉汇总：正文数字格没被套样式', wsX.getCell('B2').fill === undefined || wsX.getCell('B2').fill?.fgColor === undefined,
+    JSON.stringify(wsX.getCell('B2').fill));
+  check('交叉汇总：行标题列列宽自适应 ≤ 40', (wsX.getColumn(1).width || 0) <= 40, wsX.getColumn(1).width);
+
+  /* ---- 边界 ---- */
+  await ev(resetMt);
+  await sleep(250);
+  await ev('App.mtTab("join")');
+  await sleep(200);
+  await clickSheet('明细');
+  await sleep(250);
+  check('横拼只勾 1 张表 → 提示 + 不给按钮',
+    /先勾至少 2 张表/.test(await ev('document.getElementById("mtOps").innerText')) &&
+    (await ev('document.querySelectorAll("#mtOps button.btn").length')) === 0,
+    await ev('document.getElementById("mtOps").innerText.replace(/\\s+/g," ").slice(0,60)'));
+  await ev('App.mtTab("diff")');
+  await sleep(250);
+  check('找差异只勾 1 张 → 提示正好 2 张', /正好 2 张/.test(await ev('document.getElementById("mtOps").innerText')));
+  await clickSheet('人员A');
+  await sleep(200);
+  await clickSheet('人员B');
+  await sleep(250);
+  check('找差异勾 3 张 → 明确说只支持 2 张', /只支持 2 张表/.test(await ev('document.getElementById("mtOps").innerText')),
+    await ev('document.getElementById("mtOps").innerText.replace(/\\s+/g," ").slice(0,80)'));
+
+  /* ---- 切回前两组，确认没被碰坏 ---- */
+  await ev('App.switchMode("merge")');
+  await sleep(400);
+  check('切回合并拆分：第二组仍正常',
+    (await ev('getComputedStyle(document.getElementById("mergeArea")).display')) !== 'none' &&
+    (await ev('getComputedStyle(document.getElementById("matchArea")).display')) === 'none' &&
+    (await ev('document.querySelectorAll("#mgSeg .seg-btn").length')) === 2);
+  check('第二组结果区与第三组互不串（各自一份状态）',
+    (await ev('App.mg.results !== App.mt.results && App.mg.sel !== App.mt.sel')) === true &&
+    (await ev('App.mg.results.length')) === 0,
+    'mg=' + (await ev('App.mg.results.length')) + ' / mt=' + (await ev('App.mt.results.length')));
+  await ev('App.switchMode("clean")');
+  await sleep(300);
+  check('切回清洗：三块区域都收起',
+    (await ev('getComputedStyle(document.getElementById("matchArea")).display')) === 'none' &&
+    (await ev('getComputedStyle(document.getElementById("mergeArea")).display')) === 'none');
 
   /* ---- 超限文件不崩 ---- */
   await ev(`(()=>{

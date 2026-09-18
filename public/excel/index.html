@@ -9,6 +9,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
 <script src="/excel/excel-clean.js"></script>
 <script src="/excel/excel-merge.js"></script>
+<script src="/excel/excel-match.js"></script>
 <style>
 :root{
   --bg:#0d0d0f;--surface:#101014;--panel:#17171b;--elevated:#1e1e28;--border:#2a2a33;
@@ -191,6 +192,23 @@ input[type="checkbox"]{accent-color:var(--accent)}
 .mg-preview{font-size:12px;color:var(--muted);line-height:1.7;padding:9px 11px;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);word-break:break-word}
 .mg-preview b{color:var(--text);font-weight:600}
 @media(max-width:1020px){.mg-grid{grid-template-columns:1fr}}
+/* ---- 第三组 · 匹配对比 ---- */
+.mt-grid{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:16px;align-items:start}
+.mt-chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{padding:4px 10px;border:1px solid var(--border);border-radius:999px;background:var(--bg);color:var(--muted);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;white-space:nowrap}
+.chip:hover{border-color:var(--accent);color:var(--text)}
+.chip.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip.on.key{background:#4a7cff;border-color:#4a7cff}
+.mt-tbl{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 11px;background:rgba(255,255,255,.015);display:flex;flex-direction:column;gap:7px}
+.mt-tbl-head{display:flex;align-items:center;gap:8px;font-size:12px;font-weight:700;color:var(--text);flex-wrap:wrap}
+.mt-lab{font-size:11px;font-weight:600;color:var(--muted)}
+.mt-rows{display:flex;flex-direction:column;gap:11px}
+.mt-row3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+.mt-row3 .form-group{margin:0}
+.mt-wide{grid-column:1/-1}
+.seg-4 .seg-btn{padding:7px 6px;font-size:12px}
+.mt-tag{display:inline-flex;align-items:center;padding:1px 7px;border-radius:4px;font-size:10px;font-weight:700;background:rgba(74,124,255,.18);color:#a9c4ff}
+@media(max-width:1020px){.mt-grid{grid-template-columns:1fr}.mt-row3{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
@@ -298,6 +316,31 @@ input[type="checkbox"]{accent-color:var(--accent)}
           <div class="mg-body" id="mgOut"></div>
         </section>
       </div>
+
+      <div id="matchArea" style="display:none">
+        <div class="mt-grid">
+          <section class="mg-col">
+            <div class="mg-head"><span class="mg-title">③ 操作</span><span class="card-sub" id="mtOpSub"></span></div>
+            <div class="mg-body">
+              <div class="seg seg-4" id="mtSeg">
+                <button class="seg-btn active" data-tab="join" onclick="App.mtTab('join')">横拼</button>
+                <button class="seg-btn" data-tab="diff" onclick="App.mtTab('diff')">找差异</button>
+                <button class="seg-btn" data-tab="sum" onclick="App.mtTab('sum')">汇总</button>
+                <button class="seg-btn" data-tab="cross" onclick="App.mtTab('cross')">交叉汇总</button>
+              </div>
+              <div id="mtOps"></div>
+            </div>
+          </section>
+          <section class="mg-col">
+            <div class="mg-head"><span class="mg-title">④ 结果</span><span class="card-sub" id="mtResSub"></span></div>
+            <div class="mg-body" id="mtResList"></div>
+          </section>
+        </div>
+        <section class="mg-col mg-out">
+          <div class="mg-head"><span class="mg-title">⑤ 输出</span><span class="card-sub" id="mtOutSub"></span></div>
+          <div class="mg-body" id="mtOut"></div>
+        </section>
+      </div>
     </div>
   </main>
 </div>
@@ -324,6 +367,7 @@ var WARN_ROWS = 200000;
 
 var CLEAN = window.ShadeMarkExcelClean;
 var MERGE = window.ShadeMarkExcelMerge;
+var MATCH = window.ShadeMarkExcelMatch;
 
 // 扫描时把所有项目都打开（体检报告要显示每一项的真实条数）
 var SCAN_CFG = {
@@ -369,6 +413,30 @@ var App = {
     busy: ''
   },
 
+  // ---- 第三组 · 匹配对比（结构与 App.mg 同形，共享来源树 / 结果区 / 输出） ----
+  mt: {
+    tab: 'join',         // join | diff | sum | cross
+    sel: [],
+    results: [],
+    referenced: {},
+    added: {},
+    out: 'one',
+    seq: 0,
+    cfg: {},             // 每张表的键 / 贴列配置：key → {keys:[列下标], picks:[列下标], guess:[...]}
+    tables: {},          // key → 已读到的表
+    loading: {},         // key → true（正在读）
+    bad: {},             // key → 读取失败原因（失败不重试，避免死循环）
+    sumGroup: 0,         // 简单汇总：分组依据
+    sumValue: 1,         // 简单汇总：聚合对象
+    sumAgg: 'sum',
+    crossRow: 0, crossCol: 1, crossValue: 2, crossAgg: 'sum',
+    crossSub: true, crossTotal: true,
+    busy: ''
+  },
+
+  // 当前生效的「结果工作区」：合并拆分 / 匹配对比共用一套选择·结果·输出逻辑
+  W: function () { return App.mode === 'match' ? App.mt : App.mg; },
+
   /* ---------------- 生命周期 ---------------- */
   init: function () {
     var dz = document.getElementById('dropZone');
@@ -405,17 +473,7 @@ var App = {
   switchMode: function (m) {
     App.mode = m;
     document.querySelectorAll('.mode-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.mode === m); });
-    if (m === 'clean' || m === 'merge') { App.render(); return; }
-    document.getElementById('contentTitle').textContent = '匹配对比';
-    document.getElementById('contentMeta').textContent = '本轮先做清洗 + 合并拆分';
-    document.getElementById('mergeArea').style.display = 'none';
-    document.getElementById('emptyState').style.display = 'flex';
-    document.getElementById('emptyState').innerHTML =
-      '<div class="icon">🔍</div>' +
-      '<div>匹配对比 还没开放</div>' +
-      '<div style="font-size:12px;opacity:.7">切换回清洗 / 合并拆分即可使用</div>';
-    document.getElementById('reportArea').style.display = 'none';
-    document.getElementById('summaryArea').style.display = 'none';
+    App.render();
   },
 
   /* ---------------- 上传 / 解析 ---------------- */
@@ -501,6 +559,8 @@ var App = {
     App.files = []; App.results = null; App.pick = defaultPick();
     App.mg.sel = []; App.mg.results = []; App.mg.added = {}; App.mg.referenced = {};
     App.mg.caret = null; App.mg.loadingKey = null; App.mg.busy = ''; App.mg.seq = 0;
+    App.mt.sel = []; App.mt.results = []; App.mt.added = {}; App.mt.referenced = {};
+    App.mt.cfg = {}; App.mt.tables = {}; App.mt.loading = {}; App.mt.busy = ''; App.mt.seq = 0;
     App.render();
   },
 
@@ -566,6 +626,7 @@ var App = {
   /* ---------------- 渲染 ---------------- */
   render: function () {
     if (App.mode === 'merge') { App.renderMerge(); return; }
+    if (App.mode === 'match') { App.renderMatch(); return; }
     if (App.mode !== 'clean') return;
     App.ensureScanned();
     var ready = App.files.filter(function (f) { return f.state === 'ready'; });
@@ -573,6 +634,7 @@ var App = {
 
     App.renderSidebar();
     document.getElementById('mergeArea').style.display = 'none';
+    document.getElementById('matchArea').style.display = 'none';
     document.getElementById('btnRescan').style.display = '';
 
     document.getElementById('btnClear').disabled = !App.files.length;
@@ -603,7 +665,7 @@ var App = {
   },
 
   renderSidebar: function () {
-    var merge = App.mode === 'merge';
+    var merge = App.mode === 'merge' || App.mode === 'match';   // 两组都用来源树
     document.getElementById('filePanelTitle').textContent = merge ? '② 来源树' : '文件';
     document.getElementById('treeTools').style.display = merge ? '' : 'none';
     document.getElementById('sideOut').style.display = merge ? 'none' : '';
@@ -679,7 +741,7 @@ var App = {
   renderResTree: function () {
     var panel = document.getElementById('resTreePanel');
     var list = App.mgTreeResults();
-    if (App.mode !== 'merge' || !list.length) { panel.style.display = 'none'; return; }
+    if (!(App.mode === 'merge' || App.mode === 'match') || !list.length) { panel.style.display = 'none'; return; }
     panel.style.display = '';
     document.getElementById('resTree').innerHTML = list.map(function (r) {
       var key = App.mgKeyOfResult(r.id);
@@ -702,8 +764,13 @@ var App = {
   removeFile: function (fid) {
     App.files = App.files.filter(function (x) { return x.id !== fid; });
     App.results = null;
-    App.mg.sel = App.mg.sel.filter(function (x) { return x.type !== 'sheet' || x.fileId !== fid; });
+    var drop = function (S) {
+      S.sel = S.sel.filter(function (x) { return x.type !== 'sheet' || x.fileId !== fid; });
+    };
+    drop(App.mg);
+    drop(App.mt);
     App.mg.caret = null;
+    App.mtSync();
     App.render();
   },
 
@@ -988,7 +1055,7 @@ var App = {
   backToReport: function () { App.results = null; App.render(); },
 
   download: function () {
-    if (App.mode === 'merge') { App.mgDownload(); return; }
+    if (App.mode === 'merge' || App.mode === 'match') { App.mgDownload(); return; }
     if (!App.results || !App.results.outputs.length) { App.toast('还没有可下载的结果'); return; }
     var outs = App.results.outputs;
     if (outs.length === 1) {
@@ -1033,13 +1100,16 @@ var App = {
     App.files.forEach(function (f) { if (f.id === fid) out = f; });
     return out;
   },
+  /* 注意：以下「共享」助手都走 App.W()（当前生效的结果工作区），
+     合并拆分 / 匹配对比各自一份状态，互不干扰。 */
   mgResult: function (rid) {
     var out = null;
-    App.mg.results.forEach(function (r) { if (r.id === rid) out = r; });
+    App.W().results.forEach(function (r) { if (r.id === rid) out = r; });
     return out;
   },
   mgTreeResults: function () {
-    return App.mg.results.filter(function (r) { return !!App.mg.added[r.id]; });
+    var S = App.W();
+    return S.results.filter(function (r) { return !!S.added[r.id]; });
   },
   mgRefOf: function (key) {
     if (key.charAt(0) === 'r') {
@@ -1053,19 +1123,20 @@ var App = {
   },
   mgIsSel: function (key) {
     var yes = false;
-    App.mg.sel.forEach(function (x) { if (x.key === key) yes = true; });
+    App.W().sel.forEach(function (x) { if (x.key === key) yes = true; });
     return yes;
   },
   mgSetRaw: function (key, on) {
+    var S = App.W();
     var found = false, keep = [];
-    App.mg.sel.forEach(function (x) {
+    S.sel.forEach(function (x) {
       if (x.key === key) { found = true; if (on) keep.push(x); }
       else keep.push(x);
     });
     if (on && !found) keep.push(App.mgRefOf(key));
-    App.mg.sel = keep;
+    S.sel = keep;
   },
-  mgSet: function (key, on) { App.mgSetRaw(key, on); App.mg.caret = null; App.render(); },
+  mgSet: function (key, on) { App.mgSetRaw(key, on); App.mg.caret = null; App.mtSync(); App.render(); },
   mgToggleSheet: function (fid, idx, on) {
     var f = App.mgFile(fid);
     if (!f || !f.sheets[idx]) return;
@@ -1076,6 +1147,7 @@ var App = {
     if (!f) return;
     f.sheets.forEach(function (s) { App.mgSetRaw(App.mgKeyOfSheet(fid, s.name), on); });
     App.mg.caret = null;
+    App.mtSync();
     App.render();
   },
   mgSheetKeys: function () {
@@ -1092,15 +1164,18 @@ var App = {
     return keys;
   },
   mgToggleAll: function (on) {
+    var S = App.W();
     var all = App.mgAllKeys();
     if (on) all.forEach(function (k) { App.mgSetRaw(k, true); });
-    else App.mg.sel = App.mg.sel.filter(function (x) { return all.indexOf(x.key) < 0; });
+    else S.sel = S.sel.filter(function (x) { return all.indexOf(x.key) < 0; });
     App.mg.caret = null;
+    App.mtSync();
     App.render();
   },
   mgSyncTree: function () {
+    var S = App.W();
     var sheetKeys = App.mgSheetKeys();
-    var picked = App.mg.sel.filter(function (x) { return x.type === 'sheet'; }).length;
+    var picked = S.sel.filter(function (x) { return x.type === 'sheet'; }).length;
     var all = document.getElementById('treeAll');
     if (all) {
       all.checked = sheetKeys.length > 0 && picked === sheetKeys.length;
@@ -1117,8 +1192,9 @@ var App = {
     });
   },
   mgMarkUsed: function (refs) {
+    var S = App.W();
     refs.forEach(function (x) {
-      if (x.type === 'sheet') { App.mg.referenced[x.key] = true; return; }
+      if (x.type === 'sheet') { S.referenced[x.key] = true; return; }
       var r = App.mgResult(x.resultId);
       if (r) r.referenced = true;
     });
@@ -1126,7 +1202,7 @@ var App = {
   mgUniqName: function (base) {
     var b = String(base == null ? '' : base).replace(/[\[\]\*\?\/\\:]/g, '_').slice(0, 31) || '结果';
     var used = {};
-    App.mg.results.forEach(function (r) { used[r.name] = 1; });
+    App.W().results.forEach(function (r) { used[r.name] = 1; });
     if (!used[b]) return b;
     for (var i = 2; i < 999; i++) {
       var tail = '_' + i;
@@ -1205,6 +1281,7 @@ var App = {
 
     var ma = document.getElementById('mergeArea');
     var es = document.getElementById('emptyState');
+    document.getElementById('matchArea').style.display = 'none';
     document.getElementById('reportArea').style.display = 'none';
     document.getElementById('summaryArea').style.display = 'none';
     document.getElementById('contentTitle').textContent = 'Excel 合并拆分';
@@ -1313,12 +1390,16 @@ var App = {
   },
 
   mgResHtml: function () {
-    if (!App.mg.results.length) {
+    var S = App.W();
+    if (!S.results.length) {
       return '<div class="mg-empty">还没有结果。<br>左边勾选来源 → 中间点按钮，每做一次这里多一个。<br>' +
         '结果可以改名、上下排序、删除，也可以「↻ 拿去再用」送回来源树继续处理（级联拆）。</div>';
     }
-    var n = App.mg.results.length;
-    return App.mg.results.map(function (r, i) {
+    var n = S.results.length;
+    return S.results.map(function (r, i) {
+      var info = (r.info && r.info.length)
+        ? r.info.map(function (x) { return '<div class="res-meta">· ' + App.esc(x) + '</div>'; }).join('')
+        : '';
       return '<div class="res">' +
         '<div class="res-top">' +
           '<input class="res-name" value="' + App.esc(r.name) + '" onchange="App.mgRename(' + r.id + ',this.value)">' +
@@ -1326,11 +1407,12 @@ var App = {
           (r.referenced ? '<span class="tag tag-ref">↻ 已引用</span>' : '') +
         '</div>' +
         '<div class="res-meta">' + r.nRows + ' 行 × ' + r.nCols + ' 列 · 来自 ' + App.esc(r.from.join(' + ')) + '</div>' +
+        info +
         '<div class="res-acts">' +
           '<button class="linkish" onclick="App.mgPeek(' + r.id + ')">看内容</button>' +
           '<button class="linkish" ' + (i === 0 ? 'disabled ' : '') + 'onclick="App.mgMove(' + r.id + ',-1)">↑</button>' +
           '<button class="linkish" ' + (i === n - 1 ? 'disabled ' : '') + 'onclick="App.mgMove(' + r.id + ',1)">↓</button>' +
-          '<button class="linkish" onclick="App.mgUse(' + r.id + ')">' + (App.mg.added[r.id] ? '↻ 已在来源树' : '↻ 拿去再用') + '</button>' +
+          '<button class="linkish" onclick="App.mgUse(' + r.id + ')">' + (S.added[r.id] ? '↻ 已在来源树' : '↻ 拿去再用') + '</button>' +
           '<button class="linkish" onclick="App.mgDel(' + r.id + ')">删除</button>' +
         '</div>' +
       '</div>';
@@ -1338,20 +1420,26 @@ var App = {
   },
 
   mgOutHtml: function () {
-    var n = App.mg.results.length;
-    return '<label class="radio-row"><input type="radio" name="mgout" ' + (App.mg.out === 'one' ? 'checked ' : '') +
+    var S = App.W();
+    var n = S.results.length;
+    var busy = App.mode === 'match' ? App.mt.busy : App.mg.busy;
+    // id / radio 名按模式区分，避免两块区域同时存在时撞车
+    var m = App.mode === 'match';
+    var nm = m ? 'mtout' : 'mgout';
+    var hid = m ? 'mtOutHint' : 'mgOutHint';
+    return '<label class="radio-row"><input type="radio" name="' + nm + '" ' + (S.out === 'one' ? 'checked ' : '') +
         'onchange="App.mgSetOut(\'one\')">所有结果装进一个文件（各占一个 sheet）</label>' +
-      '<label class="radio-row"><input type="radio" name="mgout" ' + (App.mg.out === 'each' ? 'checked ' : '') +
+      '<label class="radio-row"><input type="radio" name="' + nm + '" ' + (S.out === 'each' ? 'checked ' : '') +
         'onchange="App.mgSetOut(\'each\')">每个结果一个文件</label>' +
-      '<div class="mg-hint" id="mgOutHint">' + App.mgOutHint() + '</div>' +
-      '<button class="btn btn-primary btn-block" ' + (n && !App.mg.busy ? '' : 'disabled ') +
+      '<div class="mg-hint" id="' + hid + '">' + App.mgOutHint() + '</div>' +
+      '<button class="btn btn-primary btn-block" ' + (n && !busy ? '' : 'disabled ') +
       'onclick="App.download()">⬇️ 下载</button>';
   },
-  mgSetOut: function (v) { App.mg.out = v; App.renderMg(); },
+  mgSetOut: function (v) { App.W().out = v; App.render(); },
   mgSetSplitCol: function (v) { App.mg.splitCol = parseInt(v, 10) || 0; App.renderMg(); },
   mgSetSplitRows: function (v) { App.mg.splitRows = Math.max(1, parseInt(v, 10) || 1); App.renderMg(); },
   mgOutputOrigin: function () {
-    var rs = App.mg.results;
+    var rs = App.W().results;
     if (!rs.length || !rs[0].origin) return null;
     var fid = rs[0].origin.fileId;
     var same = rs.every(function (r) { return r.origin && r.origin.fileId === fid; });
@@ -1360,9 +1448,10 @@ var App = {
     return f ? rs[0].origin : null;
   },
   mgOutHint: function () {
-    var rs = App.mg.results;
+    var S = App.W();
+    var rs = S.results;
     if (!rs.length) return '还没有结果。';
-    if (App.mg.out === 'each') {
+    if (S.out === 'each') {
       return '将输出 ' + rs.length + ' 个文件' + (rs.length > 1 ? '（下载时打成一个 zip）' : '') + '：每个结果一个 .xlsx。';
     }
     var o = App.mgOutputOrigin();
@@ -1375,33 +1464,36 @@ var App = {
     var r = App.mgResult(id);
     if (!r) return;
     var nm = String(v == null ? '' : v).trim().slice(0, 31);
-    if (!nm) { App.toast('名字不能为空'); App.renderMg(); return; }
+    if (!nm) { App.toast('名字不能为空'); App.render(); return; }
     r.name = nm;
     App.render();
   },
   mgMove: function (id, d) {
+    var S = App.W();
     var i = -1;
-    App.mg.results.forEach(function (r, k) { if (r.id === id) i = k; });
+    S.results.forEach(function (r, k) { if (r.id === id) i = k; });
     var j = i + d;
-    if (i < 0 || j < 0 || j >= App.mg.results.length) return;
-    var tmp = App.mg.results[i];
-    App.mg.results[i] = App.mg.results[j];
-    App.mg.results[j] = tmp;
+    if (i < 0 || j < 0 || j >= S.results.length) return;
+    var tmp = S.results[i];
+    S.results[i] = S.results[j];
+    S.results[j] = tmp;
     App.render();
   },
   mgDel: function (id) {
-    App.mg.results = App.mg.results.filter(function (r) { return r.id !== id; });
-    delete App.mg.added[id];
+    var S = App.W();
+    S.results = S.results.filter(function (r) { return r.id !== id; });
+    delete S.added[id];
     var key = App.mgKeyOfResult(id);
-    App.mg.sel = App.mg.sel.filter(function (x) { return x.key !== key; });
+    S.sel = S.sel.filter(function (x) { return x.key !== key; });
     App.mg.caret = null;
+    App.mtSync();
     App.render();
     App.toast('已删除该结果');
   },
   mgUse: function (id) {
     var r = App.mgResult(id);
     if (!r) return;
-    App.mg.added[id] = true;
+    App.W().added[id] = true;
     r.referenced = true;
     App.render();
     App.toast('「' + r.name + '」已送回来源树，可以在左边勾选继续处理');
@@ -1544,16 +1636,23 @@ var App = {
 
   /* ---- 输出 ---- */
   mgOutputs: function () {
-    var rs = App.mg.results;
+    var S = App.W();
+    var isMatch = App.mode === 'match';
+    var rs = S.results;
     if (!rs.length) return Promise.resolve([]);
     var bundle = function (tables) {
       var wb = new ExcelJS.Workbook();
-      MERGE.writeAll(wb, tables);
+      var wss = MERGE.writeAll(wb, tables);
+      // 交叉汇总的行标题列也要当表头（第 1 列也套样式）
+      (wss || []).forEach(function (ws, i) {
+        var r = rs[i];
+        if (r && r.headCol && MATCH) MATCH.styleHeadCol(ws, (r.table.rows || []).length + 1);
+      });
       return wb.xlsx.writeBuffer().then(function (buf) {
         return { data: buf, ext: 'xlsx', size: (buf.byteLength || buf.length || 0) };
       });
     };
-    if (App.mg.out === 'each') {
+    if (S.out === 'each') {
       var out = [], i = 0, used = {};
       var step = function () {
         if (i >= rs.length) return Promise.resolve(out);
@@ -1570,7 +1669,7 @@ var App = {
     var origin = App.mgOutputOrigin();
     if (!origin) {
       return bundle(tables).then(function (o) {
-        o.name = App.safe('合并拆分结果.xlsx');
+        o.name = App.safe((isMatch ? '匹配对比结果' : '合并拆分结果') + '.xlsx');
         return [o];
       });
     }
@@ -1584,7 +1683,9 @@ var App = {
     });
   },
   mgDownload: function () {
-    if (!App.mg.results.length) { App.toast('还没有结果'); return; }
+    var S = App.W();
+    var isMatch = App.mode === 'match';
+    if (!S.results.length) { App.toast('还没有结果'); return; }
     if (App._mgBusy) return;
     App._mgBusy = true;
     App.toast('正在生成文件…');
@@ -1599,13 +1700,477 @@ var App = {
       var zip = new JSZip();
       outs.forEach(function (o) { zip.file(o.name, new Uint8Array(o.data)); });
       return zip.generateAsync({ type: 'blob', compression: 'DEFLATE' }).then(function (b) {
-        App.saveBlob(b, App.safe('合并拆分_' + outs.length + '个文件.zip'));
+        App.saveBlob(b, App.safe((isMatch ? '匹配对比_' : '合并拆分_') + outs.length + '个文件.zip'));
         App.toast('已打包 ' + outs.length + ' 个文件');
       });
     }).catch(function (e) {
       App._mgBusy = false;
       App.toast('生成失败：' + ((e && e.message) || '未知错误'));
     });
+  },
+
+  /* ============================================================
+     第三组 · 匹配对比
+     来源树 / 结果区 / 状态叠加 / 结果送回 / 输出 —— 与第二组共用同一套
+     四个功能：横拼 · 找差异 · 汇总 · 交叉汇总
+     ============================================================ */
+
+  mtSync: function () {
+    var keep = {};
+    App.mt.sel.forEach(function (x) { keep[x.key] = 1; });
+    ['cfg', 'tables', 'loading', 'bad'].forEach(function (bag) {
+      Object.keys(App.mt[bag]).forEach(function (k) { if (!keep[k]) delete App.mt[bag][k]; });
+    });
+  },
+
+  mtTab: function (t) { App.mt.tab = t; App.renderMt(); },
+  mtSelTables: function () {
+    return App.mt.sel.map(function (r, i) {
+      return { i: i, key: r.key, ref: r, label: r.label, table: App.mt.tables[r.key] || null, bad: App.mt.bad[r.key] || '' };
+    });
+  },
+  mtEnsureTables: function () {
+    var S = App.mt;
+    var todo = S.sel.filter(function (r) { return !S.tables[r.key] && !S.loading[r.key] && !S.bad[r.key]; });
+    todo.forEach(function (r) {
+      S.loading[r.key] = true;
+      App.mgTable(r).then(function (t) {
+        S.loading[r.key] = false;
+        S.tables[r.key] = t;
+        if (App.mode === 'match') App.renderMt();
+      }).catch(function (e) {
+        S.loading[r.key] = false;
+        S.bad[r.key] = (e && e.message) || '读取失败';
+        App.toast('读取「' + r.label + '」失败：' + S.bad[r.key]);
+        if (App.mode === 'match') App.renderMt();
+      });
+    });
+  },
+  mtCfgOf: function (key, table) {
+    var c = App.mt.cfg[key];
+    if (c) return c;
+    var d = MATCH.defaultConfig([{ label: key, table: table }])[0];
+    c = App.mt.cfg[key] = { keys: d.keys.slice(), picks: d.picks.slice(), guess: d.guess, touched: false };
+    return c;
+  },
+  mtItems: function (its) {
+    return its.map(function (x) {
+      var c = App.mtCfgOf(x.key, x.table);
+      return { label: x.label, table: x.table, keys: c.keys, picks: c.picks };
+    });
+  },
+  mtToggleKey: function (i, ci) {
+    var ref = App.mt.sel[i];
+    if (!ref || !App.mt.tables[ref.key]) return;
+    var c = App.mtCfgOf(ref.key, App.mt.tables[ref.key]);
+    var k = c.keys.indexOf(ci);
+    if (k >= 0) c.keys.splice(k, 1);
+    else {
+      c.keys.push(ci);
+      var p = c.picks.indexOf(ci);
+      if (p >= 0) c.picks.splice(p, 1);        // 键列不再重复贴一遍
+      c.keys.sort(function (a, b) { return a - b; });
+    }
+    c.touched = true;
+    App.renderMt();
+  },
+  mtTogglePick: function (i, ci) {
+    var ref = App.mt.sel[i];
+    if (!ref || !App.mt.tables[ref.key]) return;
+    var c = App.mtCfgOf(ref.key, App.mt.tables[ref.key]);
+    if (c.keys.indexOf(ci) >= 0) { App.toast('这一列是键列，不算贴的列'); return; }
+    var p = c.picks.indexOf(ci);
+    if (p >= 0) c.picks.splice(p, 1);
+    else { c.picks.push(ci); c.picks.sort(function (a, b) { return a - b; }); }
+    c.touched = true;
+    App.renderMt();
+  },
+
+  mtChips: function (i, table, kind, cfg) {
+    var labs = MERGE.columnLabels(table);
+    var on = kind === 'key' ? cfg.keys : cfg.picks;
+    var fn = kind === 'key' ? 'mtToggleKey' : 'mtTogglePick';
+    return '<div class="mt-chips">' + labs.map(function (l) {
+      var isOn = on.indexOf(l.index) >= 0;
+      return '<button class="chip' + (isOn ? ' on' : '') + (kind === 'key' ? ' key' : '') +
+        '" onclick="App.' + fn + '(' + i + ',' + l.index + ')">' + App.esc(l.label) + '</button>';
+    }).join('') + '</div>';
+  },
+  mtTableBlock: function (it) {
+    if (it.bad) return '<div class="mt-tbl"><div class="mt-tbl-head">' + App.esc(it.label) +
+      ' <span class="flag flag-err">读取失败</span></div><div class="mg-hint">' + App.esc(it.bad) + '</div></div>';
+    var t = it.table;
+    if (!t) return '<div class="mt-tbl"><div class="mt-tbl-head">' + App.esc(it.label) +
+      ' <span class="tag tag-off">读取中…</span></div></div>';
+    var c = App.mtCfgOf(it.key, t);
+    var keys = c.keys.map(function (ci) { return MATCH.labelOf(t, ci); });
+    return '<div class="mt-tbl">' +
+      '<div class="mt-tbl-head">' + App.esc(it.label) +
+        ' <span class="tag tag-off">' + t.nRows + ' 行 × ' + t.header.length + ' 列</span></div>' +
+      '<div class="mt-lab">键列（可多选，全对上才算匹配）' +
+        (keys.length ? ' → <b>' + App.esc(keys.join(' + ')) + '</b>' : ' → <b>还没选</b>') + '</div>' +
+      App.mtChips(it.i, t, 'key', c) +
+      '<div class="mt-lab">贴哪些列（默认全贴，点一下取消）</div>' +
+      App.mtChips(it.i, t, 'pick', c) +
+    '</div>';
+  },
+
+  /* ---- 四块操作区 ---- */
+  mtOpsHtml: function () {
+    var h = [];
+    if (App.mt.busy) h.push('<div class="mg-hint">' + App.esc(App.mt.busy) + '</div>');
+    if (App.mt.tab === 'join') h.push(App.mtJoinHtml('join'));
+    else if (App.mt.tab === 'diff') h.push(App.mtJoinHtml('diff'));
+    else if (App.mt.tab === 'sum') h.push(App.mtSumHtml());
+    else h.push(App.mtCrossHtml());
+    return h.join('');
+  },
+
+  mtKeysBad: function (cfg) { return cfg.filter(function (c) { return !c.keys.length; }); },
+  mtKeyText: function (cfg, idx) {
+    var c = cfg[idx || 0];
+    if (!c || !c.keys.length) return '';
+    return c.keys.map(function (ci) { return MATCH.labelOf(c.table, ci); }).join(' + ');
+  },
+
+  mtJoinHtml: function (mode) {
+    var its = App.mtSelTables();
+    var n = its.length;
+    var h = [];
+    if (mode === 'join') {
+      h.push('<div class="mg-hint">不定义主表：每张表各自选键，按键对齐横拼，键值全留。原表不动，结果是一张新表。</div>');
+    } else {
+      h.push('<div class="mg-hint">正好 2 张表 → 各自选键 → 出一张带「差异类型」的表：只在 A 有 / 只在 B 有 / 都有但值不同。</div>');
+    }
+    if (n < 2) {
+      h.push('<div class="mg-hint">先勾' + (mode === 'diff' ? '正好 2 张' : '至少 2 张') + '表（左边来源树）—— 现在勾了 ' + n + ' 张。</div>');
+      return h.join('');
+    }
+    if (mode === 'diff' && n !== 2) {
+      h.push('<div class="mg-hint">找差异只支持 2 张表（「只在 A / 只在 B」本身就是两方）—— 现在勾了 ' + n + ' 张，先取消多余的。</div>');
+      return h.join('');
+    }
+    h.push('<div class="mt-rows">' + its.map(App.mtTableBlock).join('') + '</div>');
+    if (its.some(function (x) { return !x.table; })) {
+      h.push('<div class="mg-hint">正在读取表头…</div>');
+      return h.join('');
+    }
+    var cfg = App.mtItems(its);
+    var bad = App.mtKeysBad(cfg);
+    if (bad.length) {
+      h.push('<div class="mg-preview">还有 <b>' + bad.length + '</b> 张表没选键列（' +
+        App.esc(bad.map(function (b) { return b.label; }).join('、')) + '）：点上面「键列」里的列名选一个。</div>');
+      return h.join('');
+    }
+    if (mode === 'join') {
+      var d = MATCH.describeJoin(cfg);
+      h.push('<div class="mg-preview">' + d.tables + ' 个表按 <b>' + App.esc(d.keyLabels.join(' + ')) +
+        '</b> 对齐，共 <b>' + d.cols + '</b> 列 · 输入共 ' + d.inRows + ' 行（键值全留）</div>');
+      h.push('<button class="btn btn-primary btn-block" ' + (App.mt.busy ? 'disabled ' : '') +
+        'onclick="App.mtDoJoin()">按列横拼</button>');
+    } else {
+      var total = cfg.reduce(function (a, c) { return a + c.table.rows.length; }, 0);
+      var kt = App.mtKeyText(cfg, 0);
+      if (total > 20000) {
+        h.push('<div class="mg-preview">按 <b>' + App.esc(kt) + '</b> 对比两张表 · 共 ' + total + ' 行（行数较多，点按钮后才算）</div>');
+      } else {
+        var dd = MATCH.findDiff(cfg);
+        h.push(dd.error
+          ? '<div class="mg-preview">' + App.esc(dd.error) + '</div>'
+          : '<div class="mg-preview">按 <b>' + App.esc(kt) + '</b> 对比：只在 A 有 <b>' + dd.counts.onlyA +
+            '</b> 行 · 只在 B 有 <b>' + dd.counts.onlyB + '</b> 行 · 都有但值不同 <b>' + dd.counts.diff + '</b> 行</div>');
+      }
+      h.push('<button class="btn btn-primary btn-block" ' + (App.mt.busy ? 'disabled ' : '') +
+        'onclick="App.mtDoDiff()">找差异</button>');
+    }
+    return h.join('');
+  },
+
+  mtAggSelect: function (cur, handler) {
+    var A = MATCH.AGG_LABEL;
+    return '<select onchange="App.' + handler + '(this.value)">' +
+      ['sum', 'count', 'avg'].map(function (k) { return App.opt(k, A[k], cur); }).join('') + '</select>';
+  },
+
+  mtSumHtml: function () {
+    var its = App.mtSelTables();
+    var h = ['<div class="mg-hint">一次处理 1 张表：选分组依据 + 聚合对象 + 算法，出一张两列的结果表。</div>'];
+    if (its.length !== 1) {
+      h.push('<div class="mg-hint">先只勾 1 张表 —— 现在勾了 ' + its.length + ' 张。</div>');
+      return h.join('');
+    }
+    var it = its[0];
+    if (it.bad) return '<div class="mg-hint">「' + App.esc(it.label) + '」读取失败：' + App.esc(it.bad) + '</div>';
+    if (!it.table) return '<div class="mg-hint">正在读取「' + App.esc(it.label) + '」…</div>';
+    var t = it.table, labs = MERGE.columnLabels(t);
+    if (!labs.length) return '<div class="mg-hint">「' + App.esc(it.label) + '」是空表。</div>';
+    var gi = Math.min(Math.max(parseInt(App.mt.sumGroup, 10) || 0, 0), labs.length - 1);
+    var vi = Math.min(Math.max(parseInt(App.mt.sumValue, 10) || 0, 0), labs.length - 1);
+
+    h.push('<div class="mt-tbl"><div class="mt-tbl-head">' + App.esc(it.label) +
+      ' <span class="tag tag-off">' + t.nRows + ' 行 × ' + t.header.length + ' 列</span></div>');
+    h.push('<div class="mt-row3">' +
+      '<div class="form-group"><label class="form-label">分组依据</label><select onchange="App.mtSetSum(\'group\',this.value)">' +
+        labs.map(function (l) { return App.opt(l.index, l.label, gi); }).join('') + '</select></div>' +
+      '<div class="form-group"><label class="form-label">聚合对象</label><select onchange="App.mtSetSum(\'value\',this.value)">' +
+        labs.map(function (l) { return App.opt(l.index, l.label, vi); }).join('') + '</select></div>' +
+      '<div class="form-group"><label class="form-label">算法</label>' + App.mtAggSelect(App.mt.sumAgg, 'mtSetSumAgg') + '</div>' +
+    '</div></div>');
+
+    var s = MATCH.summarize({ table: t }, gi, vi, App.mt.sumAgg);
+    h.push('<div class="mg-preview">按 <b>' + App.esc(labs[gi].label) + '</b> 分组，对 <b>' + App.esc(labs[vi].label) +
+      '</b> ' + App.esc(MATCH.AGG_LABEL[App.mt.sumAgg]) + ' → 出 <b>' + s.rows.length + '</b> 行（分组值 + ' +
+      App.esc(MATCH.AGG_LABEL[App.mt.sumAgg]) + '结果）</div>');
+    h.push('<button class="btn btn-primary btn-block" ' + (App.mt.busy ? 'disabled ' : '') +
+      'onclick="App.mtDoSum()">汇总 · ' + s.rows.length + ' 组</button>');
+    return h.join('');
+  },
+
+  mtCrossHtml: function () {
+    var its = App.mtSelTables();
+    var h = ['<div class="mg-hint">一次处理 1 张表：行维度 × 列维度 → 矩阵。只支持单行单列，不做嵌套。</div>'];
+    if (its.length !== 1) {
+      h.push('<div class="mg-hint">先只勾 1 张表 —— 现在勾了 ' + its.length + ' 张。</div>');
+      return h.join('');
+    }
+    var it = its[0];
+    if (it.bad) return '<div class="mg-hint">「' + App.esc(it.label) + '」读取失败：' + App.esc(it.bad) + '</div>';
+    if (!it.table) return '<div class="mg-hint">正在读取「' + App.esc(it.label) + '」…</div>';
+    var t = it.table, labs = MERGE.columnLabels(t);
+    if (!labs.length) return '<div class="mg-hint">「' + App.esc(it.label) + '」是空表。</div>';
+    var cl = function (v, d) { return Math.min(Math.max(parseInt(v, 10) || d, 0), labs.length - 1); };
+    var ri = cl(App.mt.crossRow, 0), ci = cl(App.mt.crossCol, 1), vi = cl(App.mt.crossValue, 2);
+
+    h.push('<div class="mt-tbl"><div class="mt-tbl-head">' + App.esc(it.label) +
+      ' <span class="tag tag-off">' + t.nRows + ' 行 × ' + t.header.length + ' 列</span></div>');
+    h.push('<div class="mt-row3">' +
+      '<div class="form-group"><label class="form-label">行</label><select onchange="App.mtSetCross(\'row\',this.value)">' +
+        labs.map(function (l) { return App.opt(l.index, l.label, ri); }).join('') + '</select></div>' +
+      '<div class="form-group"><label class="form-label">列</label><select onchange="App.mtSetCross(\'col\',this.value)">' +
+        labs.map(function (l) { return App.opt(l.index, l.label, ci); }).join('') + '</select></div>' +
+      '<div class="form-group"><label class="form-label">值</label><select onchange="App.mtSetCross(\'value\',this.value)">' +
+        labs.map(function (l) { return App.opt(l.index, l.label, vi); }).join('') + '</select></div>' +
+    '</div>');
+    h.push('<div class="mt-row3">' +
+      '<div class="form-group"><label class="form-label">算法</label>' + App.mtAggSelect(App.mt.crossAgg, 'mtSetCrossAgg') + '</div>' +
+      '<div class="form-group"><label class="form-label">合计</label>' +
+        '<label class="radio-row"><input type="checkbox" ' + (App.mt.crossSub ? 'checked ' : '') +
+          'onchange="App.mtSetCrossFlag(\'sub\',this.checked)">小计（行 + 列）</label>' +
+        '<label class="radio-row"><input type="checkbox" ' + (App.mt.crossTotal ? 'checked ' : '') +
+          'onchange="App.mtSetCrossFlag(\'total\',this.checked)">总计</label>' +
+      '</div>' +
+    '</div></div>');
+
+    var x = MATCH.crossTab({ table: t }, ri, ci, vi, App.mt.crossAgg, { subtotal: App.mt.crossSub, total: App.mt.crossTotal });
+    var m = x.matrix;
+    h.push('<div class="mg-preview">行 = <b>' + App.esc(labs[ri].label) + '</b>（' + m.nR + '）· 列 = <b>' +
+      App.esc(labs[ci].label) + '</b>（' + m.nC + '）· 值 = <b>' + App.esc(labs[vi].label) + '</b> ' +
+      App.esc(MATCH.AGG_LABEL[App.mt.crossAgg]) + ' → <b>' + m.nR + '×' + m.nC + '</b> 矩阵（' + x.nRows + ' 行 × ' + x.nCols + ' 列）' +
+      (m.subtotal ? ' · 带小计' : '') + (m.total ? ' · 带总计' : '') + '</div>');
+    h.push('<button class="btn btn-primary btn-block" ' + (App.mt.busy ? 'disabled ' : '') +
+      'onclick="App.mtDoCross()">生成矩阵</button>');
+    return h.join('');
+  },
+
+  mtSetSum: function (what, v) {
+    if (what === 'group') App.mt.sumGroup = parseInt(v, 10) || 0;
+    else App.mt.sumValue = parseInt(v, 10) || 0;
+    App.renderMt();
+  },
+  mtSetSumAgg: function (v) { App.mt.sumAgg = v; App.renderMt(); },
+  mtSetCross: function (what, v) {
+    var n = parseInt(v, 10) || 0;
+    if (what === 'row') App.mt.crossRow = n;
+    else if (what === 'col') App.mt.crossCol = n;
+    else App.mt.crossValue = n;
+    App.renderMt();
+  },
+  mtSetCrossAgg: function (v) { App.mt.crossAgg = v; App.renderMt(); },
+  mtSetCrossFlag: function (which, on) {
+    if (which === 'sub') App.mt.crossSub = !!on; else App.mt.crossTotal = !!on;
+    App.renderMt();
+  },
+
+  /* ---- 执行 ---- */
+  mtPush: function (res) {
+    var S = App.mt;
+    S.seq++;
+    S.results.push({
+      id: S.seq, name: res.name, op: res.op, opLabel: res.opLabel,
+      table: res.table, nRows: res.table.nRows, nCols: res.table.nCols,
+      from: res.from, origin: null, referenced: false, info: res.info, stats: res.stats, headCol: !!res.headCol
+    });
+  },
+  mtRun: function (label, fn) {
+    var S = App.mt;
+    S.busy = label;
+    App.renderMt();
+    setTimeout(function () {
+      try {
+        var r = fn();
+        S.busy = '';
+        if (r && r.error) { App.renderMt(); App.toast(r.error); return; }
+        App.render();
+        if (r && r.done) App.toast(r.done);
+      } catch (e) {
+        S.busy = '';
+        App.renderMt();
+        App.toast('失败：' + ((e && e.message) || '未知错误'));
+      }
+    }, 0);
+  },
+
+  mtDoJoin: function () {
+    var its = App.mtSelTables();
+    if (its.length < 2) { App.toast('先勾至少 2 张表'); return; }
+    if (its.some(function (x) { return !x.table; })) { App.toast('还在读表头，稍等一下'); return; }
+    var cfg = App.mtItems(its);
+    var bad = App.mtKeysBad(cfg);
+    if (bad.length) { App.toast('还有表没选键列：' + bad.map(function (b) { return b.label; }).join('、')); return; }
+    var refs = App.mt.sel.slice();
+    App.mtRun('正在按列横拼…', function () {
+      var t = MATCH.crossJoin(cfg);
+      if (t.error) return t;
+      var st = t.stats;
+      App.mtPush({
+        name: App.mgUniqName('横拼_' + cfg.length + '表'), op: 'join', opLabel: '横拼', table: t,
+        from: cfg.map(function (c) { return c.label; }),
+        info: [
+          '键：' + t.keySlots.map(function (s) { return s.label; }).join(' + ') + ' · 对齐 ' + st.joinedKeys + ' 个键值',
+          st.dupKeys ? '⚠ ' + st.dupKeys + ' 个键在某一侧重复：同行按键位置配对，多出来的行留空' : '',
+          st.singleSideKeys ? st.singleSideKeys + ' 个键只有一边有（另一边留空）' : ''
+        ].filter(Boolean),
+        stats: st
+      });
+      App.mgMarkUsed(refs);
+      App.mt.sel = []; App.mtSync();
+      return { done: '已横拼 ' + st.tables + ' 张表 → ' + st.cols + ' 列 / ' + st.rows + ' 行' };
+    });
+  },
+
+  mtDoDiff: function () {
+    var its = App.mtSelTables();
+    if (its.length !== 2) { App.toast('找差异要正好 2 张表'); return; }
+    if (its.some(function (x) { return !x.table; })) { App.toast('还在读表头，稍等一下'); return; }
+    var cfg = App.mtItems(its);
+    var bad = App.mtKeysBad(cfg);
+    if (bad.length) { App.toast('还有表没选键列：' + bad.map(function (b) { return b.label; }).join('、')); return; }
+    var refs = App.mt.sel.slice();
+    App.mtRun('正在比对…', function () {
+      var t = MATCH.findDiff(cfg);
+      if (t.error) return t;
+      var c = t.counts;
+      App.mtPush({
+        name: App.mgUniqName('差异_' + cfg[0].label + '_' + cfg[1].label), op: 'diff', opLabel: '找差异', table: t,
+        from: cfg.map(function (x) { return x.label; }),
+        info: [
+          '键：' + App.mtKeyText(cfg, 0),
+          '只在 ' + cfg[0].label + ' 有 ' + c.onlyA + ' 行 · 只在 ' + cfg[1].label + ' 有 ' + c.onlyB +
+            ' 行 · 都有但值不同 ' + c.diff + ' 行',
+          '分辨不出差异的行不进来（完全一致的不占行）'
+        ],
+        stats: t.stats
+      });
+      App.mgMarkUsed(refs);
+      App.mt.sel = []; App.mtSync();
+      return { done: '差异：A 独有 ' + c.onlyA + ' / B 独有 ' + c.onlyB + ' / 值不同 ' + c.diff };
+    });
+  },
+
+  mtDoSum: function () {
+    var its = App.mtSelTables();
+    if (its.length !== 1 || !its[0].table) { App.toast('汇总要正好勾 1 张表'); return; }
+    var it = its[0], t = it.table;
+    var labs = MERGE.columnLabels(t);
+    if (!labs.length) { App.toast('这张表是空的'); return; }
+    var gi = Math.min(Math.max(parseInt(App.mt.sumGroup, 10) || 0, 0), labs.length - 1);
+    var vi = Math.min(Math.max(parseInt(App.mt.sumValue, 10) || 0, 0), labs.length - 1);
+    var agg = App.mt.sumAgg;
+    App.mtRun('正在汇总…', function () {
+      var s = MATCH.summarize({ table: t }, gi, vi, agg);
+      App.mtPush({
+        name: App.mgUniqName('汇总_' + labs[gi].label), op: 'sum', opLabel: '汇总', table: s,
+        from: [it.label],
+        info: ['按「' + labs[gi].label + '」分组 · 对「' + labs[vi].label + '」' + MATCH.AGG_LABEL[agg] +
+          ' · ' + t.nRows + ' 行 → ' + s.rows.length + ' 组'],
+        stats: s.stats
+      });
+      App.mgMarkUsed([it.ref]);
+      App.mt.sel = []; App.mtSync();
+      return { done: '已汇总 → ' + s.rows.length + ' 组' };
+    });
+  },
+
+  mtDoCross: function () {
+    var its = App.mtSelTables();
+    if (its.length !== 1 || !its[0].table) { App.toast('交叉汇总要正好勾 1 张表'); return; }
+    var it = its[0], t = it.table;
+    var labs = MERGE.columnLabels(t);
+    if (!labs.length) { App.toast('这张表是空的'); return; }
+    var cl = function (v, d) { return Math.min(Math.max(parseInt(v, 10) || d, 0), labs.length - 1); };
+    var ri = cl(App.mt.crossRow, 0), ci = cl(App.mt.crossCol, 1), vi = cl(App.mt.crossValue, 2);
+    var agg = App.mt.crossAgg, sub = App.mt.crossSub, tot = App.mt.crossTotal;
+    App.mtRun('正在生成矩阵…', function () {
+      var x = MATCH.crossTab({ table: t }, ri, ci, vi, agg, { subtotal: sub, total: tot });
+      App.mtPush({
+        name: App.mgUniqName('交叉_' + labs[ri].label + '×' + labs[ci].label), op: 'cross', opLabel: '交叉汇总', table: x,
+        from: [it.label], headCol: true,
+        info: ['行「' + labs[ri].label + '」× 列「' + labs[ci].label + '」· 值「' + labs[vi].label + '」' + MATCH.AGG_LABEL[agg] +
+          ' · ' + x.matrix.nR + '×' + x.matrix.nC + ' 矩阵' + (sub ? ' · 小计' : '') + (tot ? ' · 总计' : '')],
+        stats: x.stats
+      });
+      App.mgMarkUsed([it.ref]);
+      App.mt.sel = []; App.mtSync();
+      return { done: '已生成 ' + x.matrix.nR + '×' + x.matrix.nC + ' 矩阵' };
+    });
+  },
+
+  /* ---- 渲染 ---- */
+  renderMatch: function () {
+    App.renderSidebar();
+    document.getElementById('btnClear').disabled = !App.files.length;
+    document.getElementById('btnRescan').style.display = 'none';
+    document.getElementById('btnDownload').disabled = !App.mt.results.length;
+
+    var ma = document.getElementById('matchArea');
+    var es = document.getElementById('emptyState');
+    document.getElementById('mergeArea').style.display = 'none';
+    document.getElementById('reportArea').style.display = 'none';
+    document.getElementById('summaryArea').style.display = 'none';
+    document.getElementById('contentTitle').textContent = 'Excel 匹配对比';
+
+    if (!App.files.length) {
+      ma.style.display = 'none';
+      es.style.display = 'flex';
+      es.innerHTML = '<div class="icon">🔍</div><div>按列横拼 / 找差异 / 简单汇总 / 交叉汇总</div>' +
+        '<div style="font-size:12px;opacity:.7">拖 Excel 进来 → 左边来源树勾选 → 中间选功能 → 右边出结果 → 底下选输出</div>';
+      document.getElementById('contentMeta').textContent = '拖拽文件到页面任意位置，或点击左侧上传';
+      return;
+    }
+    es.style.display = 'none';
+    ma.style.display = '';
+    App.mtEnsureTables();
+    App.renderMt();
+  },
+
+  renderMt: function () {
+    var S = App.mt;
+    var seg = document.getElementById('mtSeg');
+    if (seg) {
+      seg.querySelectorAll('.seg-btn').forEach(function (b) { b.classList.toggle('active', b.dataset.tab === S.tab); });
+    }
+    document.getElementById('contentMeta').textContent =
+      App.files.length + ' 个文件 · ' + App.mgSheetKeys().length + ' 张表 · 已勾选 ' + S.sel.length + ' 项' +
+      (S.results.length ? ' · 结果 ' + S.results.length + ' 个' : '');
+    document.getElementById('mtOpSub').textContent = S.sel.length ? '已选 ' + S.sel.length + ' 项' : '';
+    document.getElementById('mtResSub').textContent = S.results.length ? S.results.length + ' 个结果' : '';
+    document.getElementById('mtOutSub').textContent = S.results.length
+      ? (S.out === 'each' ? S.results.length + ' 个文件' : '1 个文件') : '';
+    document.getElementById('mtOps').innerHTML = App.mtOpsHtml();
+    document.getElementById('mtResList').innerHTML = App.mgResHtml();
+    document.getElementById('mtOut').innerHTML = App.mgOutHtml();
+    App.mgSyncTree();
+    App.renderResTree();
   },
 
   /* ---------------- 小工具 ---------------- */
