@@ -1,6 +1,6 @@
 // 线上复验：确认 shademark.cn 三页 .brand-text 已为实色（无渐变）
 const SITE = 'https://shademark.cn';
-const PAGES = ['/quote', '/watermark/', '/compress/', '/', '/links', '/admin'];
+const PAGES = ['/quote', '/watermark/', '/compress/', '/excel/', '/', '/links', '/admin'];
 const cb = Date.now();
 
 const out = [];

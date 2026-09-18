@@ -17,7 +17,7 @@ const require = createRequire(import.meta.url);
 const E = require('C:/Users/87882/AppData/Local/Temp/exceljs-dl/exceljs.min.js');
 
 const ROOT = 'E:/Workbuddy/Shademark';
-const PUBLIC = join(ROOT, 'public');
+const DIST_ROOT = join(ROOT, 'dist');
 const EDGE = 'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe';
 const PORT = 8777;
 const CDP = 9444;
@@ -68,13 +68,16 @@ async function makeDirty() {
   return Buffer.from(buf);
 }
 
-/* ---------------- 2. 静态服务 ---------------- */
+/* ---------------- 2. 静态服务 ----------------
+ * 设 E2E_BASE=https://shademark.cn 就直接打线上（验部署产物），否则本地起 dist 服务
+ */
+const LIVE = process.env.E2E_BASE || '';
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.ico': 'image/x-icon', '.css': 'text/css; charset=utf-8' };
-const server = createServer(async (req, res) => {
+const server = LIVE ? null : createServer(async (req, res) => {
   try {
     let p = decodeURIComponent(req.url.split('?')[0]);
     if (p === '/excel' || p === '/excel/') p = '/excel/index.html';
-    let file = join(PUBLIC, normalize(p).replace(/^([/\\])+/, ''));
+    let file = join(DIST_ROOT, normalize(p).replace(/^([/\\])+/, ''));
     if (!existsSync(file)) return res.writeHead(404).end('404');
     if ((await stat(file)).isDirectory()) file = join(file, 'index.html');
     const body = await readFile(file);
@@ -82,7 +85,8 @@ const server = createServer(async (req, res) => {
     res.end(body);
   } catch (e) { res.writeHead(500).end(String(e.message)); }
 });
-await new Promise((r) => server.listen(PORT, '127.0.0.1', r));
+if (server) await new Promise((r) => server.listen(PORT, '127.0.0.1', r));
+const BASE = LIVE || `http://127.0.0.1:${PORT}`;
 
 /* ---------------- 3. 起 Edge + CDP ---------------- */
 const child = spawn(EDGE, [
@@ -95,7 +99,7 @@ for (let i = 0; i < 80; i++) {
   try { const r = await fetch(`http://127.0.0.1:${CDP}/json/version`); if (r.ok) { ver = await r.json(); break; } } catch {}
   await sleep(250);
 }
-if (!ver) { console.log('Edge DevTools 未就绪'); server.close(); child.kill(); process.exit(3); }
+if (!ver) { console.log('Edge DevTools 未就绪'); if (server) server.close(); child.kill(); process.exit(3); }
 
 let target = null;
 for (let i = 0; i < 40; i++) {
@@ -106,7 +110,7 @@ for (let i = 0; i < 40; i++) {
   } catch {}
   await sleep(250);
 }
-if (!target) { console.log('拿不到 page target'); server.close(); child.kill(); process.exit(4); }
+if (!target) { console.log('拿不到 page target'); if (server) server.close(); child.kill(); process.exit(4); }
 
 const ws = new WebSocket(target.webSocketDebuggerUrl);
 await new Promise((res, rej) => { ws.onopen = res; ws.onerror = rej; });
@@ -150,7 +154,7 @@ function mat(ws) {
 
 try {
   await send('Page.enable'); await send('Runtime.enable'); await send('Network.enable');
-  await send('Page.navigate', { url: `http://127.0.0.1:${PORT}/excel` });
+  await send('Page.navigate', { url: BASE + '/excel' });
   for (let i = 0; i < 120; i++) { await sleep(150); try { if (await ev('document.readyState') === 'complete') break; } catch {} }
   await waitFor('typeof window.App === "object" && typeof window.ExcelJS === "object" && typeof window.ShadeMarkExcelClean === "object"', 30000);
   check('页面加载 + exceljs / 引擎就位',
@@ -355,6 +359,6 @@ try {
   console.log(`\n=== ${failed === 0 ? '全部通过' : failed + ' 项失败'} / 共 ${results.length + (failed && !results.length ? 1 : 0)} 项 ===`);
   try { ws.close(); } catch {}
   try { child.kill(); } catch {}
-  server.close();
+  if (server) server.close();
   process.exit(failed === 0 ? 0 : 1);
 }
