@@ -65,12 +65,14 @@ const PAGES = [
   ['platform', '/platform.html'], ['quote', '/quote.html'],
   ['watermark', '/watermark/index.html'], ['compress', '/compress/index.html'],
   ['excel', '/excel/index.html'],
-  ['404', '/404.html'], ['login', '/login.html'],
+  ['404', '/404.html'], ['login', '/login.html'], ['forgot', '/forgot.html'],
 ];
 
+// ⚠️ 这份 MEASURE 常量当前【未被使用】——真正生效的探测表达式是下面循环里内联的那份（第 ~104 行）。
+//    改选择器时两处都要改，或者优先改内联那份。曾因只改这里、没改内联那份而误判「未找到品牌名元素」。
 const MEASURE = `(()=>{
   const d=document;
-  const sel=['.brand-text','.nav .brand span','.sidebar .logo span','.logo span','.logo h1'];
+  const sel=['.brand-text','.nav .brand span','.sidebar .logo span','.logo span','.brand-mini span','.logo h1'];
   let el=null,tag='';
   for(const s of sel){const e=d.querySelector(s);if(e){el=e;tag=s;break;}}
   if(!el)return{found:false};
@@ -101,7 +103,7 @@ for (const [name, url] of PAGES) {
   for (let i = 0; i < 120; i++) { try { if (await ev('document.readyState')) break; } catch {} await sleep(120); }
   for (let i = 0; i < 80; i++) { try { if (await ev('(()=>{try{return document.getElementById("f").contentWindow.__ready===true}catch(e){return false}})()')) break; } catch {} await sleep(150); }
 
-  const m = await ev(`(()=>{try{const w=document.getElementById('f').contentWindow;const d=w.document;const sel=['.brand-text','.nav .brand span','.sidebar .logo span','.logo span','.logo h1'];let el=null,tag='';for(const s of sel){const e=d.querySelector(s);if(e){el=e;tag=s;break;}}if(!el)return{found:false};const cs=w.getComputedStyle(el);const r=el.getBoundingClientRect();return{found:true,sel:tag,text:el.textContent.trim(),fontSize:cs.fontSize,fontWeight:cs.fontWeight,letterSpacing:cs.letterSpacing,color:cs.color,bgImage:cs.backgroundImage==='none'?'none':cs.backgroundImage.slice(0,60),textFillColor:cs.webkitTextFillColor,bgClip:cs.webkitBackgroundClip||cs.backgroundClip,rect:[Math.round(r.width*100)/100,Math.round(r.height*100)/100]};}catch(e){return{err:String(e)}}})()`);
+  const m = await ev(`(()=>{try{const w=document.getElementById('f').contentWindow;const d=w.document;const sel=['.brand-text','.nav .brand span','.sidebar .logo span','.logo span','.brand-mini span','.logo h1'];let el=null,tag='';for(const s of sel){const e=d.querySelector(s);if(e){el=e;tag=s;break;}}if(!el)return{found:false};const cs=w.getComputedStyle(el);const r=el.getBoundingClientRect();return{found:true,sel:tag,text:el.textContent.trim(),fontSize:cs.fontSize,fontWeight:cs.fontWeight,letterSpacing:cs.letterSpacing,color:cs.color,bgImage:cs.backgroundImage==='none'?'none':cs.backgroundImage.slice(0,60),textFillColor:cs.webkitTextFillColor,bgClip:cs.webkitBackgroundClip||cs.backgroundClip,rect:[Math.round(r.width*100)/100,Math.round(r.height*100)/100]};}catch(e){return{err:String(e)}}})()`);
 
   out.push({ page: name, ...m });
   try { fs.unlinkSync(tmp); } catch {}
@@ -128,18 +130,18 @@ for (const r of out) {
   if (r.textFillColor && r.textFillColor !== r.color) problems.push(`${r.page}: textFillColor(${r.textFillColor}) != color(${r.color})，存在裁剪色差`);
 }
 
-// 顶栏组（login 是卡片堆叠标题，单列除外）
-const navGroup = out.filter(r => r.found && r.page !== 'login');
+// 全站品牌名（login / forgot 已与全站同一套弹窗外壳，品牌行同为 16px 实色 → 不再有「登录卡」例外）
+const navGroup = out.filter(r => r.found);
 const colors = [...new Set(navGroup.map(r => r.color))];
 const fonts = [...new Set(navGroup.map(r => r.fontSize))];
-lines.push(`顶栏组颜色集合: ${JSON.stringify(colors)}`);
-lines.push(`顶栏组字号集合: ${JSON.stringify(fonts)}`);
-lines.push(`登录卡片(单独设计): ${JSON.stringify(out.find(r => r.page === 'login')?.color)} / ${JSON.stringify(out.find(r => r.page === 'login')?.fontSize)}`);
-if (colors.length !== 1) problems.push(`顶栏颜色不唯一：${JSON.stringify(colors)}`);
+lines.push(`全站颜色集合: ${JSON.stringify(colors)}`);
+lines.push(`全站字号集合: ${JSON.stringify(fonts)}`);
+if (colors.length !== 1) problems.push(`品牌名颜色不唯一：${JSON.stringify(colors)}`);
+if (fonts.length !== 1) problems.push(`品牌名字号不唯一：${JSON.stringify(fonts)}`);
 
 lines.push('');
 if (problems.length) { lines.push(`发现 ${problems.length} 处问题：`); problems.forEach(p => lines.push('  x ' + p)); }
-else lines.push('全部通过：顶栏品牌名全站实色 rgb(232, 232, 234)，无渐变残留。');
+else lines.push('全部通过：全站品牌名实色 rgb(232, 232, 234) / 16px，无渐变残留，零例外。');
 
 fs.writeFileSync(path.join(ROOT, 'tmp_brand_color.txt'), lines.join('\n'), 'utf8');
 console.log('written');
