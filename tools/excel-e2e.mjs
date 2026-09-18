@@ -73,9 +73,21 @@ async function makeDirty() {
  */
 const LIVE = process.env.E2E_BASE || '';
 const MIME = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.png': 'image/png', '.ico': 'image/x-icon', '.css': 'text/css; charset=utf-8' };
+/* 顶栏登录闸门用例用的假鉴权（只在本地模式生效；线上走真接口） */
+let MOCK_SESSION = { authenticated: false };
+const MOCK_LOGIN_OK = { success: true };
+let MOCK_LOGIN = MOCK_LOGIN_OK;
 const server = LIVE ? null : createServer(async (req, res) => {
   try {
     let p = decodeURIComponent(req.url.split('?')[0]);
+    if (p === '/api/auth/session') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify(MOCK_SESSION));
+    }
+    if (p === '/api/auth/login' || p === '/api/auth/register') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      return res.end(JSON.stringify(MOCK_LOGIN));
+    }
     if (p === '/excel' || p === '/excel/') p = '/excel/index.html';
     let file = join(DIST_ROOT, normalize(p).replace(/^([/\\])+/, ''));
     if (!existsSync(file)) return res.writeHead(404).end('404');
@@ -892,6 +904,84 @@ try {
   check('375px 隐藏工具导航', m375.nav === 'none', m375.nav);
   check('375px 无横向溢出', !m375.over);
   await send('Emulation.clearDeviceMetricsOverride');
+
+  /* ---- 顶栏登录闸门：发码 / 短链（必须与其他页面同一套弹窗，别另起一套） ---- */
+  const cardSpec = `(()=>{const e=document.querySelector('#authModal .modal-card');if(!e)return 'none';const s=getComputedStyle(e);const im=e.querySelector('input[type=email]');const is=im?getComputedStyle(im):null;const tb=e.querySelector('.tab');const ts=tb?getComputedStyle(tb):null;return [s.maxWidth,s.paddingTop,s.borderRadius,s.backgroundColor,is?is.minHeight:'-',ts?ts.borderRadius:'-'].join('|');})()`;
+  const authSig = `(()=>['modal-card','modal-head','tabs','tab','modal-close','auth-submit','auth-tip','auth-forgot'].filter(c=>document.querySelector('#authModal .'+c)).join(','))()`;
+  async function goto(p, marker) {
+    await send('Page.navigate', { url: BASE + p });
+    await waitFor(`location.pathname===${JSON.stringify(p)} && document.readyState==='complete'`, 25000);
+    if (marker) await waitFor(marker, 25000);
+    await sleep(600);
+  }
+
+  await ev(`document.querySelector('.nav-tools a[href="/admin"]').click()`);
+  await sleep(450);
+  check('未登录点「发码」→ 弹全站统一登录框（不直接跳走）',
+    (await ev('document.getElementById("authModal").classList.contains("active")')) === true,
+    await ev('document.getElementById("authModal").className'));
+  check('用的就是首页/报价单那套模板（modal-card + modal-head + tabs + ×）',
+    (await ev('!!document.querySelector("#authModal .modal-card.auth .modal-head .tabs .tab#tabLogin")')) === true &&
+    (await ev('!!document.querySelector("#authModal .modal-card.auth .modal-head #authCloseBtn")')) === true);
+  const excelCard = await ev(cardSpec);
+  check('登录卡片规格 = 380 / 24 / 12（与其他页同为 modal-card）',
+    excelCard === '380px|24px|12px|rgb(23, 23, 27)|44px|8px', excelCard);
+  check('默认登录态：注册字段收起 + 按钮「登录」',
+    (await ev('document.getElementById("tabLogin").classList.contains("active")&&getComputedStyle(document.getElementById("authNameWrap")).display==="none"&&document.getElementById("authSubmitBtn").textContent==="登录"')) === true);
+  await ev('document.getElementById("tabRegister").click()');
+  await sleep(250);
+  check('切「注册」：昵称/联系方式出现 + 按钮变「注册」',
+    (await ev('getComputedStyle(document.getElementById("authNameWrap")).display!=="none"&&getComputedStyle(document.getElementById("authContactWrap")).display!=="none"&&document.getElementById("authSubmitBtn").textContent==="注册"')) === true);
+  await ev('document.getElementById("authCloseBtn").click()');
+  await sleep(250);
+  check('右上角 × 能关掉', (await ev('document.getElementById("authModal").classList.contains("active")')) === false);
+
+  await ev(`document.querySelector('.nav-tools a[href="/links"]').click()`);
+  await sleep(350);
+  check('未登录点「短链」→ 同样弹统一登录框', (await ev('document.getElementById("authModal").classList.contains("active")')) === true);
+  await ev(`document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}))`);
+  await sleep(250);
+  check('Esc 能关掉', (await ev('document.getElementById("authModal").classList.contains("active")')) === false);
+
+  /* 与「水印」页同一入口做真实对照 */
+  await goto('/watermark', `!!document.querySelector('.nav-tools a[data-gate]')`);
+  await ev(`document.querySelector('.nav-tools a[href="/admin"]').click()`);
+  await sleep(450);
+  const wmCard = await ev(cardSpec);
+  check('水印页同一入口的卡片规格完全一致', wmCard === excelCard, wmCard + '  vs  ' + excelCard);
+  const wmSig = await ev(authSig);
+  check('两页弹窗 DOM 结构一致', wmSig === 'modal-card,modal-head,tabs,tab,modal-close,auth-submit,auth-tip,auth-forgot', wmSig);
+
+  if (!LIVE) {
+    /* 已登录 → 不弹窗直接进；未登录提交登录后跳回原目标 */
+    MOCK_SESSION = { authenticated: true };
+    await goto('/excel', `typeof window.App==="object" && !!document.getElementById("authModal")`);
+    await ev(`document.querySelector('.nav-tools a[href="/admin"]').click()`);
+    await sleep(800);
+    check('已登录点「发码」→ 不弹窗，直接跳 /admin',
+      (await ev('location.pathname')) === '/admin' && (await ev('!!document.getElementById("authModal")')) === false,
+      await ev('location.pathname'));
+
+    MOCK_SESSION = { authenticated: false };
+    await goto('/excel', `typeof window.App==="object" && !!document.getElementById("authModal")`);
+    await ev(`document.querySelector('.nav-tools a[href="/links"]').click()`);
+    await sleep(350);
+    /* 先验失败分支：接口报错要显示在弹窗里，且不跳走 */
+    MOCK_LOGIN = { error: '邮箱或密码不正确' };
+    await ev(`(()=>{document.getElementById('authEmail').value='e2e@example.com';document.getElementById('authPass').value='wrongpass';document.getElementById('authSubmitBtn').click();return true;})()`);
+    await sleep(1200);
+    check('登录失败：错误显示在弹窗内且不跳走',
+      (await ev('document.getElementById("authError").textContent')) === '邮箱或密码不正确' &&
+      (await ev('getComputedStyle(document.getElementById("authError")).display')) !== 'none' &&
+      (await ev('document.getElementById("authModal").classList.contains("active")')) === true &&
+      (await ev('location.pathname')) === '/excel',
+      await ev('document.getElementById("authError").textContent'));
+    /* 再验成功分支：跳回原目标 */
+    MOCK_LOGIN = MOCK_LOGIN_OK;
+    await ev(`document.getElementById('authSubmitBtn').click()`);
+    await sleep(1800);
+    check('登录提交成功后跳回原目标 /links', (await ev('location.pathname')) === '/links', await ev('location.pathname'));
+  }
 
   check('全程无 JS 报错', errs.length === 0, errs.slice(0, 3).join(' | '));
 } catch (e) {

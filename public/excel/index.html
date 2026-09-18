@@ -114,6 +114,23 @@ input[type="checkbox"]{accent-color:var(--accent)}
 .modal-close{background:none;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:0 4px;font-family:inherit}
 .modal-close:hover{color:var(--text)}
 .modal-body{overflow-y:auto;padding:4px 0}
+/* —— 登录/注册弹窗（全站统一：modal-card + modal-head + modal-close，与首页/报价单/水印同一套） —— */
+.modal-card.auth{max-width:380px;padding:24px;display:block;max-height:88vh;overflow:auto}
+.modal-card.auth .modal-head{padding:0;border-bottom:none;margin-bottom:18px}
+.modal .tabs{display:flex;gap:6px}
+.modal .tab{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 16px;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
+.modal .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.modal-card.auth input{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);padding:11px 12px;font-size:14px;outline:none;margin-bottom:12px;min-height:44px;font-family:inherit}
+.modal-card.auth input:focus{border-color:var(--accent)}
+.auth-submit{width:100%;background:var(--accent);color:#fff;border:none;border-radius:6px;padding:12px;font-size:14px;font-weight:600;cursor:pointer;transition:filter .2s;min-height:46px;font-family:inherit}
+.auth-submit:hover{filter:brightness(.9)}
+.auth-submit:disabled{opacity:.5}
+.auth-error{color:var(--error);font-size:13px;margin:-4px 0 12px;display:none}
+.auth-forgot{display:none;text-align:right;margin:-6px 0 12px}
+.auth-forgot a{color:var(--muted);font-size:13px;text-decoration:underline;text-underline-offset:3px;text-decoration-color:rgba(138,138,148,.45);transition:color .2s,text-decoration-color .2s}
+.auth-forgot a:hover{color:var(--accent);text-decoration-color:var(--accent)}
+.auth-tip{color:var(--muted);font-size:12px;margin-top:12px;text-align:center;line-height:1.6}
+@media(max-width:600px){.modal-card.auth{padding:20px}}
 .smp{display:grid;grid-template-columns:minmax(120px,240px) minmax(0,1fr);gap:8px 14px;padding:9px 20px;border-bottom:1px solid rgba(42,42,51,.5);font-size:12px}
 .smp-loc{color:var(--accent);font-family:"SF Mono",Monaco,monospace;word-break:break-all}
 .smp-val{color:var(--muted);word-break:break-all}
@@ -218,7 +235,7 @@ input[type="checkbox"]{accent-color:var(--accent)}
     <a href="/"><img src="/logo.png" alt="ShadeMark"><span class="brand-text">ShadeMark</span></a>
   </div>
   <div class="nav-tools">
-    <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/excel" class="active">Excel</a><a href="/admin">发码</a><a href="/links">短链</a>
+    <a href="/">主页</a><a href="/quote">报价单</a><a href="/watermark">水印</a><a href="/compress">压缩</a><a href="/excel" class="active">Excel</a><a href="/admin" data-gate="1">发码</a><a href="/links" data-gate="1">短链</a>
   </div>
   <div class="brand-slogan"><span>🔒 文件不离本地</span><span>🧾 清洗 / 瘦身 / 格式统一</span></div>
   <div class="mode-switch">
@@ -358,6 +375,29 @@ input[type="checkbox"]{accent-color:var(--accent)}
 </div>
 
 <div class="toast" id="toast"></div>
+
+<!-- 登录弹窗：未登录点击「发码 / 短链」时弹出（规格同首页 / 报价单 / 水印，全站同一套） -->
+<div class="modal" id="authModal">
+  <div class="modal-card auth">
+    <div class="modal-head">
+      <div class="tabs">
+        <button class="tab active" id="tabLogin">登录</button>
+        <button class="tab" id="tabRegister">注册</button>
+      </div>
+      <button class="modal-close" id="authCloseBtn" aria-label="关闭">&times;</button>
+    </div>
+    <form id="authForm">
+      <input type="email" id="authEmail" placeholder="邮箱" autocomplete="off" />
+      <input type="password" id="authPass" placeholder="密码" autocomplete="new-password" />
+      <div class="auth-forgot" id="authForgot"><a href="/forgot">忘记密码？</a></div>
+      <div id="authNameWrap" style="display:none"><input id="authName" placeholder="昵称（可选）" autocomplete="off" /></div>
+      <div id="authContactWrap" style="display:none"><input id="authContact" placeholder="联系方式（可选）：微信号或手机号" autocomplete="off" /></div>
+      <div class="auth-error" id="authError"></div>
+      <button class="auth-submit" id="authSubmitBtn" type="submit">登录</button>
+    </form>
+    <p class="auth-tip" id="authTip"></p>
+  </div>
+</div>
 
 <script>
 // ===================== 常量 =====================
@@ -2194,6 +2234,98 @@ var App = {
 };
 
 document.addEventListener('DOMContentLoaded', function () { App.init(); });
+</script>
+<script>
+/* ===================== 顶栏登录闸门（与首页 / 报价单 / 水印 / 压缩同一套，勿另起一套弹窗） ===================== */
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var S = { ok: false, ready: false, offline: false }, pendingTarget = null, mode = 'login', sending = false;
+
+  function checkAuth() {
+    return fetch('/api/auth/session')
+      .then(function (r) { return r.json(); })
+      .then(function (d) { S.ok = !!(d && d.authenticated); })
+      .catch(function () { S.offline = true; S.ok = false; })
+      .then(function () { S.ready = true; });
+  }
+  function openAuth() {
+    $('authModal').classList.add('active');
+    setMode('login');
+  }
+  function closeAuth() {
+    $('authModal').classList.remove('active');
+    pendingTarget = null;
+  }
+  function setMode(m) {
+    mode = m;
+    $('tabLogin').classList.toggle('active', m === 'login');
+    $('tabRegister').classList.toggle('active', m === 'register');
+    $('authNameWrap').style.display = m === 'register' ? 'block' : 'none';
+    $('authContactWrap').style.display = m === 'register' ? 'block' : 'none';
+    $('authForgot').style.display = m === 'login' ? 'block' : 'none';
+    $('authSubmitBtn').textContent = m === 'login' ? '登录' : '注册';
+    $('authError').style.display = 'none';
+    $('authPass').autocomplete = 'new-password';
+    $('authEmail').setAttribute('autocomplete', 'off');
+    $('authName').setAttribute('autocomplete', 'off');
+    $('authContact').setAttribute('autocomplete', 'off');
+    $('authTip').textContent = m === 'login'
+      ? '还没有账号？点击上方「注册」，或直接返回继续浏览工具。'
+      : '已有账号？点击上方「登录」。注册即可使用短链与发码平台。';
+  }
+  function submitAuth(ev) {
+    ev.preventDefault();
+    if (sending) return;
+    var email = $('authEmail').value.trim();
+    var pass = $('authPass').value;
+    var err = $('authError');
+    err.style.display = 'none';
+    if (!email || !pass) { err.textContent = '请填写邮箱和密码'; err.style.display = 'block'; return; }
+    var btn = $('authSubmitBtn');
+    sending = true;
+    btn.disabled = true;
+    var old = btn.textContent;
+    btn.textContent = '请稍候…';
+    var url = mode === 'login' ? '/api/auth/login' : '/api/auth/register';
+    var body = mode === 'login'
+      ? { email: email, password: pass }
+      : { email: email, password: pass, display_name: $('authName').value.trim(), contact: $('authContact').value.trim() };
+    fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json().catch(function () { return {}; }); })
+      .then(function (d) {
+        if (d.error || !d.success) { err.textContent = d.error || '操作失败'; err.style.display = 'block'; return; }
+        S.ok = true;
+        var target = pendingTarget || '/';
+        pendingTarget = null;
+        closeAuth();
+        location.href = target;
+      })
+      .catch(function () { err.textContent = '网络错误'; err.style.display = 'block'; })
+      .then(function () { sending = false; btn.disabled = false; btn.textContent = old; });
+  }
+  // 需要登录的入口：已登录直接进，未登录弹登录框；离线 / 本地打开时保持原有直跳行为
+  function guardNav(ev, url) {
+    ev.preventDefault();
+    var go = function () {
+      if (S.ok || S.offline) { location.href = url; return; }
+      pendingTarget = url;
+      openAuth();
+    };
+    if (S.ready) { go(); } else { checkAuth().then(go); }
+  }
+
+  document.querySelectorAll('.nav-tools a[data-gate]').forEach(function (el) {
+    el.addEventListener('click', function (ev) { guardNav(ev, el.getAttribute('href')); });
+  });
+  $('tabLogin').addEventListener('click', function () { setMode('login'); });
+  $('tabRegister').addEventListener('click', function () { setMode('register'); });
+  $('authCloseBtn').addEventListener('click', closeAuth);
+  $('authForm').addEventListener('submit', submitAuth);
+  $('authModal').addEventListener('click', function (e) { if (e.target.id === 'authModal') closeAuth(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeAuth(); });
+
+  checkAuth();
+})();
 </script>
 </body>
 </html>
