@@ -4,7 +4,7 @@
   "description": "ShadeMark — 开发者工具产品矩阵",
   "private": true,
   "scripts": {
-    "dev": "wrangler pages dev dist --d1=DB",
+    "dev": "wrangler pages dev dist --d1=DB --compatibility-flags=nodejs_compat",
     "deploy": "wrangler deploy",
     "db:migrate": "wrangler d1 execute shademark --local --file=schema.sql",
     "db:migrate:remote": "wrangler d1 execute shademark --remote --file=schema.sql"
