@@ -10,6 +10,7 @@
   --bg:#0d0d0f;--card:#17171b;--sidebar:#101014;--border:#2a2a33;
   --text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;
   --danger:#f87171;--success:#4ade80;--warn:#ffd166;--info:#60a5fa;
+  --panel:#17171b;--radius:12px;--radius-sm:8px;--error:#f87171;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex;flex-direction:column}
@@ -105,7 +106,7 @@ tr:hover td{background:#14141a}
 .upgrade-text{font-size:13px;line-height:1.7}
 .actions{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
 /* —— 新建商品弹窗排版（仅作用于 #productModal，不影响其它弹窗）—— */
-#productModal .modal-content{max-width:660px}
+#productModal .modal-card{max-width:660px}
 #productModal .pm-sections{display:flex;flex-direction:column;gap:4px}
 #productModal .pm-sec{border:1px solid var(--border);border-radius:10px;padding:14px 16px 2px;margin-bottom:12px}
 #productModal .pm-sec-title{font-size:12px;font-weight:700;letter-spacing:.6px;color:var(--muted);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
@@ -136,10 +137,15 @@ input:disabled,select:disabled{opacity:.45;cursor:not-allowed;background:transpa
 .form-group{margin-bottom:16px}
 .form-group label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
 .form-group input,.form-group select,.form-group textarea{width:100%;max-width:480px}
-.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.72);z-index:100;align-items:center;justify-content:center;padding:20px}
+/* —— 弹窗外壳：全站统一样式（与 excel / 水印 / 报价单 同一套，勿另起一套） —— */
+.modal{display:none;position:fixed;inset:0;background:rgba(6,6,9,.72);backdrop-filter:blur(4px);z-index:300;align-items:center;justify-content:center;padding:20px}
 .modal.active{display:flex}
-.modal-content{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:28px;max-width:520px;width:100%;max-height:88vh;overflow-y:auto}
-.modal-content h2{font-size:18px;font-weight:700;margin-bottom:20px}
+.modal-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:760px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);gap:12px}
+.modal-head h3{font-size:15px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:0 4px;font-family:inherit}
+.modal-close:hover{color:var(--text)}
+.modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 20px 22px}
 .loading{color:var(--muted);text-align:center;padding:40px;font-size:14px}
 .actions{display:flex;gap:10px;flex-wrap:wrap}
 .cell-actions{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
@@ -152,13 +158,13 @@ input:disabled,select:disabled{opacity:.45;cursor:not-allowed;background:transpa
 .sd-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:20px;flex-wrap:wrap}
 .sd-actions .btn{min-height:42px;padding:9px 14px;flex:1 1 auto;min-width:96px}
 /* 联系表单弹窗（三处入口共用） */
-.contact-modal .modal-content{max-width:480px}
-.contact-modal .cm-sub{color:var(--muted);font-size:12px;line-height:1.6;margin:-14px 0 16px}
+.contact-modal .modal-card{max-width:480px}
+.contact-modal .cm-sub{color:var(--muted);font-size:12px;line-height:1.6;margin:0 0 16px}
 .contact-modal .form-group input,.contact-modal .form-group select,.contact-modal .form-group textarea{max-width:none;min-height:44px}
 .contact-modal textarea{resize:vertical;min-height:96px}
 .contact-modal .cm-err{color:var(--danger);font-size:13px;line-height:1.5;min-height:0;margin:-6px 0 4px;display:none}
 .contact-modal .actions .btn{min-height:44px;padding:9px 16px;flex:1 1 auto}
-@media(max-width:600px){.contact-modal .modal-content{margin:8px;width:90%;padding:20px}}
+@media(max-width:600px){.contact-modal .modal-card{max-height:88vh}}
 
 .sub-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:13px;color:var(--muted);line-height:1.6}
 .sub-bar .badge{font-size:11px;font-weight:700}
@@ -233,7 +239,8 @@ input:disabled,select:disabled{opacity:.45;cursor:not-allowed;background:transpa
   .btn-sm{min-height:38px}
   .btn{min-height:42px}
   .cell-actions{gap:6px}
-  .modal-content{padding:20px;margin:16px;max-height:88vh;border-radius:12px}
+  .modal{padding:12px}
+  .modal-card{max-height:88vh}
   .loading{padding:28px 12px}
   .actions{justify-content:flex-end}
 }
@@ -422,22 +429,31 @@ input:disabled,select:disabled{opacity:.45;cursor:not-allowed;background:transpa
 
 <!-- Pro 专属提示弹窗 -->
 <div class="modal" id="proModal">
-  <div class="modal-content">
-    <h2><span class="badge badge-pro">Pro</span> 专属功能</h2>
-    <p style="color:var(--text);margin:14px 0 6px;font-size:14px;line-height:1.7">该功能为 Pro 专属。请联系平台方升级后使用。</p>
-    <p style="color:var(--muted);font-size:12px;line-height:1.6">开通后立即生效，无需重新登录。一个账号、一个等级，发码平台 / 短链 / 水印 / 压缩全矩阵通用。</p>
-    <div class="actions">
-      <button class="btn btn-primary" onclick="openContact('upgrade')">联系开通</button>
-      <button class="btn btn-ghost" onclick="goSubscription()">查看详情</button>
-      <button class="btn btn-ghost" onclick="closeProModal()">知道了</button>
+  <div class="modal-card" style="max-width:480px">
+    <div class="modal-head">
+      <h3><span class="badge badge-pro">Pro</span> 专属功能</h3>
+      <button class="modal-close" onclick="closeProModal()" aria-label="关闭">&times;</button>
+    </div>
+    <div class="modal-body">
+      <p style="color:var(--text);margin:0 0 6px;font-size:14px;line-height:1.7">该功能为 Pro 专属。请联系平台方升级后使用。</p>
+      <p style="color:var(--muted);font-size:12px;line-height:1.6">开通后立即生效，无需重新登录。一个账号、一个等级，发码平台 / 短链 / 水印 / 压缩全矩阵通用。</p>
+      <div class="actions">
+        <button class="btn btn-primary" onclick="openContact('upgrade')">联系开通</button>
+        <button class="btn btn-ghost" onclick="goSubscription()">查看详情</button>
+        <button class="btn btn-ghost" onclick="closeProModal()">知道了</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- 联系表单弹窗（三处入口共用） -->
 <div class="modal contact-modal" id="contactModal">
-  <div class="modal-content">
-    <h2>联系平台方</h2>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3>联系平台方</h3>
+      <button class="modal-close" onclick="closeContact()" aria-label="关闭">&times;</button>
+    </div>
+    <div class="modal-body">
     <p class="cm-sub">有什么需求或问题，提交后平台方会尽快回复。</p>
     <div class="form-group"><label>联系方式 <em class="req">*</em></label><input id="cm_email" type="text" placeholder="建议填写邮箱或微信号，用于平台方联系你" /></div>
     <div class="form-group"><label>类型 <em class="req">*</em></label>
@@ -453,13 +469,18 @@ input:disabled,select:disabled{opacity:.45;cursor:not-allowed;background:transpa
       <button class="btn btn-primary cm-submit" onclick="submitContact()">提交</button>
       <button class="btn btn-ghost" onclick="closeContact()">取消</button>
     </div>
+    </div>
   </div>
 </div>
 
 <!-- 商品模态框 -->
 <div class="modal" id="productModal">
-  <div class="modal-content" style="max-width:660px">
-    <h2 id="productModalTitle">新建商品</h2>
+  <div class="modal-card">
+    <div class="modal-head">
+      <h3 id="productModalTitle">新建商品</h3>
+      <button class="modal-close" onclick="closeProductModal()" aria-label="关闭">&times;</button>
+    </div>
+    <div class="modal-body">
     <div class="pm-sections">
 
       <!-- 基本信息 -->
@@ -509,34 +530,45 @@ input:disabled,select:disabled{opacity:.45;cursor:not-allowed;background:transpa
         <button class="btn" onclick="createProduct()">创建商品</button>
       </div>
     </div>
+    </div>
   </div>
 </div>
 
 <!-- 购买链接弹层 -->
 <div class="modal" id="linkModal">
-  <div class="modal-content" style="max-width:520px">
-    <h2 id="linkModalTitle">购买链接</h2>
-    <div id="linkExtra" style="margin-bottom:14px"></div>
-    <div class="form-group"><label>链接</label><input id="linkUrl" class="link-input" type="text" onclick="this.select()" /></div>
-    <div class="actions">
-      <button class="btn" id="linkCopyBtn" onclick="copyModalLink()">复制链接</button>
-      <button class="btn btn-ghost" onclick="closeLinkModal()">关闭</button>
+  <div class="modal-card" style="max-width:520px">
+    <div class="modal-head">
+      <h3 id="linkModalTitle">购买链接</h3>
+      <button class="modal-close" onclick="closeLinkModal()" aria-label="关闭">&times;</button>
+    </div>
+    <div class="modal-body">
+      <div id="linkExtra" style="margin-bottom:14px"></div>
+      <div class="form-group"><label>链接</label><input id="linkUrl" class="link-input" type="text" onclick="this.select()" /></div>
+      <div class="actions">
+        <button class="btn" id="linkCopyBtn" onclick="copyModalLink()">复制链接</button>
+        <button class="btn btn-ghost" onclick="closeLinkModal()">关闭</button>
+      </div>
     </div>
   </div>
 </div>
 
 <!-- 激活码详情 / 修改有效期（激活码管理 + 订单管理共用） -->
 <div class="modal" id="codeModal">
-  <div class="modal-content">
-    <h2>激活码详情</h2>
-    <div id="codeDetailBox"></div>
-    <div class="form-group"><label>修改有效期<span style="text-transform:none;color:var(--muted);font-weight:400">（留空表示永久有效）</span></label>
-      <input id="codeExpiresDate" type="date" />
+  <div class="modal-card" style="max-width:520px">
+    <div class="modal-head">
+      <h3>激活码详情</h3>
+      <button class="modal-close" onclick="closeCodeModal()" aria-label="关闭">&times;</button>
     </div>
-    <div class="error" id="codeModalErr" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px"></div>
-    <div class="actions">
-      <button class="btn" onclick="saveCodeExpiry()">保存</button>
-      <button class="btn btn-ghost" onclick="closeCodeModal()">取消</button>
+    <div class="modal-body">
+      <div id="codeDetailBox"></div>
+      <div class="form-group"><label>修改有效期<span style="text-transform:none;color:var(--muted);font-weight:400">（留空表示永久有效）</span></label>
+        <input id="codeExpiresDate" type="date" />
+      </div>
+      <div class="error" id="codeModalErr" style="display:none;color:var(--danger);font-size:13px;margin-bottom:12px"></div>
+      <div class="actions">
+        <button class="btn" onclick="saveCodeExpiry()">保存</button>
+        <button class="btn btn-ghost" onclick="closeCodeModal()">取消</button>
+      </div>
     </div>
   </div>
 </div>
@@ -1042,7 +1074,16 @@ document.addEventListener('click',()=>{
   const m=document.getElementById('acctMenu'),b=document.getElementById('acctBtn');
   if(m&&m.classList.contains('show')){m.classList.remove('show');if(b)b.setAttribute('aria-expanded','false');}
 });
-document.addEventListener('keydown',(e)=>{if(e.key==='Escape'){const m=document.getElementById('acctMenu');if(m&&m.classList.contains('show'))toggleAcct();}});
+// Esc：先关账号菜单；没有菜单时关掉当前打开的弹窗（点 × 走各自的关闭函数，保证状态一起复位）
+document.addEventListener('keydown',(e)=>{
+  if(e.key!=='Escape')return;
+  const m=document.getElementById('acctMenu');
+  if(m&&m.classList.contains('show')){toggleAcct();return;}
+  const open=document.querySelector('.modal.active');
+  if(!open)return;
+  const x=open.querySelector('.modal-close');
+  if(x)x.click();
+});
 
 // 账号信息：顶栏已显示邮箱，侧栏不再重复展示
 function renderAccount(d){
@@ -1270,6 +1311,7 @@ checkAuth();
 document.getElementById('proModal').addEventListener('click',e=>{if(e.target.id==='proModal')closeProModal()});
 document.getElementById('linkModal').addEventListener('click',e=>{if(e.target.id==='linkModal')closeLinkModal()});
 document.getElementById('linkUrl').addEventListener('keydown',e=>{if(e.key==='Enter')copyModalLink()});
+document.getElementById('productModal').addEventListener('click',e=>{if(e.target.id==='productModal')closeProductModal()});
 document.getElementById('codeModal').addEventListener('click',e=>{if(e.target.id==='codeModal')closeCodeModal()});
 document.getElementById('contactModal').addEventListener('click',e=>{if(e.target.id==='contactModal')closeContact()});
 document.getElementById('contactModal').addEventListener('keydown',e=>{if(e.key==='Enter'&&e.target&&e.target.tagName!=='TEXTAREA'&&e.target.id!=='cm_type'){e.preventDefault();submitContact();}});

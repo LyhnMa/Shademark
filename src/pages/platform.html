@@ -10,6 +10,7 @@
   --bg:#0d0d0f;--card:#17171b;--sidebar:#101014;--border:#2a2a33;
   --text:#e8e8ea;--muted:#8a8a94;--accent:#7c6cf0;
   --danger:#f87171;--success:#4ade80;--warn:#ffd166;--info:#60a5fa;
+  --panel:#17171b;--radius:12px;--radius-sm:8px;--error:#f87171;
 }
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;min-height:100vh;display:flex}
@@ -89,10 +90,15 @@ tr:hover td{background:#14141a}
 .c-msg{max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px}
 .locked{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:40px;text-align:center;color:var(--muted);font-size:14px}
 /* 弹窗（通用） */
-.modal{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.72);z-index:100;align-items:center;justify-content:center;padding:20px}
+/* —— 弹窗外壳：全站统一样式（与 excel / 水印 / 报价单 同一套，勿另起一套） —— */
+.modal{display:none;position:fixed;inset:0;background:rgba(6,6,9,.72);backdrop-filter:blur(4px);z-index:300;align-items:center;justify-content:center;padding:20px}
 .modal.active{display:flex}
-.modal-content{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:420px;width:100%;max-height:88vh;overflow-y:auto}
-.modal-content h2{font-size:17px;font-weight:700;margin-bottom:6px}
+.modal-card{background:var(--panel);border:1px solid var(--border);border-radius:var(--radius);width:100%;max-width:760px;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.5)}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);gap:12px}
+.modal-head h3{font-size:15px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:0 4px;font-family:inherit}
+.modal-close:hover{color:var(--text)}
+.modal-body{flex:1 1 auto;min-height:0;overflow-y:auto;padding:18px 20px 22px}
 .modal-sub{color:var(--muted);font-size:12px;margin-bottom:18px;line-height:1.6}
 .modal-user{display:flex;align-items:center;gap:10px;background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:16px;flex-wrap:wrap}
 .modal-user .mail{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;word-break:break-all;flex:1 1 auto;min-width:0}
@@ -106,11 +112,9 @@ tr:hover td{background:#14141a}
 .modal-actions{display:flex;gap:10px;flex-wrap:wrap}
 .modal-actions .btn{flex:1 1 auto}
 .modal-actions .btn-danger{flex:1 1 100%}
-.close-x{position:absolute;top:14px;right:16px;background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;line-height:1}
-.close-x:hover{color:var(--text)}
 /* —— 登录 / 注册弹窗（与首页 #authModal 完全一致，仅命名空间隔离）—— */
-.auth-modal .modal-card{background:var(--card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:380px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5)}
-.auth-modal .modal-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.auth-modal .modal-card{background:var(--card);border:1px solid var(--border);border-radius:12px;width:100%;max-width:380px;padding:24px;box-shadow:0 20px 60px rgba(0,0,0,.5);display:block;max-height:88vh;overflow:auto}
+.auth-modal .modal-head{display:flex;align-items:center;justify-content:space-between;padding:0;border-bottom:none;margin-bottom:18px}
 .auth-modal .tabs{display:flex;gap:6px}
 .auth-modal .tab{background:transparent;border:1px solid var(--border);color:var(--muted);padding:7px 16px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;font-family:inherit}
 .auth-modal .tab.active{background:var(--accent);border-color:var(--accent);color:#fff}
@@ -260,20 +264,24 @@ tr:hover td{background:#14141a}
 
 <!-- 到期时间设置弹窗 -->
 <div class="modal" id="expiryModal">
-  <div class="modal-content" style="position:relative">
-    <button class="close-x" onclick="closeExpiry()" aria-label="关闭">&times;</button>
-    <h2 id="expTitle">升级 Pro</h2>
-    <div class="modal-sub" id="expSub">选择 Pro 到期时间，操作立即生效，无需对方重新登录。</div>
-    <div class="modal-user"><span class="mail" id="expMail"></span></div>
-    <div class="exp-presets">
-      <button class="pbtn" data-days="30"><span class="lab">30 天</span><span class="desc">按当前时间起 30 天</span></button>
-      <button class="pbtn" data-days="90"><span class="lab">90 天</span><span class="desc">按当前时间起 90 天</span></button>
-      <button class="pbtn" data-days="365"><span class="lab">一年</span><span class="desc">按当前时间起 365 天</span></button>
-      <button class="pbtn permanent" data-days="0"><span class="lab">永久</span><span class="desc">不限期（subscription_expires_at = NULL）</span></button>
+  <div class="modal-card" style="max-width:420px">
+    <div class="modal-head">
+      <h3 id="expTitle">升级 Pro</h3>
+      <button class="modal-close" onclick="closeExpiry()" aria-label="关闭">&times;</button>
     </div>
-    <div class="modal-actions">
-      <button class="btn btn-danger" id="expDowngrade" onclick="downgradeUser()" style="display:none">降级为 Free</button>
-      <button class="btn btn-ghost" onclick="closeExpiry()">取消</button>
+    <div class="modal-body">
+      <div class="modal-sub" id="expSub">选择 Pro 到期时间，操作立即生效，无需对方重新登录。</div>
+      <div class="modal-user"><span class="mail" id="expMail"></span></div>
+      <div class="exp-presets">
+        <button class="pbtn" data-days="30"><span class="lab">30 天</span><span class="desc">按当前时间起 30 天</span></button>
+        <button class="pbtn" data-days="90"><span class="lab">90 天</span><span class="desc">按当前时间起 90 天</span></button>
+        <button class="pbtn" data-days="365"><span class="lab">一年</span><span class="desc">按当前时间起 365 天</span></button>
+        <button class="pbtn permanent" data-days="0"><span class="lab">永久</span><span class="desc">不限期（subscription_expires_at = NULL）</span></button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-danger" id="expDowngrade" onclick="downgradeUser()" style="display:none">降级为 Free</button>
+        <button class="btn btn-ghost" onclick="closeExpiry()">取消</button>
+      </div>
     </div>
   </div>
 </div>
